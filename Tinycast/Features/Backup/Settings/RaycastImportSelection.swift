@@ -15,7 +15,6 @@ struct RaycastImportSelection: View {
         .init(option: .shortcuts, symbol: "command", label: "Shortcuts"),
         .init(option: .favorites, symbol: "star", label: "Favorites"),
         .init(option: .aliases, symbol: "character.cursor.ibeam", label: "Aliases"),
-        .init(option: .emojiSkinTone, symbol: "face.smiling", label: "Emoji skin tone"),
         .init(option: .launchAtLogin, symbol: "power", label: "Launch at login"),
         .init(option: .menuBarVisibility, symbol: "menubar.rectangle", label: "Menu-bar icon"),
         .init(option: .clipboardHistory, symbol: "doc.on.clipboard", label: "Clipboard history"),

@@ -118,10 +118,6 @@ enum BackupApplier {
             core.launcherRanking.replace(records)
             applied += records.count
         }
-        if let records = bundle.decodeLearning(.emoji, as: [FrequentEmoji].self) {
-            core.frequentEmoji.replace(records)
-            applied += records.count
-        }
         if let entries = bundle.decodeLearning(.calculator, as: [CalcHistoryEntry].self) {
             core.calcHistory.replace(entries)
             applied += entries.count

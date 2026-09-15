@@ -53,9 +53,9 @@ struct PaletteRowIndexTests {
         return 0
     }
 
-    /// The emoji screen's contract: a grid move walks one visual row of the same flat row order.
+    /// A sectioned grid's contract: a grid move walks one visual row of the same flat row order.
     static func expectGrid(_ counts: [Int], columns: Int, _ label: String) {
-        let grid = EmojiGridGeometry(counts: counts, columns: columns)
+        let grid = GridGeometry(counts: counts, columns: columns)
         let index = PaletteRowIndex(sectionCounts: counts)
         let lastRow = counts.reduce(0) { $0 + ($1 + columns - 1) / columns } - 1
         for flat in 0..<index.count {
@@ -367,26 +367,25 @@ struct PaletteRowIndexTests {
         expect(historyCardOnly.row(at: 1), nil, "nothing follows a lone card")
         expect(historyCardOnly.clamped(4) == 0, "a stale selection clamps back onto the card")
 
-        // The emoji grid: sections of 8, 20 and 5 cells over 8 columns, as the picker renders them.
-        let emoji = PaletteRowIndex(sectionCounts: [8, 20, 5])
-        expect(emoji.count == 33, "the grid indexes every cell of every section")
+        // Sections of 8, 20 and 5 cells over 8 columns.
+        let grid3 = PaletteRowIndex(sectionCounts: [8, 20, 5])
+        expect(grid3.count == 33, "the grid indexes every cell of every section")
         expect(
-            emoji.row(at: 8), .element(section: 1, offset: 0),
+            grid3.row(at: 8), .element(section: 1, offset: 0),
             "the flat index crosses into the next section's first cell")
-        expectRoundTrip(emoji, "emoji grid shape")
-        let emojiGrid = EmojiGridGeometry(counts: [8, 20, 5], columns: 8)
+        expectRoundTrip(grid3, "grid shape")
+        let grid = GridGeometry(counts: [8, 20, 5], columns: 8)
         expect(
-            emojiGrid.down(from: 3), 8 + 3,
+            grid.down(from: 3), 8 + 3,
             "down from the last row of a section lands in the same column of the next")
         expect(
-            emojiGrid.up(from: 8 + 3), 3,
+            grid.up(from: 8 + 3), 3,
             "up from a section's first row lands in the same column of the previous")
-        expect(emojiGrid.down(from: 8 + 16 + 3), 28 + 3, "the third section is entered by column")
-        expect(emojiGrid.up(from: 28 + 3), 8 + 16 + 3, "and left again by the same column")
-        // `EmojiGrid.sections` skips an empty category, so no shape here carries an empty section.
-        expectGrid([8, 20, 5], columns: 8, "emoji grid")
-        expectGrid([33], columns: 8, "emoji search results")
-        expectGrid([1], columns: 8, "a single emoji result")
+        expect(grid.down(from: 8 + 16 + 3), 28 + 3, "the third section is entered by column")
+        expect(grid.up(from: 28 + 3), 8 + 16 + 3, "and left again by the same column")
+        expectGrid([8, 20, 5], columns: 8, "grid")
+        expectGrid([33], columns: 8, "search results")
+        expectGrid([1], columns: 8, "a single result")
 
         // Exhaustive: every grid shape moves by one visual row and stays inside the flat order.
         for a in 1...9 {

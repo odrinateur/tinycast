@@ -35,8 +35,7 @@ struct PaletteNavigationTests {
             "a pushed screen opens as fresh as a prepared one")
         expect(vm.canGoBack, "the screen it was pushed over is still there to return to")
 
-        vm.emojiCategoryFilter = .pinned
-        vm.emojiGridColumnsOverride = .six
+        vm.clipboardFilter = .image
 
         expect(vm.pop(), "a pushed screen has a step back")
         expect(
@@ -48,46 +47,45 @@ struct PaletteNavigationTests {
             vm.mode == .launcher && vm.query == "clipboard",
             "a refused back step leaves the screen untouched")
 
-        let freshEmoji = searchingLauncher()
-        freshEmoji.emojiCategoryFilter = .category(.flags)
-        freshEmoji.emojiGridColumnsOverride = .ten
-        freshEmoji.prepare(mode: .emoji)
+        let freshClipboard = searchingLauncher()
+        freshClipboard.clipboardFilter = .image
+        freshClipboard.prepare(mode: .clipboard)
         expect(
-            freshEmoji.emojiCategoryFilter == .all && freshEmoji.emojiGridColumnsOverride == nil,
-            "a fresh emoji screen restores all categories and the configured grid default")
+            freshClipboard.clipboardFilter == .all,
+            "a fresh clipboard screen restores the unfiltered list")
 
         // A list snapped to the top would throw away the very selection being restored.
         let tokens = searchingLauncher()
-        tokens.push(mode: .emoji)
+        tokens.push(mode: .fileSearch)
         let reset = tokens.resetToken
         let follow = tokens.followToken
-        expect(tokens.pop(), "the emoji screen goes back to the launcher")
+        expect(tokens.pop(), "the file search screen goes back to the launcher")
         expect(tokens.resetToken == reset, "a back step does not snap the restored list to the top")
         expect(tokens.followToken != follow, "it scrolls the restored row into view instead")
 
         let nested = searchingLauncher()
-        nested.push(mode: .emoji)
-        nested.query = "smile"
+        nested.push(mode: .fileSearch)
+        nested.query = "report"
         nested.push(mode: .clipboard)
         expect(
-            nested.pop() && nested.mode == .emoji && nested.query == "smile",
-            "clipboard returns to the emoji query it was opened over")
+            nested.pop() && nested.mode == .fileSearch && nested.query == "report",
+            "clipboard returns to the file search query it was opened over")
         expect(
             nested.pop() && nested.mode == .launcher && nested.query == "clipboard",
-            "and emoji returns to the search that found it")
+            "and file search returns to the search that found it")
 
         // `replace` is for a screen swapping its own contents, which is not a step of its own.
         let replaced = searchingLauncher()
-        replaced.push(mode: .emoji)
-        replaced.replace(mode: .emoji)
-        expect(replaced.canGoBack, "replacing the emoji screen keeps whatever it was opened over")
+        replaced.push(mode: .fileSearch)
+        replaced.replace(mode: .fileSearch)
+        expect(replaced.canGoBack, "replacing the file search screen keeps whatever it was opened over")
         expect(
             replaced.pop() && replaced.mode == .launcher,
             "so one back step still lands on the launcher")
 
         let summoned = searchingLauncher()
         summoned.push(mode: .clipboard)
-        summoned.prepare(mode: .emoji)
+        summoned.prepare(mode: .fileSearch)
         expect(!summoned.canGoBack, "a summon is a new root, not a step onto the old stack")
 
         let ringed = searchingLauncher()
@@ -107,12 +105,12 @@ struct PaletteNavigationTests {
             "and the screen it crossed from is the step back")
 
         let chatted = searchingLauncher()
-        chatted.push(mode: .emoji)
-        chatted.query = "smile"
+        chatted.push(mode: .fileSearch)
+        chatted.query = "report"
         chatted.push(mode: .clipboard)
         expect(
-            chatted.pop() && chatted.mode == .emoji && chatted.query == "smile",
-            "Tab out of emoji leaves the query to come back to")
+            chatted.pop() && chatted.mode == .fileSearch && chatted.query == "report",
+            "Tab out of file search leaves the query to come back to")
         expect(
             chatted.pop() && chatted.mode == .launcher,
             "and a second step back reaches the launcher the ring started on")

@@ -4,7 +4,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
     case launcher
     case clipboard
     case calculatorHistory
-    case emoji
     case fileSearch
     case menuSearch
     case quicklinks
@@ -23,7 +22,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .launcher: return "magnifyingglass"
         case .clipboard: return "doc.on.doc"
         case .calculatorHistory: return "plus.forwardslash.minus"
-        case .emoji: return "face.smiling"
         case .fileSearch: return "doc.text.magnifyingglass"
         case .menuSearch: return "menubar.rectangle"
         case .quicklinks: return Quicklink.sfSymbol
@@ -37,7 +35,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .launcher: return "Search for apps and commands…"
         case .clipboard: return "Type to filter entries…"
         case .calculatorHistory: return "Do math, convert units, or search your past calculations…"
-        case .emoji: return "Search emoji and symbols…"
         case .fileSearch: return "Search files and folders…"
         case .menuSearch: return "Search menu bar items…"
         case .quicklinks: return "Search quicklinks…"

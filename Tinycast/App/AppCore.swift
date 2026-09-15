@@ -31,9 +31,6 @@ final class AppCore {
     let currencyRates = CurrencyRateStore()
     let updateChecker = UpdateCheckStore()
     let supportReminders: SupportReminderStore
-    let emojiIndex = EmojiIndex()
-    let frequentEmoji = FrequentEmojiStore()
-    let pinnedEmoji = PinnedEmojiStore()
     let runningApps = RunningAppsMonitor()
     let palette = PaletteState()
     let fileSearch = FileSearchSession()
@@ -102,9 +99,6 @@ final class AppCore {
         clipboardStore: clipboardStore, clipboardManager: clipboardManager, settings: settings,
         appIndex: appIndex, palette: palette, windowController: windowController,
         paletteCoordinator: paletteCoordinator, core: self)
-    @ObservationIgnored private(set) lazy var emojiCoordinator = EmojiCoordinator(
-        frequentEmoji: frequentEmoji, settings: settings, windowController: windowController,
-        paletteCoordinator: paletteCoordinator)
     @ObservationIgnored private(set) lazy var calculatorCoordinator = CalculatorCoordinator(
         calcHistory: calcHistory, paletteCoordinator: paletteCoordinator, core: self)
     @ObservationIgnored private(set) lazy var fileSearchCoordinator = FileSearchCoordinator(
@@ -155,9 +149,6 @@ final class AppCore {
             NSApp.setActivationPolicy(.accessory)
             applyAppearance()
             observeEffectiveAppearance()
-            pinnedEmoji.onPersistenceFailure = { [weak self] in
-                self?.showMessage("Couldn't save Emoji & Symbols pins", tone: .danger)
-            }
 
             appIndex.start(settings: settings)
             clipboardCoordinator.applyEnabled()
@@ -179,7 +170,6 @@ final class AppCore {
             quicklinkCoordinator.applyQuicklinksPresence()
             updateCoordinator.applyEnabled()
             Task { await appIndex.refresh() }
-            Task { await emojiIndex.load() }
             currencyRates.start()
             updateChecker.onUpdateAvailable = { [weak self] release in
                 self?.updateCoordinator.presentIfAvailable(release) ?? true

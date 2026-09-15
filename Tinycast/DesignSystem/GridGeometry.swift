@@ -1,5 +1,5 @@
 /// Flat-index navigation over sectioned rows; vertical moves keep the column across sections.
-struct EmojiGridGeometry {
+struct GridGeometry {
     let counts: [Int]
     let columns: Int
     private let starts: [Int]

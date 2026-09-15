@@ -52,8 +52,6 @@ extension SettingsAnchor {
     static let clipboardDisabledApplications = Self(
         tab: .clipboard, title: "Disabled Applications")
 
-    static let emojiCommands = Self(tab: .emoji, title: "Commands")
-    static let emojiAppearance = Self(tab: .emoji, title: "Appearance")
 
     static let extensionsExtensions = Self(tab: .extensions, title: "Extensions")
     static let extensionsCompatibility = Self(tab: .extensions, title: "Compatibility")

@@ -58,10 +58,6 @@ enum RaycastImportReader {
             data.showInMenuBar = showInMenuBar
             mapped = true
         }
-        if let tone = mapSkinTone(json) {
-            data.emojiSkinTone = tone
-            mapped = true
-        }
         // Exact-match only: a timeout outside our option set is skipped, not clamped.
         if let secs = general?["popToRootTimeout"] as? Int,
             let timeout = PopToRootTimeout(rawValue: secs)
@@ -101,9 +97,6 @@ enum RaycastImportReader {
             switch command["extensionId"] as? String {
             case "e:r:clipboard-history":
                 commands[CommandID.clipboardHistory.rawValue] = binding
-                mapped = true
-            case "e:r:emoji-picker":
-                commands[CommandID.searchEmoji.rawValue] = binding
                 mapped = true
             case "e:r:applications":
                 if let path = appPath(fromCommandID: command["id"] as? String),
@@ -187,13 +180,6 @@ enum RaycastImportReader {
         guard let id, let range = id.range(of: "::=::") else { return nil }
         let path = String(id[range.upperBound...])
         return path.isEmpty ? nil : path
-    }
-
-    /// A recursive search, avoiding a brittle path; the raw values line up already.
-    private static func mapSkinTone(_ json: [String: Any]) -> String? {
-        guard let raw = firstValue(forKey: "skinTone", in: json) as? String else { return nil }
-        if raw == "default" { return EmojiSkinTone.none.rawValue }
-        return EmojiSkinTone(rawValue: raw)?.rawValue
     }
 
     // MARK: - Clipboard

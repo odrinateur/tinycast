@@ -5,7 +5,6 @@ struct RaycastImportOptions: OptionSet, Sendable {
     let rawValue: Int
     static let shortcuts = RaycastImportOptions(rawValue: 1 << 0)
     static let favorites = RaycastImportOptions(rawValue: 1 << 1)
-    static let emojiSkinTone = RaycastImportOptions(rawValue: 1 << 2)
     static let launchAtLogin = RaycastImportOptions(rawValue: 1 << 3)
     static let menuBarVisibility = RaycastImportOptions(rawValue: 1 << 4)
     static let clipboardHistory = RaycastImportOptions(rawValue: 1 << 5)
@@ -15,7 +14,7 @@ struct RaycastImportOptions: OptionSet, Sendable {
     static let aliases = RaycastImportOptions(rawValue: 1 << 9)
     static let quicklinks = RaycastImportOptions(rawValue: 1 << 10)
     static let all: RaycastImportOptions = [
-        .shortcuts, .favorites, .emojiSkinTone, .launchAtLogin, .menuBarVisibility, .clipboardHistory,
+        .shortcuts, .favorites, .launchAtLogin, .menuBarVisibility, .clipboardHistory,
         .popToRoot, .compactMode, .snippets, .aliases, .quicklinks
     ]
 }
@@ -39,10 +38,6 @@ enum RaycastImport {
 
             var settings = SettingsBackup.SettingsData()
             var hasSettings = false
-            if options.contains(.emojiSkinTone), let tone = backup.settings?.emojiSkinTone {
-                settings.emojiSkinTone = tone
-                hasSettings = true
-            }
             if options.contains(.launchAtLogin), let launch = backup.settings?.launchAtLogin {
                 settings.launchAtLogin = launch
                 hasSettings = true

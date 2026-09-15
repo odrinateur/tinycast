@@ -57,7 +57,6 @@ extension SettingsTab {
         case .snippets: [.searchSnippets, .createSnippet]
         case .navigation: [.searchMenuItems]
         case .clipboard: [.clipboardHistory]
-        case .emoji: [.searchEmoji]
         default: []
         }
     }

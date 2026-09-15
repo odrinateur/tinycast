@@ -102,19 +102,6 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
             ?? event.charactersIgnoringModifiers?.lowercased()
     }
 
-    /// Shift is allowed, since ⌘+ is a shifted = on most layouts; the base key decides.
-    private static func emojiGridZoom(from event: NSEvent) -> EmojiGridZoom? {
-        guard !event.isARepeat, event.modifierFlags.isDisjoint(with: [.option, .control]) else {
-            return nil
-        }
-        switch ASCIIKeyboardLayout.character(for: event) {
-        case "0": return .actualSize
-        case "=", "+": return .zoomIn
-        case "-": return .zoomOut
-        default: return nil
-        }
-    }
-
     /// A local monitor sees the key before menu dispatch; returning nil swallows it.
     private func installPasteMonitor() {
         pasteMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
@@ -338,10 +325,6 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
         // Handled at the panel: the field editor or a missing main menu eats these first.
         panel.onCommandShortcut = { [weak self] event in
             guard let self else { return false }
-            if self.core.palette.mode == .emoji, let zoom = Self.emojiGridZoom(from: event) {
-                self.core.palette.noteEmojiGridZoom(zoom)
-                return true
-            }
             guard Self.commandCharacter(from: event) != nil else { return false }
             if self.core.palette.mode == .launcher || self.core.palette.mode == .clipboard,
                 let index = FavoriteSlots.index(forKeyCode: event.keyCode)

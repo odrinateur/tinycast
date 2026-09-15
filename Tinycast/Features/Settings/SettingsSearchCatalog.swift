@@ -110,7 +110,7 @@ enum SettingsSearchCatalog {
     static let entries: [SettingsSearchEntry] =
         general + applications + systemSettings
         + commands + quicklinks + fallbacks + fileSearch + notes
-        + snippets + navigation + clipboard + emoji
+        + snippets + navigation + clipboard
         + extensions + permissions + backup + about
 
     private static let general: [SettingsSearchEntry] = [
@@ -331,21 +331,6 @@ enum SettingsSearchCatalog {
         .init(
             .clipboardDisabledApplications, "Clear history",
             keywords: ["delete", "erase", "wipe"])
-    ]
-
-    private static let emoji: [SettingsSearchEntry] = [
-        .init(
-            pane: .emoji,
-            keywords: ["picker", "character", "unicode", "smiley"]),
-        .init(
-            group: .emojiCommands, "Emoji commands",
-            keywords: ["shortcut", "hotkey", "launcher", "picker"]),
-        .init(
-            .emojiAppearance, "Emoji Skin Tone",
-            keywords: ["colour", "color", "fitzpatrick", "default"]),
-        .init(
-            .emojiAppearance, "Column Count",
-            keywords: ["columns", "density", "zoom", "six", "eight", "ten"])
     ]
 
     private static let extensions: [SettingsSearchEntry] = [

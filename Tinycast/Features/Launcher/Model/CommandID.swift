@@ -4,7 +4,6 @@ import Foundation
 enum CommandID: String, CaseIterable, Sendable {
     case calculatorHistory = "command:calculator-history"
     case clipboardHistory = "command:clipboard-history"
-    case searchEmoji = "command:search-emoji"
     case searchFiles = "command:search-files"
     case searchMenuItems = "command:search-menu-items"
     case openInBrowser = "command:open-in-browser"
@@ -31,7 +30,6 @@ enum CommandID: String, CaseIterable, Sendable {
         switch self {
         case .calculatorHistory: return "Calculator History"
         case .clipboardHistory: return "Clipboard History"
-        case .searchEmoji: return "Search Emoji & Symbols"
         case .searchFiles: return "Search Files"
         case .searchMenuItems: return "Search Menu Bar Items"
         case .openInBrowser: return "Open in Browser"
@@ -60,8 +58,6 @@ enum CommandID: String, CaseIterable, Sendable {
         switch self {
         case .calculatorHistory: return "plus.forwardslash.minus"
         case .clipboardHistory: return "doc.on.clipboard"
-        // This pair renders opposite to its name on the target SF Symbols runtime.
-        case .searchEmoji: return "face.smiling.inverse"
         case .searchFiles: return "doc.text.magnifyingglass"
         case .searchMenuItems: return "menubar.rectangle"
         case .openInBrowser: return "globe"
