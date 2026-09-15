@@ -68,9 +68,9 @@ struct PaletteEscapeTests {
             .hidePalette,
             "an empty argument field hides the palette, which cancels the pending command")
         expect(
-            resolve(query: "why is the sky", mode: .ai),
+            resolve(query: "smile", mode: .emoji),
             .clearQuery,
-            "an unsent chat draft clears before chat itself is left")
+            "an unsent emoji query clears before emoji itself is left")
 
         // Provenance, not the mode, decides whether there is anywhere to go back to.
         expect(
@@ -82,13 +82,13 @@ struct PaletteEscapeTests {
             .hidePalette,
             "the same screen summoned by its own hotkey is a root, so it hides")
         expect(
-            resolve(mode: .ai, canGoBack: true),
+            resolve(mode: .emoji, canGoBack: true),
             .goBack,
-            "chat is no different: reached from the root, it goes back to it")
+            "emoji is no different: reached from the root, it goes back to it")
         expect(
-            resolve(mode: .ai),
+            resolve(mode: .emoji),
             .hidePalette,
-            "chat summoned by its own hotkey hides rather than falling back to the launcher")
+            "emoji summoned by its own hotkey hides rather than falling back to the launcher")
         expect(
             resolve(query: "notes", mode: .clipboard, canGoBack: true),
             .clearQuery,
@@ -113,9 +113,9 @@ struct PaletteEscapeTests {
             "a menu outranks the behavior setting beneath it")
 
         expect(
-            resolve(menuOpen: true, mode: .ai),
+            resolve(menuOpen: true, mode: .emoji),
             .closeMenu,
-            "a menu outranks the chat screen it is drawn over")
+            "a menu outranks the emoji screen it is drawn over")
         expect(
             resolve(menuOpen: true, mode: .extensionCommand),
             .closeMenu,

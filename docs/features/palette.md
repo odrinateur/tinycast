@@ -104,7 +104,7 @@ answers through `perform(_:at:)`, so a new chord never adds a cast to the shell.
 | `.customCommandArguments` | `CustomCommandArgumentsScreen` | `CustomCommandArgumentsView` (see [custom-commands.md](custom-commands.md#arguments)) |
 | `.extensionCommand` | `ExtensionCommandScreen` | `ExtensionCommandView` (see [extensions.md](extensions.md)) |
 
-**Tab rings the three surfaces a reader opens directly — launcher → AI chat → clipboard → launcher**
+**Tab rings the two surfaces a reader opens directly — launcher → clipboard → launcher**
 — unless the screen claims it through `tabTarget(from:backwards:)` (an extension's `Form` walks its
 own fields), or the selected row declares arguments, in which case it walks those fields first (see
 below); every other mode stays off the ring, and is reached by a command or a global hotkey, with
@@ -156,7 +156,7 @@ pops, a root one closes — so `backHelp` says which, rather than promising a st
 a close. It lights to `textPrimary` under the pointer over `Theme.Duration.hover`, and
 `HeaderBackButton` keeps that hover state to itself so the header around it never re-renders.
 
-The launcher advertises the first hop in the header — `AI Chat` beside a `⇥` cap, the footer's own
+The launcher advertises mode hops in the header where one exists — the footer's own
 pairing of a label with its key. It is drawn only when Tab really would open chat, a condition read
 back out of `PaletteTabAction` rather than restated, so a hint can never promise a destination the
 key does not go to: an argument field to walk takes Tab first, and the hint steps aside for it.
@@ -388,7 +388,7 @@ the arrow outside it, and AppKit's own alternation over the field came straight 
 `RootPaletteView` holds a single `OpenMenu?` rather than a flag per menu, so "at most one is open" is
 structural instead of a pair of `onChange` handlers pushing each other closed. The ⌘K Actions menu
 hangs `.bottomTrailing`, the app menu `.bottomLeading`, and everything drawn as a header control —
-the clipboard type filter, the AI model and effort menus, an `options=` argument field's choices and
+the clipboard type filter, an `options=` argument field's choices and
 a running command's `searchBarAccessory` dropdown — hangs `.belowHeaderTrailing`, under its own
 button. `menuContent` resolves the open case to one `PaletteMenuContent` — a row count, a row action
 and a view built on demand — so ↑/↓, plain ↵, Esc and the click-away catcher serve every menu without
@@ -399,7 +399,7 @@ both its ⌘K panel and its search-bar dropdown, and the reason the seam exists 
 [extensions.md](extensions.md)). The view is a closure because `moveMenu` resolves the open menu on
 every arrow key and needs the row count alone. Every open path goes through `open(_:highlighting:)`
 and states where the highlight starts: the first row, except the pop-up-shaped menus — the type
-filter, the AI model and effort menus, an extension's search-bar dropdown — which open on the choice
+filter, an extension's search-bar dropdown — which open on the choice
 they already hold.
 
 **The click-away catcher answers either mouse button.** A left press arrives as a `DragGesture`, so a

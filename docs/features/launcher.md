@@ -279,7 +279,6 @@ order name a live row across a rename or a reinstall.
 
 | Fallback | Where the query goes | Offered when |
 | --- | --- | --- |
-| AI Chat | a fresh chat, question already sent (`AIChatCoordinator.ask`) | `aiEnabled` |
 | Search Files | the file-search screen, already narrowed | `fileSearchEnabled` |
 | Run Shell Command | `/bin/zsh`, streamed into the Command Output window | always |
 | a quicklink | its first `{argument}` | `quicklinksEnabled`, and the link has a placeholder |
@@ -311,7 +310,7 @@ pane as well as from the launcher, and reorders through ↑/↓ buttons like a f
 introducing this codebase's first drag-reorder.
 
 **A fallback row is not a result, and `LauncherScreen.Row` says so.** `.fallback` is its own case
-with a `fallback-` prefixed id, because AI Chat can be a ranked hit *and* a fallback in the same
+with a `fallback-` prefixed id, because a fallback can also be a ranked hit in the same
 list, and two rows sharing one id would collapse in `ForEach`. That is also why `LauncherList` takes
 a `selectedRowID` rather than an entry id. Nothing about a fallback row is learned, pinned or
 revealed: `activate` routes to `FallbackCoordinator.run` instead of `LauncherCoordinator.launch`, and
@@ -523,26 +522,6 @@ Only the display name is indexed. Activation resolves the stable UUID through th
 to `ShellCommandRunner`; see [custom-commands.md](custom-commands.md) for persistence, hotkeys and
 execution semantics.
 
-## Quick Actions
-
-`AppEntry.Kind.quickAction` is one section holding both halves. `CommandID.fixGrammar`, `.rewrite`,
-`.translate` and `.summarize` publish the shipped four while `quickActionsEnabled` is on, each
-carrying the action's own title and glyph so the launcher row and the settings row can never drift.
-`CommandID.init(_ action: BuiltInQuickAction)` is exhaustive, so a fifth cannot reach the launcher
-without one. They report `CommandID.entryKind`, the one place a catalog command claims a section other
-than Commands.
-
-Custom actions arrive through `AppIndex.setCustomQuickActions` as `quick-action:<uuid>` entries,
-sorted by when they were made, and bind `HotKeyAction.quickAction(id:)`.
-
-Quick Actions are one of the panes in `SettingsTab.ownedCommands`, so `Enable Commands` does not reach
-them. **There is deliberately no `Enable Quick Actions` category toggle** either: a
-`LauncherItemsSection(kind: .quickAction)` would be a second switch over rows the pane already lists.
-
-Activation hands the action to `QuickActionCoordinator.run(_:)` **without** hiding the palette first:
-the coordinator reads the displaced app and then hides, because after the hide the frontmost app is
-Tinycast. See [quick-actions.md](quick-actions.md).
-
 ## Notes commands
 
 `CommandID.showNotes`, `.createNote`, and `.searchNotes` publish the three Notes entry points while the
@@ -564,7 +543,7 @@ and three places read it: `FeatureCommandsSection` draws the pane's rows from it
 category gate for it in both `isVisible` and `allowsHotKey`. Stamping the entry rather than sniffing its
 id is what keeps "which pane owns this" out of the entry-ID namespace.
 
-Eleven panes own commands today — AI, Quick Actions, File Search, Notes, Snippets, Navigation,
+Nine panes own commands today — File Search, Notes, Snippets, Navigation,
 Window Management, Clipboard, Emoji, Calendar and Quicklinks. What is left in Settings › Commands is
 the set no feature switch governs: Calculator History, Open Camera, the three backup commands, Check
 for Updates, Settings, About, Support and Quit.
@@ -668,7 +647,7 @@ favorite, alias and learned ranking survive the round trip, and its shortcut kee
 
 The row is offered only where Settings can undo it, and `KindDescriptor.canHideFromSearch` is that
 rule — per kind, and a new `Kind` case has to answer it to compile. Applications, System Settings,
-Commands, Quick Actions, System Actions, Window Commands, Window Layouts and extension commands each
+Commands, System Actions, Window Commands, Window Layouts and extension commands each
 draw a per-row checkbox in their pane, so they carry it. Custom commands, quicklinks and snippets do
 not: their panes list a record with its own switches, not a launcher checkbox — a hide nothing in
 Settings can visibly undo is a trap, not a shortcut.

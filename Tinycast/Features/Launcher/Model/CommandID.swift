@@ -2,11 +2,6 @@ import Foundation
 
 /// Built-in launcher actions, surfaced alongside the user-authored ones.
 enum CommandID: String, CaseIterable, Sendable {
-    case aiChat = "command:ai-chat"
-    case fixGrammar = "command:fix-grammar"
-    case rewrite = "command:rewrite"
-    case translate = "command:translate"
-    case summarize = "command:summarize"
     case calculatorHistory = "command:calculator-history"
     case clipboardHistory = "command:clipboard-history"
     case searchEmoji = "command:search-emoji"
@@ -43,11 +38,6 @@ enum CommandID: String, CaseIterable, Sendable {
 
     var name: String {
         switch self {
-        case .aiChat: return "AI Chat"
-        case .fixGrammar: return BuiltInQuickAction.fixGrammar.title
-        case .rewrite: return BuiltInQuickAction.rewrite.title
-        case .translate: return BuiltInQuickAction.translate.title
-        case .summarize: return BuiltInQuickAction.summarize.title
         case .calculatorHistory: return "Calculator History"
         case .clipboardHistory: return "Clipboard History"
         case .searchEmoji: return "Search Emoji & Symbols"
@@ -86,11 +76,6 @@ enum CommandID: String, CaseIterable, Sendable {
 
     var sfSymbol: String {
         switch self {
-        case .aiChat: return "sparkles"
-        case .fixGrammar: return BuiltInQuickAction.fixGrammar.symbol
-        case .rewrite: return BuiltInQuickAction.rewrite.symbol
-        case .translate: return BuiltInQuickAction.translate.symbol
-        case .summarize: return BuiltInQuickAction.summarize.symbol
         case .calculatorHistory: return "plus.forwardslash.minus"
         case .clipboardHistory: return "doc.on.clipboard"
         // This pair renders opposite to its name on the target SF Symbols runtime.
@@ -125,26 +110,6 @@ enum CommandID: String, CaseIterable, Sendable {
         case .about: return "info.circle"
         case .support: return "heart"
         case .quit: return "power"
-        }
-    }
-
-    /// Exhaustive, so a fifth shipped action cannot reach the launcher without a row here.
-    init(_ action: BuiltInQuickAction) {
-        switch action {
-        case .fixGrammar: self = .fixGrammar
-        case .rewrite: self = .rewrite
-        case .translate: self = .translate
-        case .summarize: self = .summarize
-        }
-    }
-
-    var builtInQuickAction: BuiltInQuickAction? {
-        switch self {
-        case .fixGrammar: return .fixGrammar
-        case .rewrite: return .rewrite
-        case .translate: return .translate
-        case .summarize: return .summarize
-        default: return nil
         }
     }
 

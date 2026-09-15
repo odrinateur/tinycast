@@ -4,14 +4,12 @@ import Foundation
 enum Fallback: Hashable, Sendable {
     /// The shipped destinations, in the order a fresh install offers them.
     enum Builtin: String, CaseIterable, Sendable {
-        case aiChat
         case searchFiles
         case runShellCommand
 
         /// Where its name and glyph come from, so a fallback row reads like the command it runs.
         var command: CommandID {
             switch self {
-            case .aiChat: return .aiChat
             case .searchFiles: return .searchFiles
             case .runShellCommand: return .runShellCommand
             }
@@ -44,7 +42,6 @@ enum Fallback: Hashable, Sendable {
     /// The footer pill's verb: what ↵ does, in the destination's own words.
     var openVerb: String {
         switch self {
-        case .builtin(.aiChat): return "Ask AI Chat"
         case .builtin(.searchFiles): return "Search Files"
         case .builtin(.runShellCommand): return "Run Shell Command"
         case .quicklink: return "Open Quicklink"

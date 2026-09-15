@@ -63,7 +63,7 @@ Add a token rather than a magic number when introducing a new value.
 ### Interface Size (`InterfaceMetrics`)
 
 `AppSettings.interfaceSize` scales the palette and the surfaces that float with it — the ⌘K menu, the
-extension list panel, Quick Actions, dialogs and HUDs. Settings, Onboarding,
+extension list panel, dialogs and HUDs. Settings, Onboarding,
 Support, Update, About and Notes never scale.
 
 `DesignSystem/InterfaceMetrics.swift` stores **only a scale** and derives every value from the `Theme`
@@ -98,7 +98,7 @@ groups. See "Section headers" below.
 
 `panel 14` · `row 8` · `card 10` · `dialog 14` · `menuPanel 12` · `menu 6` · `menuRow 10` · `barControl 8` · `thumbnail 6` · `keyCap 6` · `recorderKeyCap 4`
 
-`barControl` dresses the header pop-ups (type filter, AI model), which state a value and drop a menu
+`barControl` dresses the header pop-ups (type filter), which state a value and drop a menu
 the way a native pop-up button does — a rectangle, not a pill.
 
 **The footer action group is a flat `row 8` rectangle, not a capsule.** It is the primary
@@ -461,16 +461,14 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
   read left to right and the outcome is the last thing you want to land on. Auto-dismisses after
   `Duration.messageHUD` (2.4s) — longer than the volume box, since a sentence needs reading time and a
   level only needs a glance — and a repeat call replaces rather than stacks.
-- **The same pill reports work still running**, through `showProgress(message:)`: a Quick Action set to
-  replace has no panel to watch the answer arrive in, so the pill says `Fixing Grammar…` in its place
-  and the result message replaces it when the model is done. Its trailing mark is a spinner rather
-  than a tone, which is why `MessageHUDView.Accessory` exists — a tone says how something *went*, and
-  nothing has gone anywhere yet. The spinner is **`progress.indicator` with
+- **The same pill reports work still running**, through `showProgress(message:)`: a job with no panel
+  to watch says `Working…` in its place and the result message replaces it when done. Its trailing
+  mark is a spinner rather than a tone, which is why `MessageHUDView.Accessory` exists — a tone says
+  how something *went*, and nothing has gone anywhere yet. The spinner is **`progress.indicator` with
   `.symbolEffect(.variableColor)`, never a `ProgressView`**: AppKit draws that one itself and ignores
   every tint given to it, so a blue spinner is only reachable as a symbol. Progress has no natural
   dwell, so it is shown with `dwells: false` and stays up until something replaces it or
-  `HUDPresenter.dismiss()` runs — the caller owns that, and `QuickActionCoordinator.produce` pairs the
-  two with a `defer` so a throw or a cancellation cannot strand it.
+  `HUDPresenter.dismiss()` runs — the caller owns that.
 - **`HUDPresenter`** is what keeps those two controllers from duplicating each other: one panel at a
   time, replace rather than stack, fade in, sit out its dwell, fade away, centred horizontally on
   a screen. The two HUDs differ only in their content, their anchor (`edgeInset(hudEdgeOffset 48)` for

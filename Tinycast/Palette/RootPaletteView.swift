@@ -89,14 +89,6 @@ struct RootPaletteView: View {
             return ClipboardScreen(
                 store: store, core: core, vm: vm, openActions: openActions,
                 scrollToFollow: { scroll = ScrollIntent(kind: .follow) })
-        case .ai:
-            return AIScreen(
-                vm: vm, metrics: metrics, chat: core.aiChat, settings: core.aiSettings,
-                coordinator: core.aiChatCoordinator)
-        case .aiHistory:
-            return ChatHistoryScreen(
-                history: core.chatHistory, chat: core.aiChat, coordinator: core.aiChatCoordinator,
-                vm: vm, openActions: openActions, metrics: metrics)
         case .calculatorHistory:
             return CalculatorHistoryScreen(
                 history: calcHistory, currencyRates: currencyRates, core: core, vm: vm,
@@ -209,15 +201,6 @@ struct RootPaletteView: View {
             return headerMenu(fileSearchFilterContent, width: metrics.size.fileSearchFilterMenuWidth)
         case .emojiCategory:
             return headerMenu(emojiCategoryContent, width: metrics.size.emojiCategoryMenuWidth)
-        case .aiModel:
-            return headerMenu(
-                AIModelMenu.models(coordinator: core.aiChatCoordinator),
-                width: metrics.size.menuWidth)
-        case .aiReasoning:
-            return headerMenu(
-                AIModelMenu.reasoning(
-                    coordinator: core.aiChatCoordinator, settings: core.aiSettings),
-                width: metrics.size.menuWidth)
         case .argumentOptions:
             guard let field = argumentOptionsField,
                 let popover = headerAccessory?.optionsMenu(field)
@@ -615,10 +598,6 @@ struct RootPaletteView: View {
                 accessory.view
                 Spacer(minLength: 0)
             }
-            if tabOpensChat {
-                headerGutter(width: metrics.spacing.md)
-                aiChatTabHint
-            }
             // Keyed off the mode, which says which screen is up; the field just flexes narrower.
             if !isCollapsed, vm.mode == .clipboard {
                 headerGutter(width: metrics.spacing.md)
@@ -641,21 +620,6 @@ struct RootPaletteView: View {
                     isOpen: openMenu == .emojiCategory,
                     help: "Filter by category  ⌘P",
                     action: toggleEmojiCategory)
-            }
-            if !isCollapsed, vm.mode == .ai {
-                headerGutter(width: metrics.spacing.md)
-                AIModelButton(
-                    title: core.aiChatCoordinator.selectedModelTitle,
-                    icon: core.aiChatCoordinator.selectedModelIcon,
-                    isOpen: openMenu == .aiModel,
-                    action: toggleAIModel)
-                if !core.aiChatCoordinator.reasoningEfforts.isEmpty {
-                    headerGutter(width: metrics.spacing.md)
-                    AIReasoningButton(
-                        title: core.aiChatCoordinator.selectedReasoningTitle,
-                        isOpen: openMenu == .aiReasoning,
-                        action: toggleAIReasoning)
-                }
             }
             // Compact pins favorites beside the field; expanded shows them as rows.
             if isCollapsed, settings.showFavoritesInCompactMode,
@@ -709,27 +673,6 @@ struct RootPaletteView: View {
         return screen.headerAccessory(at: selection(in: screen), focus: $argumentFocused)
     }
 
-    /// Nothing else advertises Tab, so the launcher says where it goes.
-    private var aiChatTabHint: some View {
-        BarButton(chrome: .rounded, action: cycleMode) {
-            HStack(spacing: metrics.spacing.sm) {
-                Text("AI Chat")
-                    .font(metrics.typography.bar)
-                    .foregroundStyle(Theme.Colors.textSecondary)
-                KeyCapChip(text: "⇥", style: .outline)
-            }
-        }
-        .help("Ask AI Chat what you typed  ⇥")
-    }
-
-    /// Resolved through `PaletteTabAction`, so the hint cannot promise the wrong destination.
-    private var tabOpensChat: Bool {
-        guard !isCollapsed, headerAccessory?.fieldNames.isEmpty ?? true else { return false }
-        return PaletteTabAction.resolve(
-            mode: vm.mode, aiEnabled: settings.aiEnabled,
-            clipboardEnabled: settings.clipboardEnabled) == .ask
-    }
-
     /// True when the screen took the keyboard over, which leaves the header empty beside the chevron.
     private var hidesSearchField: Bool { !isCollapsed && screen.hidesSearchField }
 
@@ -768,7 +711,7 @@ struct RootPaletteView: View {
     /// In the argument form the field is that argument's input, so it names the argument.
     private var searchPrompt: String {
         // Squeezed to the caret, the field has no room for a prompt; beside one it keeps it.
-        if headerAccessory?.placement == .afterQuery, vm.mode != .ai { return "" }
+        if headerAccessory?.placement == .afterQuery { return "" }
         if vm.mode == .customCommandArguments {
             return customCommandArguments.prompt ?? vm.mode.placeholder
         }
@@ -956,37 +899,6 @@ struct RootPaletteView: View {
         open(.extensionAccessory, highlighting: accessory.index(of: value))
     }
 
-    /// Opens on the selected model, mirroring the clipboard filter's active-row behavior.
-    private func toggleAIModel() {
-        if openMenu == .aiModel {
-            closeMenus()
-            return
-        }
-        let refreshTask = core.aiChatCoordinator.prepareModelSwitcher()
-        open(.aiModel, highlighting: aiModelHighlight)
-        Task { @MainActor in
-            await refreshTask.value
-            guard openMenu == .aiModel else { return }
-            menuSelection = aiModelHighlight
-            syncMenuPanel(presenting: false)
-        }
-    }
-
-    private var aiModelHighlight: Int {
-        AIModelMenu.modelHighlight(coordinator: core.aiChatCoordinator, settings: core.aiSettings)
-    }
-
-    private func toggleAIReasoning() {
-        if openMenu == .aiReasoning {
-            closeMenus()
-            return
-        }
-        open(
-            .aiReasoning,
-            highlighting: AIModelMenu.reasoningHighlight(
-                coordinator: core.aiChatCoordinator, settings: core.aiSettings))
-    }
-
     /// Every header menu states its own width, so resizing one never moves another.
     private func headerMenu(_ popover: PopoverMenuContent, width: CGFloat) -> PaletteMenuContent {
         PaletteMenuContent(
@@ -1039,7 +951,7 @@ struct RootPaletteView: View {
         case .app: .bottomLeading
         case .actions: .bottomTrailing
         case .argumentOptions: .belowHeaderTrailing
-        case .clipboardFilter, .fileSearchFilter, .emojiCategory, .aiModel, .aiReasoning,
+        case .clipboardFilter, .fileSearchFilter, .emojiCategory,
             .extensionAccessory:
             .belowHeaderTrailing
         case nil: nil
@@ -1130,7 +1042,7 @@ struct RootPaletteView: View {
     /// A ring hop leaves a step back — except the hop closing the ring on the launcher, its root.
     private func cycleMode() {
         switch PaletteTabAction.resolve(
-            mode: vm.mode, aiEnabled: settings.aiEnabled,
+            mode: vm.mode,
             clipboardEnabled: settings.clipboardEnabled)
         {
         case .carryQuery(.launcher):
@@ -1138,7 +1050,6 @@ struct RootPaletteView: View {
             vm.resetNavigation()
         case .carryQuery(let mode): vm.pushCarryingQuery(mode: mode)
         case .freshScreen(let mode): vm.push(mode: mode)
-        case .ask: core.aiChatCoordinator.ask(vm.query)
         }
     }
 
@@ -1247,8 +1158,6 @@ private enum OpenMenu {
     case clipboardFilter
     case fileSearchFilter
     case emojiCategory
-    case aiModel
-    case aiReasoning
 }
 
 /// Its own modifier: the palette's body is already at the type-checker's limit.

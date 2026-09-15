@@ -49,16 +49,6 @@ final class AppCore {
     let customCommandArguments = CustomCommandArgumentSession()
     let notesStore: NotesStore
     let extensions: ExtensionManager
-    let chatHistory: ChatHistoryStore
-    let aiChat: AIChatState
-    let aiSettings = AISettingsStore(
-        isAppleIntelligenceAvailable: { AppleIntelligenceProvider.status().isAvailable })
-    let mcpSettings = MCPSettingsStore()
-    let mcp = MCPServerManager()
-    let quickActionSettings = QuickActionSettingsStore()
-    let customQuickActions = CustomQuickActionStore()
-    let chatGPTSubscription = ChatGPTSubscriptionManager()
-    let installedAI = InstalledAIManager()
 
     /// Set when a quicklink editor should open with Settings; the pane consumes it.
     var pendingQuicklinkEdit: QuicklinkEditRequest?
@@ -162,17 +152,6 @@ final class AppCore {
         store: updateChecker, core: self)
     @ObservationIgnored private(set) lazy var supportCoordinator = SupportCoordinator(
         store: supportReminders, core: self)
-    @ObservationIgnored private(set) lazy var quickActionCoordinator = QuickActionCoordinator(
-        settings: settings, store: quickActionSettings, customActions: customQuickActions,
-        injector: textInjector, appIndex: appIndex, hotKeys: hotKeys, favorites: favorites,
-        visibility: visibility, ranking: launcherRanking, aliases: aliases,
-        paletteCoordinator: paletteCoordinator, core: self)
-    @ObservationIgnored private(set) lazy var mcpCoordinator = MCPCoordinator(
-        settings: settings, store: mcpSettings, manager: mcp, core: self)
-    @ObservationIgnored private(set) lazy var aiChatCoordinator = AIChatCoordinator(
-        chat: aiChat, settings: settings, appIndex: appIndex, palette: palette,
-        paletteCoordinator: paletteCoordinator, settingsCoordinator: settingsCoordinator,
-        core: self)
 
     @ObservationIgnored private lazy var windowController = PaletteWindowController(core: self)
     @ObservationIgnored private lazy var messageHUD = MessageHUDController(settings: settings)
@@ -183,12 +162,9 @@ final class AppCore {
     private init() {
         let launcherRanking = LauncherRankingStore()
         let settings = AppSettings()
-        let chatHistory = ChatHistoryStore(directory: AppPaths.applicationSupport())
         self.launcherRanking = launcherRanking
         self.settings = settings
-        self.chatHistory = chatHistory
         supportReminders = SupportReminderStore(settings: settings)
-        aiChat = AIChatState(history: chatHistory)
         appIndex = AppIndex(ranking: launcherRanking, aliases: aliases)
         let clipboardManager = ClipboardManager(store: clipboardStore, settings: settings)
         self.clipboardManager = clipboardManager
@@ -227,14 +203,6 @@ final class AppCore {
             menuSearchCoordinator.applyEnabled()
             fileSearchCoordinator.applyPolicy()
             notesCoordinator.applyEnabled()
-            aiChatCoordinator.applyEnabled()
-            mcpCoordinator.applyEnabled()
-            customQuickActions.onChange = { [weak self] _ in
-                self?.quickActionCoordinator.applyCustomQuickActionsPresence()
-            }
-            // Before `hotKeys.start` even when off: the prune reads it.
-            customQuickActions.load()
-            quickActionCoordinator.applyEnabled()
             customCommands.onChange = { [weak self] _ in
                 self?.customCommandCoordinator.applyCustomCommandsPresence()
             }
@@ -283,9 +251,6 @@ final class AppCore {
             hotKeys.onOpenQuicklink = { [weak self] id in
                 self?.quicklinkCoordinator.openQuicklink(id: id)
             }
-            hotKeys.onRunQuickAction = { [weak self] id in
-                self?.quickActionCoordinator.run(id: id)
-            }
             hotKeys.onRunExtensionCommand = { [weak self] entryID in
                 self?.extensionCoordinator.runExtensionCommand(entryID: entryID)
             }
@@ -309,8 +274,7 @@ final class AppCore {
             hotKeys.start(
                 customCommandIDs: Set(customCommands.commands.map(\.id)),
                 quicklinkIDs: Set(quicklinks.quicklinks.map(\.id)),
-                windowLayoutIDs: Set(windowLayouts.layouts.map(\.id)),
-                quickActionIDs: Set(customQuickActions.actions.map(\.id)))
+                windowLayoutIDs: Set(windowLayouts.layouts.map(\.id)))
             // Keeps running while Carbon pauses: the recorder needs its rewritten flags.
             hyperKeyTap.start(settings: settings)
 
@@ -378,8 +342,6 @@ final class AppCore {
             return customCommands.command(id: id)?.name
         case .quicklink(let id):
             return quicklinks.quicklink(id: id)?.name
-        case .quickAction(let id):
-            return customQuickActions.action(id: id)?.name
         case .windowLayout(let id):
             return windowLayouts.layout(id: id)?.name
         case .extensionCommand(let entryID):
@@ -428,47 +390,6 @@ final class AppCore {
         textInjector.prepareForTermination()
         snippetListener.stop()
         snippetsStore.stop()
-        aiChat.cancel()
-        chatGPTSubscription.stop()
-        mcp.stop()
-        installedAI.stop()
-    }
-
-    @discardableResult
-    func applyInstalledAILifecycle() -> Task<Void, Never> {
-        let enabledKinds =
-            settings.aiEnabled || settings.quickActionsEnabled
-            ? aiSettings.enabledInstalledProviders : []
-        var tasks: [Task<Void, Never>] = []
-        if enabledKinds.contains(.codex) {
-            tasks.append(
-                chatGPTSubscription.phase == .idle
-                    ? chatGPTSubscription.refresh()
-                    : chatGPTSubscription.currentRefreshTask())
-        } else {
-            chatGPTSubscription.stop()
-        }
-        tasks.append(installedAI.ensure(enabledKinds: enabledKinds))
-        return Task { for task in tasks { await task.value } }
-    }
-
-    func aiProvider() throws -> any AIProvider {
-        try AIProviderFactory.make(
-            settings: aiSettings, subscription: chatGPTSubscription, installedAI: installedAI)
-    }
-
-    /// Permissive guardrails: the text transformed is the reader's own, which `.default` refuses.
-    func quickActionProvider(for action: QuickAction) throws -> any AIProvider {
-        quickActionSettings.repairModel(
-            against: aiSettings.connections, fallback: aiSettings.defaultModel)
-        guard let selection = quickActionSettings.model(for: action) ?? aiSettings.defaultModel
-        else {
-            throw AIProviderError.unavailable("Choose a model in Settings \u{2192} Quick Actions.")
-        }
-        return try AIProviderFactory.make(
-            selection: selection, settings: aiSettings, subscription: chatGPTSubscription,
-            installedAI: installedAI,
-            guardrails: .permissiveContentTransformations)
     }
 
     // MARK: - Feature switches
@@ -507,15 +428,6 @@ final class AppCore {
                 $0.menuSearchCoordinator.applyEnabled()
             })
         track({ _ = $0.notesEnabled }, reproject: { $0.notesCoordinator.applyEnabled() })
-        track({ _ = $0.aiEnabled }, reproject: { $0.aiChatCoordinator.applyEnabled() })
-        track(
-            {
-                _ = $0.aiEnabled
-                _ = $0.mcpEnabled
-            }, reproject: { $0.mcpCoordinator.applyEnabled() })
-        track(
-            { _ = $0.quickActionsEnabled },
-            reproject: { $0.quickActionCoordinator.applyEnabled() })
         track(
             {
                 _ = $0.calendarEnabled

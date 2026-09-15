@@ -128,13 +128,7 @@ struct DoubleTapDetectorTests {
             HotKeyAction.builtInActions.contains(.togglePalette),
             "the launcher toggle is bindable without a command row of its own")
 
-        // Every action reaches the launcher as well as a shortcut; `CommandID.init` is exhaustive.
-        expect(
-            BuiltInQuickAction.allCases.allSatisfy { CommandID($0).name == $0.title },
-            "each Quick Action's command carries the action's own title")
-        expect(
-            Set(BuiltInQuickAction.allCases.map(CommandID.init)).count == BuiltInQuickAction.allCases.count,
-            "no two Quick Actions share a launcher command")
+        // No two built-in actions share a defaults key, which would bind them together.
         expect(
             Set(HotKeyAction.builtInActions.map(\.defaultsKey)).count
                 == HotKeyAction.builtInActions.count,

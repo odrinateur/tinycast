@@ -109,7 +109,7 @@ enum SettingsSearchCatalog {
 
     static let entries: [SettingsSearchEntry] =
         general + applications + systemSettings
-        + systemActions + commands + quicklinks + fallbacks + ai + quickActions + fileSearch + notes
+        + systemActions + commands + quicklinks + fallbacks + fileSearch + notes
         + snippets + navigation + windowManagement + clipboard + emoji + calendar
         + extensions + permissions + backup + about
 
@@ -249,62 +249,6 @@ enum SettingsSearchCatalog {
         .init(
             pane: .fallbacks,
             keywords: ["no results", "empty", "search web", "order"])
-    ]
-
-    private static let ai: [SettingsSearchEntry] = [
-        .init(pane: .ai, keywords: ["chat", "llm", "model", "openai", "anthropic"]),
-        .init(.aiAI, "Enable AI", keywords: ["chat", "llm"]),
-        .init(
-            .aiProviders, "Providers",
-            keywords: [
-                "sign in", "connect", "codex", "claude", "opencode", "api key", "connection",
-                "base url", "openai", "anthropic", "ollama"
-            ]),
-        .init(.aiDefault, "Default model", keywords: ["llm", "gpt", "claude"]),
-        .init(.aiDefault, "Reasoning effort", keywords: ["thinking", "effort", "deepseek"]),
-        .init(.aiChat, "Web search", keywords: ["browse", "internet"]),
-        .init(
-            .aiConversations, "Opens to",
-            keywords: ["new chat", "last", "summon"]),
-        .init(
-            .aiConversations, "Start a new conversation after",
-            keywords: ["idle", "timeout", "fresh"]),
-        .init(
-            .aiConversations, "Keep conversations",
-            keywords: ["retention", "delete", "history", "privacy"]),
-        .init(
-            .aiSystemPrompt, "Send a system prompt",
-            keywords: ["instructions", "persona"]),
-        .init(
-            .aiMCPServers, "Enable MCP servers",
-            keywords: ["tools", "model context protocol"]),
-        .init(
-            .aiMCPServers, "Add MCP Server",
-            keywords: ["tools", "model context protocol", "stdio"]),
-        .init(
-            group: .aiCommands, "AI commands",
-            keywords: ["shortcut", "launcher", "chat"])
-    ]
-
-    private static let quickActions: [SettingsSearchEntry] = [
-        .init(
-            pane: .quickActions,
-            keywords: ["selected text", "rewrite", "translate", "summarize"]),
-        .init(
-            .quickActionsQuickActions, "Enable Quick Actions",
-            keywords: ["selected text", "accessibility"]),
-        .init(
-            group: .quickActionsActions, "Actions",
-            keywords: ["shortcut", "replace", "preview", "customize"]),
-        .init(
-            .quickActionsActions, "Add Quick Action",
-            keywords: ["new", "custom", "prompt", "instructions", "alias"]),
-        .init(
-            .quickActionsModel, "Model",
-            keywords: ["llm", "ai", "default"]),
-        .init(
-            .quickActionsTranslate, "Translate to",
-            keywords: ["language", "locale"])
     ]
 
     private static let fileSearch: [SettingsSearchEntry] = [
