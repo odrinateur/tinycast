@@ -26,8 +26,8 @@ enum Theme {
     }
 
     enum Radius {
-        static let panel: CGFloat = 26
-        static let row: CGFloat = 10
+        static let panel: CGFloat = 14
+        static let row: CGFloat = 8
         /// Emoji tiles are roomier than list rows, so their corners take one larger step.
         static let emojiCell: CGFloat = 12
         static let menu: CGFloat = 6
@@ -35,9 +35,9 @@ enum Theme {
         static let menuRow: CGFloat = 10
         /// A header pop-up button; the footer's action pills stay capsules.
         static let barControl: CGFloat = 8
-        static let menuPanel: CGFloat = 16
+        static let menuPanel: CGFloat = 12
         /// The dialog and HUD surface, so a dialog reads as a sibling of the palette.
-        static let dialog: CGFloat = 20
+        static let dialog: CGFloat = 14
         static let thumbnail: CGFloat = 6
         /// A shape small enough that `thumbnail` would round it into a circle.
         static let glyph: CGFloat = 2
@@ -323,8 +323,9 @@ enum Theme {
             adaptive(dark: .srgbInk(1, alpha: dark), light: .srgbInk(0, alpha: light))
         }
 
-        /// The ramp's inverse: the scrim darkens the dark surface and lightens the light one.
-        static let panelScrim = adaptive(dark: .srgbInk(0, alpha: 0.40), light: .srgbInk(1, alpha: 0.55))
+        /// The inverse's inverse: the scrim darkens the dark surface and lightens the light one.
+        /// Nearly opaque by default: the panel reads flat, with only a hint of the desktop.
+        static let panelScrim = adaptive(dark: .srgbInk(0, alpha: 0.78), light: .srgbInk(1, alpha: 0.88))
 
         static func panelScrim(transparency: Int) -> Color {
             guard transparency != 0 else { return panelScrim }
@@ -333,7 +334,7 @@ enum Theme {
                 amount > 0 ? baseline * (1 - amount) : baseline - (1 - baseline) * amount
             }
             return adaptive(
-                dark: .srgbInk(0, alpha: alpha(0.40)), light: .srgbInk(1, alpha: alpha(0.55)))
+                dark: .srgbInk(0, alpha: alpha(0.78)), light: .srgbInk(1, alpha: alpha(0.88)))
         }
 
         static func panelEdgeHighlight(transparency: Int) -> Color {
@@ -390,7 +391,8 @@ enum Theme {
         /// The preview's plate: a display is dark in both appearances, so `adaptive`, not `ramp`.
         static let layoutPreviewGround = adaptive(
             dark: .srgbInk(0, alpha: 0.55), light: .srgbInk(0, alpha: 0.50))
-        static let glassFrost = adaptive(dark: .srgbInk(1, alpha: 0.05), light: .srgbInk(1, alpha: 0.25))
+        /// Flat popover fill: solid enough to sit over panel content with no glass.
+        static let popSurface = adaptive(dark: .srgbInk(0.16, alpha: 1), light: .srgbInk(0.96, alpha: 1))
         /// The pill behind the header of the section a Settings search jumped to.
         static let searchFlash = Color.accentColor.opacity(0.35)
         /// The two squares of a checkerboard, behind a colour with alpha to show.
@@ -414,9 +416,9 @@ enum Theme {
 }
 
 extension View {
-    /// A floating glass control surface, frosted so it reads brighter than clear glass.
-    func frosted(in shape: some Shape) -> some View {
-        glassEffect(.regular.interactive().tint(Theme.Colors.glassFrost), in: shape)
-            .tint(.clear)
+    /// A flat floating control surface: a solid fill and hairline edge, never glass.
+    func frosted(in shape: some InsettableShape) -> some View {
+        background(Theme.Colors.popSurface, in: shape)
+            .overlay(shape.strokeBorder(Theme.Colors.border, lineWidth: 0.5))
     }
 }

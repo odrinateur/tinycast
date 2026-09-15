@@ -116,7 +116,8 @@ struct ExtensionActionsPanel: View {
         }
         .padding(metrics.spacing.sm)
         .frame(width: panel.width)
-        .glassEffect(.regular, in: shape)
+        .background(Theme.Colors.popSurface, in: shape)
+        .overlay(shape.strokeBorder(Theme.Colors.border, lineWidth: 0.5))
     }
 
     @ViewBuilder

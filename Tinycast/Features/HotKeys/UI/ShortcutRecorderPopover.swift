@@ -51,9 +51,10 @@ struct ShortcutRecorderPopover: View {
         .frame(
             width: Theme.Size.shortcutPopover.width, height: Theme.Size.shortcutPopover.height
         )
-        // Stock glass owns its elevation, as in `PopoverMenu` — no hand-tuned shadow.
-        .glassEffect(
-            .regular, in: CalloutShape(caretEdge: placement.caretEdge, caretX: placement.caretX))
+        // Flat fill owns its elevation — no hand-tuned shadow.
+        .background(
+            Theme.Colors.popSurface,
+            in: CalloutShape(caretEdge: placement.caretEdge, caretX: placement.caretX))
     }
 
     private var state: State {
