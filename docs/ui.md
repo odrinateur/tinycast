@@ -11,11 +11,11 @@ Read this before touching any view body, `Theme` value, or the panel chrome.
 ## The look, in one paragraph
 
 Tinycast is a **command palette**: a borderless floating panel whose surface is a nearly
-opaque flat fill — a 78% black scrim over the behind-window blur, so only a hint of the desktop
-shows through. Everything on that surface is white at a fixed alpha ramp. The header and bottom bar **float over the list as fully transparent
-overlays**; there are no hard-edged bars, strips, or dividers. Rows don't clip under the bars, they
-**dissolve**: a scroll-driven gradient mask ghosts them as they pass beneath. Floating controls (the
-action pill, the menu circle, popover menus) are **Liquid Glass**.
+opaque flat gray — charcoal 0.12 at 96% in Dark, silver 0.93 at 96% in Light — so the desktop
+barely shows through. Everything on that surface is white at a fixed alpha ramp. The header and
+bottom bar are **solid `barFill` bands with a hairline `separator` edge**, flush to the panel;
+rows hide behind them, they don't dissolve. Floating controls (the action group, the menu
+circle, popover menus) are **flat `popSurface` fills with a hairline edge**.
 
 That paragraph describes **Dark**, which is the design. Light is the same design with the ink
 inverted: a white scrim over the same blur, and a black-alpha ramp at matched stops. Nothing about
@@ -23,11 +23,11 @@ geometry, type, motion or state changes between them.
 
 Five load-bearing ideas, in priority order:
 
-1. **Surface = flat opaque fill.** A solid-feeling scrim over blur; depth comes from layering, not translucency.
+1. **Surface = flat opaque gray.** A solid-feeling gray scrim over blur; depth comes from layering, not translucency.
 2. **One alpha ramp, never grays.** Ink at fixed stops — white over the dark surface, black over the light one.
-3. **Floating bars, not chrome.** Header/footer are transparent overlays; the list fills the whole panel.
-4. **Edges dissolve, they don't clip.** Scroll-driven mask, no separators between list and bars.
-5. **Glass only on floating controls.** The main surface is never glass; pills/menus/circles are.
+3. **Solid bars, not floating chrome.** Header/footer are full-bleed `barFill` bands with a hairline divider; the list hides behind them.
+4. **No fades.** `edgeDissolve()` is a no-op kept so call sites need no edits; rows clip behind the solid bars.
+5. **Flat controls only.** The main surface is never glass; action group/menus/circles are `popSurface` + edge.
 
 ---
 
@@ -40,9 +40,9 @@ These are the things that quietly break the look if changed. Preserve them unles
 - **No grays, no opaque fills on the surface.** Reach for `Theme.Colors.*` instead of `.gray`, `NSColor.windowBackground`, etc.
 - **Three things stay fixed in both appearances, on purpose.** The `EdgeDissolve`/`OverflowFade` gradients are **mask luminance, not color** — inverting them breaks the dissolve everywhere. `ExtensionTintColors` and a tinted `IconCache` tile keep white ink, because a saturated tile carries its own contrast. And `IconCache` cannot use a dynamic `NSColor` at all: it rasterizes off-main, so the surface is carried explicitly and is part of the cache key.
 - **An icon is drawn for a surface *and* a system icon style, and both move under you.** macOS restyles the icons `NSWorkspace` hands out when System Settings → Appearance → **Icon & widget style** changes, so `IconStyleMonitor` and Tinycast's own appearance both call `IconCache.invalidateStyled()`. **The monitor may not invalidate on the notification itself.** AppKit posts `NSWorkspaceIconAppearanceConfigurationDidChange` before IconServices has swapped what `NSWorkspace` vends — measured at 25–120ms behind, jittering run to run — and the images it hands back are live objects macOS restyles in place, so flattening one on the signal freezes the *outgoing* style into a bitmap nothing ever invalidates again. `IconStyleMonitor` therefore polls `IconCache.styleFingerprint()` until the pixels actually move, and only then invalidates. Waiting also sidesteps the cost: re-flattening every icon the instant a restyle begins forces a cold IconServices regeneration, measured at 160× the settled draw cost. That drops the cached bitmaps, bumps every cache key so an in-flight decode cannot repopulate a stale one, and moves `IconCache.style.generation`. **Any view that draws an icon must key its fetch on that generation** — wrap the view's own key in `IconRequest`, or call `IconCache.observeStyle()` where the icon is resolved synchronously in a `body`. It is reached through `IconCache` rather than injected precisely because icons are drawn in menus, popovers and every list, where a missed injection would be a silent staleness bug.
-- **No hard dividers between the list and the bars.** The header and bottom bar are `safeAreaInset` overlays with no background; separation comes from `edgeDissolve()`, nothing else. (One deliberate exception: the vertical hairline between a list and its preview pane, as the clipboard and file search screens draw.)
+- **No hard dividers between the list and the bars — except the bars' own hairlines.** The header and bottom bar are solid `barFill` bands with a `separator` edge; `edgeDissolve()` is a no-op. (One deliberate exception: the vertical hairline between a list and its preview pane, as the clipboard and file search screens draw.)
 - **The panel corner is clipped once, at the root.** `RootPaletteView.body` ends with `.background(PaletteBackground(window:)) → .clipShape(RoundedRectangle(26, .continuous))`. `PaletteBackground` puts `panelScrim(transparency:)` over `VisualEffectView()`; the center setting returns the original tint. Keep that order, with the clip last.
-- **Don't use the native scroll edge effect.** Inside a transparent panel it renders a hard-bounded rectangle. Use `edgeDissolve()`, or a gradient `mask` where a surface owns its own fade — `scrollEdgeEffectStyle` draws a *material* where a scroll view meets a safe area, so over a panel that already has `panelScrim` + `VisualEffectView` it composites to nothing. Tried and rejected on `QuickActionResultView`, with and without `safeAreaBar`. This is a rule about the borderless panels; the Settings window is a titled `NSWindow` whose system titlebar draws the band itself (see "Settings").
+- **Don't use the native scroll edge effect.** Inside the panel it renders a hard-bounded rectangle. Lists hide behind the solid bars with no mask — `edgeDissolve()` is a no-op, kept so call sites need no edits. This is a rule about the borderless panels; the Settings window is a titled `NSWindow` whose system titlebar draws the band itself (see "Settings").
 - **Test over a light desktop.** Transparency and corner masking bugs only show over bright wallpaper. Dark wallpaper hides them.
 - **No `NSAlert`, no `NSSlider`, no system popovers.** Every confirmation, failure report, value prompt and transient readout is Tinycast's own SwiftUI surface (see "Dialogs & HUD"). An Aqua alert on an alpha-over-vibrancy app reads as a different product, and its `runModal` run loop keeps Carbon hotkeys firing underneath.
 - **A dialog has three independent axes; never let one infer another.** The **icon** (`DialogRequest.symbol`, required) is always the *subject's* own glyph — a command being confirmed uses its `SystemAction.sfSymbol`, so the Restart dialog shows the same icon as the Restart row. Tone never picks an icon. The **tone** (`DialogTone`: `.neutral` / `.success` / `.danger`) tints only that glyph. The **button** takes its color from `DialogAction.Role` (`.standard` white / `.destructive` red / `.cancel` secondary), so a red-glyph security warning can still carry a plain white button — as "Import executable commands?" does.
@@ -101,10 +101,9 @@ groups. See "Section headers" below.
 `barControl` dresses the header pop-ups (type filter, AI model), which state a value and drop a menu
 the way a native pop-up button does — a rectangle, not a pill.
 
-**The footer action group stays a `Capsule`, and so do the buttons inside it.** It is the primary
-action, and the pill is the affordance saying so; squaring it off reads as a toolbar. The capsule
-also keeps the pair concentric for free — a capsule's radius is half its height, so the inner
-buttons land exactly `Spacing.xs` inside the wrapper without either radius being written down.
+**The footer action group is a flat `row 8` rectangle, not a capsule.** It is the primary
+action, and the flat control is the affordance saying so; the capsule read as a floating pill
+against the old transparent footer, which no longer exists.
 
 Notes has no corner of its own: it clips to `panel`, so the two floating surfaces read as siblings.
 
@@ -124,14 +123,14 @@ Inside a menu the rule holds exactly, and `menuRow` exists to keep it holding:
 
 | Outer | Gap | Inner |
 | --- | --- | --- |
-| `menuPanel 16` | `Spacing.sm 6` | `menuRow 10` |
+| `menuPanel 12` | `Spacing.sm 6` | `menuRow 10` |
 
 **Alignment to a control outranks it.** Every palette menu hangs off a button, and its edge lines up
 with that button's — `MenuPanel.inset` is `Spacing.md`, which is `bottomBar`'s own horizontal padding,
 and the header menus use `Spacing.md * 2` to meet the header button in its wider gutter. The buttons
 sit directly under the menus, so a 2pt disagreement there reads as broken padding, while the same 2pt
 against the panel's corner reads as almost nothing. Anchor to the control, then let the corner fall
-where it does: `panel 26` against an 8pt gap would want `menuPanel 18`, and it stays 16.
+where it does: `panel 14` against an 8pt gap would want `menuPanel 6`, and it stays 12.
 
 **It applies only where corners actually meet.** A list row sits mid-panel with the header above and
 the bottom bar below, so it shares no corner with `panel` and has nothing to be concentric with —
@@ -181,7 +180,7 @@ shipped. Light is the same stop with the ink inverted, and is the only column op
 
 | Token             | Dark           | Light          | Use                                              |
 | ----------------- | -------------- | -------------- | ------------------------------------------------ |
-| `panelScrim`      | black **0.40** | white **0.55** | the panel scrim over vibrancy                    |
+| `panelScrim`      | gray 0.12 solid-ish (0.96) | gray 0.93 solid-ish (0.96) | the panel scrim over vibrancy                    |
 | `selection`       | white 0.10     | black 0.09     | selected row fill (keyboard/active selection)    |
 | `rowHover`        | white 0.05     | black 0.045    | mouse-hover fill (always fainter than selection) |
 | `menuHover`       | white 0.10     | black 0.09     | popover-menu row hover                           |
@@ -196,7 +195,8 @@ shipped. Light is the same stop with the ink inverted, and is the only column op
 | `sheen`           | white 0.04     | black 0.04     | the wash behind the Onboarding header            |
 | `cardFill`        | white 0.05     | black 0.04     | settings/calc card fill                          |
 | `cardStroke`      | white 0.10     | black 0.10     | settings/calc card border + inset dividers       |
-| `popSurface`      | gray 0.16 solid | gray 0.96 solid | flat popover/control fill, replaces glass      |
+| `popSurface`      | gray 0.30 solid | gray 1.00 solid | flat popover/control fill, replaces glass      |
+| `barFill`         | gray 0.22 solid | gray 0.88 solid | flat header/footer band fill                   |
 | `noteText`        | white 0.90     | black 0.85     | Notes Markdown source                            |
 | `dropGuide`       | white 0.35     | black 0.35     | the palette's drop guides while dragging         |
 
@@ -218,10 +218,10 @@ An extension's own surfaces live in `ExtensionColors` (`Features/Extensions/UI/`
 Source: `Palette/PalettePanel.swift`, `Palette/RootPaletteView.swift`.
 
 - **`PalettePanel`** is a borderless `NSPanel`: `isOpaque = false`, `backgroundColor = .clear`, `.floating` level, `hasShadow`, `animationBehavior = .none`. The two more transparent Dark detents turn off the native shadow and its black outline, adding a one-point white gradient border with a brighter upper edge. It hosts SwiftUI via `NSHostingView`. `PaletteWindowController` centers it slightly above screen center (`+8%`) and dismisses it on `windowDidResignKey`.
-- **The results layer fills the whole panel.** The header and bottom bar attach via `.safeAreaInset(edge: .top/.bottom)` as transparent overlays that float _over_ the list. The list underlaps them and dissolves at the edges.
+- **The results layer fills the whole panel.** The header and bottom bar are solid `barFill` bands with a hairline `separator`; the list hides behind them with no dissolve.
 - **Header** (`headerHeight 44`): a back-chevron _or_ mode glyph, then the plain `TextField` (no border/background). Sub-screens (Clipboard, Calculator History) show the back chevron; the launcher shows a magnifying glass. The search icon aligns horizontally with row content.
 - **Compact keyboard entry:** pressing `↓` in the collapsed launcher expands the results and selects the first row without replacing or defocusing the shared search field.
-- **Bottom bar** (`bottomBarHeight 52`): a menu circle on the left, the action group on the right — both floating glass, no bar background. The action group is one glass `Capsule` holding the primary-action pill (label + `↵`) and the Actions toggle (`⌘K`).
+- **Bottom bar** (`bottomBarHeight 52`): a menu circle on the left, the action group on the right — both flat `popSurface`, on the solid `barFill` band. The action group is one flat control with `row 8` corners holding the primary-action pill (label + `↵`) and the Actions toggle (`⌘K`).
 - **`BarButton`** is the shared bar control: bare label at rest, a `rowHover` capsule on hover, `barButtonHeight 28`. It carries the footer's two buttons and the clipboard header's type filter, so those hover identically. Hover state lives inside it, so sweeping one never re-renders the palette body.
 
 ---
@@ -277,17 +277,12 @@ title. Its hover buttons are hidden from accessibility so those actions are anno
 
 Source: `DesignSystem/Scrolling/EdgeDissolve.swift`.
 
-The signature effect. A scroll-driven `LinearGradient` mask on each list so rows soften as they approach
-a floating bar, ghost beneath it, and vanish only at the window edge. Attach with `.edgeDissolve()` on
-the `ScrollView`, **before `.thinScrollbar()`** (so the scrollbar overlay stays unmasked).
+Retired. `edgeDissolve()` is a no-op: the header and footer are solid bands, so rows hide
+behind them with no gradient mask. The type `EdgeDissolveMask` stays in the file so the
+call-site history is visible, but nothing attaches it. Do not reintroduce a fade without
+reverting the solid bars first.
 
-- Fade bands: top = `headerHeight + headerPadding + 32`, bottom = `bottomBarHeight + 28` — each overshoots its bar into the visible list, so the ramp finishes ~32/28px _past_ the bar rather than cliffing at its edge.
-- Alpha floors mid-scroll (not to 0): **top 0.15, bottom 0.25**, eased by how much content is hidden past the edge (`1 − (1 − floor)·clamp(dist/band, 0, 1)`).
-- Only masks when the list is scrollable; the edge stop stays transparent so rubber-band bounces still dissolve. A list that fits gets no mask.
-- The mask spans the scroll view's **full** frame (`.ignoresSafeArea()`) — otherwise the bars' safe-area insets shift the gradient onto at-rest rows.
-
-**Palette only.** Every one of its call sites is a palette screen, and the bands above are measured
-against the palette's bars. A Settings list underlaps nothing, so it uses `.overflowFade()` instead —
+**Palette lists underlap nothing.** A Settings list uses `.overflowFade()` instead —
 and so does the Notes switcher, whose search row is a sibling in a `VStack`, not a floating bar.
 
 ---
@@ -349,7 +344,7 @@ Source: `Theme.frosted(in:)`, `DesignSystem/PopoverMenu.swift`.
 
 Floating controls are **flat**, never glass.
 
-- `View.frosted(in:)` = solid `popSurface` fill + hairline `border` edge. Used on the action-group capsule, the menu circle, `PopoverMenu` and a dialog's buttons. Neither HUD uses it: both take the panel recipe instead (see "Dialogs & HUD").
+- `View.frosted(in:)` = solid `popSurface` fill + hairline `border` edge. Used on the action-group control, the menu circle, `PopoverMenu` and a dialog's buttons. Neither HUD uses it: both take the panel recipe instead (see "Dialogs & HUD").
 - **Menus are in-window overlays, not system popovers.** `.contextMenu`/`NSMenu` stall clicks for seconds inside a `LazyVStack` and spill outside the panel. Use `PopoverMenu` anchored to a corner via `.overlay`, inset `menuInset` (8pt) so its own corner isn't clipped by the panel's. A menu hung off a control instead of a corner — the clipboard type filter, `.topTrailing` — insets by that control's own metrics so their edges line up.
 - **A menu's `width` is fixed, never intrinsic**, so it can't jitter as its rows change. Every header menu states its own at its `RootPaletteView.menuContent` case — `menuWidth 276`, or a token of its own where that reads too wide (`clipboardFilterMenuWidth`, `fileSearchFilterMenuWidth`, `emojiCategoryMenuWidth`) — so retuning one never moves another.
 - **`PopoverMenu`** uses the flat `popSurface` fill with `menuPanel 12` corners and **no hand-tuned shadow** — a solid fill carries its own elevation; adding a drop shadow reads heavy. A footer menu raises only its attached bottom corner to the controls' 18-point radius, so the two silhouettes meet exactly.

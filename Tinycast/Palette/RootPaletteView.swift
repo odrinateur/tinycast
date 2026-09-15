@@ -683,9 +683,15 @@ struct RootPaletteView: View {
             headerGutter(width: metrics.spacing.md * 2)
         }
         // Identical metrics in both states, so typing can't move the search bar.
+        // Solid full-bleed band, flush to the panel top: rows hide behind it, no dissolve.
         .frame(height: metrics.size.headerHeight)
-        .padding(.top, metrics.size.headerPadding)
         .frame(maxWidth: .infinity)
+        .background(Theme.Colors.barFill)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Theme.Colors.separator)
+                .frame(height: Theme.Size.hairline)
+        }
         // Set after the show, so the field it names is focused rather than the search field.
         .onChange(of: vm.pendingArgumentEntryID) { focusPendingArgument() }
     }
@@ -824,7 +830,7 @@ struct RootPaletteView: View {
     private func bottomBar(
         pillLabel: String, showActionGroup: Bool, formPrimaryShortcut: Bool, showActions: Bool
     ) -> some View {
-        // Floating controls, no bar; the edge dissolve ghosts the rows passing beneath.
+        // Solid footer band with a top divider; rows hide behind it, no dissolve.
         HStack(spacing: 0) {
             appMenuButton
             Spacer()
@@ -837,6 +843,12 @@ struct RootPaletteView: View {
         .padding(.horizontal, metrics.spacing.md)
         .frame(height: metrics.size.bottomBarHeight)
         .frame(maxWidth: .infinity)
+        .background(Theme.Colors.barFill)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Theme.Colors.separator)
+                .frame(height: Theme.Size.hairline)
+        }
     }
 
     private var appMenuButton: some View {
@@ -845,7 +857,7 @@ struct RootPaletteView: View {
         }
     }
 
-    /// The footer control group: primary action and the Actions toggle sharing one glass capsule.
+    /// The footer control group: primary action and Actions toggle sharing one flat control.
     private func actionGroup(
         pillLabel: String, formPrimaryShortcut: Bool, showActions: Bool
     ) -> some View {
@@ -880,7 +892,14 @@ struct RootPaletteView: View {
             }
         }
         .padding(metrics.spacing.xs)
-        .frosted(in: Capsule())
+        .background(
+            Theme.Colors.popSurface,
+            in: RoundedRectangle(cornerRadius: metrics.radius.row, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: metrics.radius.row, style: .continuous)
+                .stroke(Theme.Colors.border, lineWidth: 0.5)
+        )
     }
 
     /// The one path opening the Actions menu, sampling the state its rows depend on.

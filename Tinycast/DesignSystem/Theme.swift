@@ -324,8 +324,9 @@ enum Theme {
         }
 
         /// The inverse's inverse: the scrim darkens the dark surface and lightens the light one.
-        /// Nearly opaque by default: the panel reads flat, with only a hint of the desktop.
-        static let panelScrim = adaptive(dark: .srgbInk(0, alpha: 0.78), light: .srgbInk(1, alpha: 0.88))
+        /// Gray and nearly opaque: the panel reads flat Raycast gray, not black glass.
+        static let panelScrim = adaptive(
+            dark: .srgbInk(0.12, alpha: 0.96), light: .srgbInk(0.93, alpha: 0.96))
 
         static func panelScrim(transparency: Int) -> Color {
             guard transparency != 0 else { return panelScrim }
@@ -334,7 +335,7 @@ enum Theme {
                 amount > 0 ? baseline * (1 - amount) : baseline - (1 - baseline) * amount
             }
             return adaptive(
-                dark: .srgbInk(0, alpha: alpha(0.78)), light: .srgbInk(1, alpha: alpha(0.88)))
+                dark: .srgbInk(0.12, alpha: alpha(0.96)), light: .srgbInk(0.93, alpha: alpha(0.96)))
         }
 
         static func panelEdgeHighlight(transparency: Int) -> Color {
@@ -392,7 +393,9 @@ enum Theme {
         static let layoutPreviewGround = adaptive(
             dark: .srgbInk(0, alpha: 0.55), light: .srgbInk(0, alpha: 0.50))
         /// Flat popover fill: solid enough to sit over panel content with no glass.
-        static let popSurface = adaptive(dark: .srgbInk(0.16, alpha: 1), light: .srgbInk(0.96, alpha: 1))
+        static let popSurface = adaptive(dark: .srgbInk(0.30, alpha: 1), light: .srgbInk(1, alpha: 1))
+        /// Flat bar fill: the header search band and the footer band, one step under controls.
+        static let barFill = adaptive(dark: .srgbInk(0.22, alpha: 1), light: .srgbInk(0.88, alpha: 1))
         /// The pill behind the header of the section a Settings search jumped to.
         static let searchFlash = Color.accentColor.opacity(0.35)
         /// The two squares of a checkerboard, behind a colour with alpha to show.

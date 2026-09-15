@@ -68,8 +68,9 @@ struct EdgeDissolveMask: ViewModifier {
 }
 
 extension View {
-    /// Attach to a `ScrollView` that underlaps the palette's floating bars (before `thinScrollbar`, so the scrollbar overlay stays unmasked).
+    /// No-op in this fork: the header and footer are solid bands, so scrolled rows hide
+    /// behind them with no gradient mask. Kept so call sites need no edits.
     func edgeDissolve() -> some View {
-        modifier(EdgeDissolveMask())
+        self
     }
 }
