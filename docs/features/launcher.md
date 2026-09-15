@@ -543,9 +543,9 @@ and three places read it: `FeatureCommandsSection` draws the pane's rows from it
 category gate for it in both `isVisible` and `allowsHotKey`. Stamping the entry rather than sniffing its
 id is what keeps "which pane owns this" out of the entry-ID namespace.
 
-Nine panes own commands today — File Search, Notes, Snippets, Navigation,
-Window Management, Clipboard, Emoji, Calendar and Quicklinks. What is left in Settings › Commands is
-the set no feature switch governs: Calculator History, Open Camera, the three backup commands, Check
+Eight panes own commands today — File Search, Notes, Snippets, Navigation,
+Window Management, Clipboard, Emoji and Quicklinks. What is left in Settings › Commands is
+the set no feature switch governs: Calculator History, the three backup commands, Check
 for Updates, Settings, About, Support and Quit.
 
 A pane's list is also its display order, so `CommandID`'s declaration order is grouped by owner.

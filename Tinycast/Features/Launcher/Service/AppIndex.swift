@@ -12,7 +12,6 @@ struct AppEntry: Identifiable, Hashable, Sendable {
         case windowLayout
         case quicklink
         case extensionCommand
-        case meeting
 
         var descriptor: KindDescriptor {
             switch self {
@@ -66,11 +65,6 @@ struct AppEntry: Identifiable, Hashable, Sendable {
                 return KindDescriptor(
                     label: "Extension", sectionTitle: "Extensions",
                     openVerb: "Run Command", canHideFromSearch: true,
-                    canRevealInFinder: false, isSymbolIcon: true)
-            case .meeting:
-                return KindDescriptor(
-                    label: "Meeting", sectionTitle: "Meetings",
-                    openVerb: "Join Meeting", canHideFromSearch: false,
                     canRevealInFinder: false, isSymbolIcon: true)
             }
         }
@@ -164,7 +158,7 @@ struct AppEntry: Identifiable, Hashable, Sendable {
             return WindowLayout.id(fromEntryID: id).map { .windowLayout(id: $0) }
         case .quicklink:
             return Quicklink.id(fromEntryID: id).map { .quicklink(id: $0) }
-        case .snippet, .extensionCommand, .meeting:
+        case .snippet, .extensionCommand:
             return nil
         }
     }
@@ -193,7 +187,6 @@ struct AppEntry: Identifiable, Hashable, Sendable {
         case .windowCommand:
             return WindowCommandCatalog.command(forEntryID: id)?.sfSymbol ?? "questionmark"
         case .windowLayout: return WindowLayout.sfSymbol
-        case .meeting: return "video.fill"
         case .application, .systemSettings, .extensionCommand: return "questionmark"
         }
     }
@@ -294,7 +287,6 @@ final class AppIndex {
     private var windowLayoutEntries: [AppEntry] = []
     private var quicklinkEntries: [AppEntry] = []
     private var extensionEntries: [AppEntry] = []
-    private var meetingEntries: [AppEntry] = []
     /// The catalog's commands a disabled feature hides; the Commands slice is recomputed from it.
     private var hiddenCommands: Set<CommandID> = []
     private var nameCache = BundleNameCache()
@@ -359,13 +351,6 @@ final class AppIndex {
             .map(AppEntry.init)
         guard entries != quicklinkEntries else { return }
         quicklinkEntries = entries
-        publishEntries()
-    }
-
-    /// Events move on their own, so this comes from the store's change hook, not an edit.
-    func setMeetings(_ entries: [AppEntry]) {
-        guard entries != meetingEntries else { return }
-        meetingEntries = entries
         publishEntries()
     }
 
@@ -514,7 +499,7 @@ final class AppIndex {
     private func publishEntries() {
         // Each slice arrives in its own display order; the slice order is the section order.
         let updated =
-            Self.named(meetingEntries) + discoveredEntries
+            discoveredEntries
             +             Self.named(
                 extensionEntries + quicklinkEntries + snippetEntries + Self.systemActionEntries
                     + windowLayoutEntries + windowCommandEntries + customCommandEntries

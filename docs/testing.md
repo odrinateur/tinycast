@@ -90,7 +90,6 @@ If a change touches anything in the right column, the harness on the left is man
 | `scopes-test` | `Launcher/Model/SearchScopes.swift` |
 | `app-name-test` | `Platform/AppDisplayName.swift` — every path that names a scanned bundle |
 | `calc-test` | all of `Calculator/Model/` |
-| `calendar-test` | all of `Calendar/Model/` — link detection, the join window, the day buckets |
 | `clipboard-search-test` | Ordinary and OCR result ordering, opt-in lifecycle, cancellation, pins and type filters |
 | `clipboard-text-test` | Apple Vision/PDF extraction, scheduling, retry backoff and recovery |
 | `clipboard-test` | `Clipboard/Model/ClipboardStore.swift`, `ClipboardFilter.swift`, `ClipboardFileKind.swift`, the colour trio |
@@ -361,7 +360,7 @@ caches, TCC grants and login item, so this cannot disturb an installed copy.
 - A double-tap binding fires; Hyper Key remaps and its status dot is green
 - Every binding survives quit and relaunch
 - `Enable Commands` off leaves every pane-owned command listed, searchable and firing — Notes,
-  Clipboard, Emoji, File Search, Snippets, Quicklinks, Calendar and the two layout commands
+  Clipboard, Emoji, File Search, Snippets, Quicklinks and the two layout commands
 
 ### Uninstall
 
@@ -460,48 +459,6 @@ caches, TCC grants and login item, so this cannot disturb an installed copy.
 - A bare amount (`1 usd`) answers in the Mac's region currency, and follows a change to
   System Settings ▸ General ▸ Language & Region without a relaunch — and nothing prompts for location
 - A crypto query (`1 btc`, `0.5 sol to eur`) answers, and `1 usd to btc` stays in plain notation
-
-### Calendar and meetings
-
-- With Calendar **off**: no launcher entries, no card, no permission prompt at launch
-- Enabling shows the consent dialog **before** the macOS prompt; declining prompts for nothing
-- After Calendar permission is reset, Settings ▸ Calendar offers `Allow Calendar Access…` and asks
-  again; after denial it offers System Settings instead
-- With a meeting four minutes out, an empty palette shows the card on top, provider glyph and all
-- The countdown steps on the minute boundary rather than on a keystroke
-- ↵ joins: a Zoom link opens the Zoom app, and the browser where no app claims the scheme
-- Typing a character swaps the card for the calculator's; ↑/↓ never lands on a phantom row
-- Unchecking a calendar drops its events from the launcher and My Schedule, and survives a relaunch
-- Adding or deleting an event in Calendar.app updates an open palette without a reopen
-- A meeting with no link is listed and searchable, and answers Open in Calendar rather than Join
-- Import a backup taken with Calendar on: it comes back **off**, and no calendar toggle travels
-- Calendar in Menu Bar on Disabled: the calendar item is gone and Tinycast's own item is unaffected;
-  turning `Show in menu bar` off leaves an enabled calendar item in place, and both off leaves neither
-- On Meeting Title with Show Upcoming Events at 5 minutes, the title and countdown appear at T-5 and
-  step on the minute boundary, not on a keystroke
-- `Only show events with meetings` hides a linkless event and shows it again when unchecked
-- Hide Current Event on Automatically clears the entry at the start and hands the space to the next
-  event inside its lead time; on 5 minutes it lingers counting up, then clears
-- Clicking the calendar item opens `Join <title>`, `Open in Calendar...`, `My Schedule` and
-  `Calendar Settings...` and nothing else; the second opens that event in Calendar.app, while a bare
-  click never joins
-- Camera Preview on: ↵ on the join card opens the panel **already showing live video** — no black
-  frame, no blank mid-preview; ↵ joins, Esc drops the join; the camera light goes out with the
-  panel, and the first run prompts once, before any panel appears
-- A meeting that ends leaves the launcher results and `My Schedule` on the same minute boundary it
-  leaves the menu bar, with the palette open or closed over the end
-- Auto Join on: the meeting opens itself at its start, **once** — dismiss it and it does not return.
-  With confirm on and camera preview off, the dialog asks first
-- Arming Auto Join during a meeting already under way joins nothing
-- Sleeping over a meeting's start and waking past it reloads the events; one still inside the window
-  joins, one long past does not
-- Create Event writes to the default calendar and shows up on the card, the schedule and the launcher
-  without a relaunch; a blank title leaves the dialog up on ↵ and on a click
-- Arrow keys move the caret in the New Event title field, and still step the Set Volume slider
-- Every command row of Settings ▸ Calendar has Add Alias, Record Hotkey and a checkbox, and none of
-  the five appears in Settings ▸ Commands
-- Export with auto join and camera preview on, import onto a clean profile: both come back **off**,
-  while the menu-bar settings carry over
 
 ### System actions and window management
 

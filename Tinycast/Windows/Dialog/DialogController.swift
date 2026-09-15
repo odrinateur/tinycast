@@ -77,20 +77,6 @@ final class DialogController: NSObject, NSWindowDelegate {
         return Float32(volume.level)
     }
 
-    func createEvent() async -> EventDraft? {
-        let state = EventDraftState()
-        let request = DialogRequest(
-            title: "New Event", message: "It goes on the calendar new events go to.",
-            symbol: "calendar.badge.plus", tone: .neutral,
-            actions: [
-                DialogAction(title: "Create"),
-                DialogAction(title: "Cancel", role: .cancel)
-            ],
-            defaultIndex: 0, cancelIndex: 1, accessory: .eventDraft(state))
-        guard await present(request) == 0, state.draft.isValid else { return nil }
-        return state.draft
-    }
-
     func fillSnippetArguments(
         snippetName: String, arguments: [SnippetTemplateEngine.MissingArgument]
     ) async -> [String: String]? {
@@ -149,10 +135,7 @@ final class DialogController: NSObject, NSWindowDelegate {
 
     /// A refused primary action leaves the dialog up, as a greyed-out button would.
     private static func accepts(_ index: Int, for request: DialogRequest) -> Bool {
-        guard index == request.defaultIndex, case .eventDraft(let state) = request.accessory else {
-            return true
-        }
-        return state.draft.isValid
+        return true
     }
 
     /// Resumes before the fade finishes, so a confirmation isn't held up by animation.

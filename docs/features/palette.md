@@ -97,7 +97,6 @@ answers through `perform(_:at:)`, so a new chord never adds a cast to the shell.
 | `.calculatorHistory` | `CalculatorHistoryScreen` | `CalculatorHistoryList` |
 | `.emoji` | `EmojiScreen` | `EmojiGridView` |
 | `.fileSearch` | `FileSearchScreen` | `FileSearchList` (see [file-search.md](file-search.md)) |
-| `.schedule` | `ScheduleScreen` | `ScheduleList` (see [calendar.md](calendar.md)) |
 | `.uninstall` | `UninstallScreen` | `UninstallList` (see [uninstall.md](uninstall.md)) |
 | `.quicklinks` | `QuicklinkListScreen` | `QuicklinkList` + preview (see [quicklinks.md](quicklinks.md#search-quicklinks)) |
 | `.snippets` | `SnippetsScreen` | `SnippetsList` + preview (see [snippets.md](snippets.md#search-snippets)) |
@@ -108,8 +107,7 @@ answers through `perform(_:at:)`, so a new chord never adds a cast to the shell.
 — unless the screen claims it through `tabTarget(from:backwards:)` (an extension's `Form` walks its
 own fields), or the selected row declares arguments, in which case it walks those fields first (see
 below); every other mode stays off the ring, and is reached by a command or a global hotkey, with
-Uninstall only from a launcher app's Actions menu, scoped to that app. Chat is skipped whole when
-`aiEnabled` is off, which leaves the launcher ↔ clipboard flip the ring replaced.
+Uninstall only from a launcher app's Actions menu, scoped to that app.
 
 ### Navigation
 
@@ -228,7 +226,7 @@ field instead of the search field. It is set **after** `showPalette`, since `pre
 
 The flat `selection` index is the single source of truth for highlight / activation and **must always
 match the visible row order**, including the card at index 0 when present — the calculator's (see
-[calculator.md](calculator.md)) or the meeting join card (see [calendar.md](calendar.md)), never both.
+[calculator.md](calculator.md)) or the join card (see [calendar.md](calendar.md)), never both.
 
 ## Window placement
 

@@ -110,7 +110,7 @@ enum SettingsSearchCatalog {
     static let entries: [SettingsSearchEntry] =
         general + applications + systemSettings
         + systemActions + commands + quicklinks + fallbacks + fileSearch + notes
-        + snippets + navigation + windowManagement + clipboard + emoji + calendar
+        + snippets + navigation + windowManagement + clipboard + emoji
         + extensions + permissions + backup + about
 
     private static let general: [SettingsSearchEntry] = [
@@ -393,51 +393,6 @@ enum SettingsSearchCatalog {
             keywords: ["columns", "density", "zoom", "six", "eight", "ten"])
     ]
 
-    private static let calendar: [SettingsSearchEntry] = [
-        .init(
-            pane: .calendar,
-            keywords: ["meetings", "events", "zoom", "join", "schedule"]),
-        .init(
-            .calendarCalendar, "Join meetings from Tinycast",
-            keywords: ["zoom", "meet", "teams", "permission"]),
-        .init(
-            .calendarSchedule, "Upcoming meetings in launcher",
-            keywords: ["count", "limit", "events"]),
-        .init(
-            .calendarSchedule, "Include Tomorrow's Events",
-            keywords: ["next day", "range"]),
-        .init(
-            .calendarJoining, "Show the join card",
-            keywords: ["hud", "timing", "early", "reminder"]),
-        .init(
-            .calendarJoining, "Auto Join Meetings",
-            keywords: ["automatic", "start"]),
-        .init(
-            .calendarJoining, "Confirm before joining",
-            keywords: ["ask", "prompt"]),
-        .init(
-            .calendarJoining, "Camera Preview",
-            keywords: ["webcam", "mirror", "video", "check"]),
-        .init(
-            .calendarMenuBar, "Calendar in Menu Bar",
-            keywords: ["status item", "menubar", "date"]),
-        .init(
-            .calendarMenuBar, "Show Upcoming Events",
-            keywords: ["menubar", "next event", "title"]),
-        .init(
-            .calendarMenuBar, "Only show events with meetings",
-            keywords: ["links", "filter", "menubar"]),
-        .init(
-            .calendarMenuBar, "Hide Current Event",
-            keywords: ["started", "time left", "menubar"]),
-        .init(
-            group: .calendarCommands, "Calendar commands",
-            keywords: ["shortcut", "launcher", "join", "schedule", "create event"]),
-        .init(
-            group: .calendarCalendars, "Calendars",
-            keywords: ["accounts", "sources", "choose", "icloud", "google"])
-    ]
-
     private static let extensions: [SettingsSearchEntry] = [
         .init(
             pane: .extensions,
@@ -474,10 +429,7 @@ enum SettingsSearchCatalog {
             keywords: ["privacy", "tcc", "access", "grant"]),
         .init(
             .permissionsAccessibility, "Accessibility",
-            keywords: ["paste", "keystrokes", "privacy", "grant"]),
-        .init(
-            .permissionsCalendars, "Calendars",
-            keywords: ["events", "privacy", "grant", "eventkit"])
+            keywords: ["paste", "keystrokes", "privacy", "grant"])
     ]
 
     private static let backup: [SettingsSearchEntry] = [

@@ -63,13 +63,6 @@ extension SettingsAnchor {
     static let emojiCommands = Self(tab: .emoji, title: "Commands")
     static let emojiAppearance = Self(tab: .emoji, title: "Appearance")
 
-    static let calendarCalendar = Self(tab: .calendar, title: "Calendar")
-    static let calendarCommands = Self(tab: .calendar, title: "Commands")
-    static let calendarSchedule = Self(tab: .calendar, title: "Schedule")
-    static let calendarJoining = Self(tab: .calendar, title: "Joining")
-    static let calendarMenuBar = Self(tab: .calendar, title: "Menu Bar")
-    static let calendarCalendars = Self(tab: .calendar, title: "Calendars")
-
     static let extensionsExtensions = Self(tab: .extensions, title: "Extensions")
     static let extensionsCompatibility = Self(tab: .extensions, title: "Compatibility")
     static let extensionsInstalled = Self(tab: .extensions, title: "Installed")
@@ -77,7 +70,6 @@ extension SettingsAnchor {
     static let extensionsStorage = Self(tab: .extensions, title: "Storage")
 
     static let permissionsAccessibility = Self(tab: .permissions, title: "Accessibility")
-    static let permissionsCalendars = Self(tab: .permissions, title: "Calendars")
 
     static let backupExport = Self(tab: .backup, title: "Export")
     static let backupImport = Self(tab: .backup, title: "Import")

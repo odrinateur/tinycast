@@ -33,13 +33,11 @@ struct LauncherList: View {
     /// Calc answers a typed query and the card an empty one, so only one ever leads.
     enum LeadCard: Equatable {
         case calc(CalcResult)
-        case meeting(MeetingEvent, now: Date)
         case color(ColorValue)
 
         var sectionTitle: String {
             switch self {
             case .calc: return "Calculator"
-            case .meeting: return "Meeting"
             case .color: return "Color"
             }
         }
@@ -47,7 +45,6 @@ struct LauncherList: View {
         var rowID: String {
             switch self {
             case .calc: return "calc-card"
-            case .meeting: return "meeting-card"
             case .color: return "color-card"
             }
         }
@@ -106,7 +103,7 @@ struct LauncherList: View {
         }
         // Publication order, so rows match the flat index.
         let kinds: [AppEntry.Kind] = [
-            .meeting, .application, .systemSettings, .extensionCommand, .quicklink, .snippet,
+            .application, .systemSettings, .extensionCommand, .quicklink, .snippet,
             .systemAction, .windowLayout, .windowCommand, .customCommand,
             .command
         ]
@@ -197,8 +194,6 @@ private struct LeadCardView: View {
         switch card {
         case .calc(let result):
             CalculatorCard(result: result, selected: selected)
-        case .meeting(let meeting, let now):
-            MeetingCard(meeting: meeting, now: now, selected: selected)
         case .color(let color):
             ColorCard(color: color, selected: selected)
         }

@@ -37,7 +37,5 @@ extension View {
             .environment(core.customCommandArguments)
             .environment(core.snippetsStore)
             .environment(core.extensions)
-            .environment(core.calendarStore)
-            .environment(core.meetingClock)
     }
 }
