@@ -94,7 +94,7 @@ The list decodes exactly one `NSImage` — the frozen app's icon — and every r
 ## Where it is reachable from
 
 The launcher, as `CommandID.searchMenuItems`, so it takes aliases and a global shortcut like any
-other command and ships unbound. It is one of the two commands **[Navigation](navigation.md)** owns
+other command and ships unbound. It is the command **Navigation** owns
 through `SettingsTab.ownedCommands`, so `navigationEnabled` is its switch rather than Settings ›
 Commands; it adds no `AppEntry.Kind` and no `VisibilityStore` category. Rows are not `AppEntry`s, so
 there is no frecency and no learning — ranking is per-query only.

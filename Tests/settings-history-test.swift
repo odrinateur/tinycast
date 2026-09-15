@@ -151,7 +151,7 @@ struct SettingsHistoryTests {
             ("caps lock", .general),
             ("launch at login", .general),
             ("paste history", .clipboard),
-            ("window manage", .windowManagement),
+            ("navigation", .navigation),
             ("skin tone", .emoji),
             ("file search", .fileSearch)
         ]

@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Moving somewhere — a window, a menu item — rather than changing something. Two features,
-/// one switch, so the pane lives here rather than inside either of them.
+/// Pressing any menu bar item from the launcher.
 struct NavigationSettingsView: View {
     @Environment(AppSettings.self) private var settings
 
@@ -11,25 +10,18 @@ struct NavigationSettingsView: View {
             Section {
                 Toggle(isOn: $settings.navigationEnabled) {
                     SettingsRowTitle(.navigationNavigation, "Enable navigation")
-                    Text("Jump to any open window, or press any menu bar item, from the launcher.")
+                    Text("Press any menu bar item from the launcher.")
                 }
             } header: {
                 SettingsSectionHeader(.navigationNavigation)
             }
 
             // No "show in launcher" switch: the per-command checkboxes below already are one.
-            FeatureCommandsSection(
-                owner: .navigation, anchor: .navigationCommands,
-                excluding: [.searchMenuItems]
-            )
-            .settingsEnabled(settings.navigationEnabled)
+            FeatureCommandsSection(owner: .navigation, anchor: .navigationCommands)
+                .settingsEnabled(settings.navigationEnabled)
 
-            // The menu-search command sits with the two settings that only it reads.
+            // The two settings only the menu-search command reads.
             Section {
-                if let entry = CommandCatalog.entry(for: .searchMenuItems) {
-                    FeatureCommandRow(entry: entry)
-                }
-
                 Toggle(isOn: $settings.menuSearchShowsAppleMenu) {
                     SettingsRowTitle(.navigationMenuSearch, "Show Apple menu items")
                     Text("Include the Apple menu, which is the same under every application.")

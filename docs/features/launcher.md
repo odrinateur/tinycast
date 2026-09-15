@@ -228,7 +228,7 @@ deliberate: an extension titled `Safari` can never take that query from the real
 
 A query that *equals* a category's own name lists that whole category under its section header, in the
 order the section shows when the field is empty. Both words a kind already carries work — the section
-title and the singular label, `Snippets`/`Snippet`, `Window Management`/`Window Command` — read straight
+title and the singular label, `Snippets`/`Snippet` — read straight
 off `KindDescriptor` by `AppEntry.Kind.named(by:)`, so no category name is written a second time and a
 new `Kind` case gets its category word for free.
 
@@ -435,7 +435,7 @@ permission-aware failures. With the palette closed it targets the frontmost app,
 Quit All act on the same window a palette launch would have.
 
 System actions occupy their own launcher section and their own Settings pane. The empty-query publication
-order is applications, System Settings, quicklinks, snippets, system actions, window commands, custom
+order is applications, System Settings, quicklinks, snippets, system actions, custom
 commands, then built-in commands; the sectioned view filters in that same order so the visible rows remain
 identical to the flat selection index.
 Search, favorites, visibility and learned ranking work through the normal `AppEntry` path, and every
@@ -484,24 +484,6 @@ reports remaining failures together.
 Preference-backed toggles refuse to write when the current value can't be read, and notification
 dismissal matches Accessibility subroles rather than English labels.
 
-## Window commands
-
-`WindowCommandCatalog` supplies the 32 window actions as a static slice, published as a whole by
-`AppIndex.setWindowCommandsVisible(_:)` and shown under a "Window Management" section. Like system
-actions they carry dedicated global hotkeys (`AppEntry.hotKeyAction` returns `.windowCommand(id:)`),
-so launcher rows render keycaps for them. Their per-command shortcut and visibility controls live in
-Settings › Window Management rather than a launcher-category pane of their own — the same call already
-made for snippets. The feature ships off. See
-[window-management.md](window-management.md).
-
-## Window layouts
-
-`WindowLayoutStore` supplies its slice the way custom commands do, sorted by name, published
-immediately **before** the window commands so the two read as one family. Their per-layout shortcut
-and launcher checkbox live in Settings › Window Management beside the commands', and
-`windowLayoutsShowInLauncher` takes the section and its two commands out together. See
-[window-layouts.md](window-layouts.md).
-
 ## Quicklinks
 
 `QuicklinkStore` supplies its slice the same way custom commands do, sorted pinned-first then
@@ -543,8 +525,8 @@ and three places read it: `FeatureCommandsSection` draws the pane's rows from it
 category gate for it in both `isVisible` and `allowsHotKey`. Stamping the entry rather than sniffing its
 id is what keeps "which pane owns this" out of the entry-ID namespace.
 
-Eight panes own commands today — File Search, Notes, Snippets, Navigation,
-Window Management, Clipboard, Emoji and Quicklinks. What is left in Settings › Commands is
+Seven panes own commands today — File Search, Notes, Snippets, Navigation,
+Clipboard, Emoji and Quicklinks. What is left in Settings › Commands is
 the set no feature switch governs: Calculator History, the three backup commands, Check
 for Updates, Settings, About, Support and Quit.
 
@@ -554,11 +536,10 @@ value — so a command may be moved between owners without migrating anything.
 
 ## Navigation commands
 
-`CommandID.switchWindows` opens every running app's windows as a palette screen, and
-`CommandID.searchMenuItems` does the same for the front app's menu bar. Both are plain command
-entries — no new `AppEntry.Kind` and no `VisibilityStore` category — owned by Settings › Navigation
-through `SettingsTab.ownedCommands`, so `navigationEnabled` is their switch. Their invariants and
-internals live in [navigation.md](navigation.md) and [menu-search.md](menu-search.md).
+`CommandID.searchMenuItems` opens the front app's menu bar as a palette screen. A plain command
+entry — no new `AppEntry.Kind` and no `VisibilityStore` category — owned by Settings › Navigation
+through `SettingsTab.ownedCommands`, so `navigationEnabled` is its switch. Its invariants and
+internals live in [menu-search.md](menu-search.md).
 
 > **Invariant:** `Tests/fuzz-test.swift` compiles the real `Tinycast/Features/Launcher/Model/SearchRelevance.swift`, so
 > that file must stay Foundation-only and pure. There is no copy of the scorer to keep in sync.

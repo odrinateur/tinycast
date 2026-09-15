@@ -7,7 +7,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
     case emoji
     case fileSearch
     case menuSearch
-    case switchWindows
     case uninstall
     case quicklinks
     case snippets
@@ -28,7 +27,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .emoji: return "face.smiling"
         case .fileSearch: return "doc.text.magnifyingglass"
         case .menuSearch: return "menubar.rectangle"
-        case .switchWindows: return "macwindow.on.rectangle"
         case .uninstall: return "trash"
         case .quicklinks: return Quicklink.sfSymbol
         case .customCommandArguments: return CustomCommand.sfSymbol
@@ -44,7 +42,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .emoji: return "Search emoji and symbols…"
         case .fileSearch: return "Search files and folders…"
         case .menuSearch: return "Search menu bar items…"
-        case .switchWindows: return "Search open windows…"
         case .uninstall: return "Filter files and folders by name…"
         case .quicklinks: return "Search quicklinks…"
         case .snippets: return "Search snippets…"

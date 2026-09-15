@@ -28,7 +28,7 @@ any `.application` entry; it opens the `.uninstall` palette sub-screen scoped to
 
 ## Layers
 
-Same split as `WindowManagement`: a pure half that decides, an impure half that touches the disk.
+Same split as any pure/impure pair: a pure half that decides, an impure half that touches the disk.
 
 | File | Role |
 | --- | --- |

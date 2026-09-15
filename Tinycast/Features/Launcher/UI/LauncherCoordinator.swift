@@ -10,12 +10,9 @@ final class LauncherCoordinator {
     private let customCommandCoordinator: CustomCommandCoordinator
     private let systemActionCoordinator: SystemActionCoordinator
     private let quicklinkCoordinator: QuicklinkCoordinator
-    private let windowCommandCoordinator: WindowCommandCoordinator
-    private let windowLayoutCoordinator: WindowLayoutCoordinator
     private let snippetCoordinator: SnippetCoordinator
     private let fileSearchCoordinator: FileSearchCoordinator
     private let menuSearchCoordinator: MenuSearchCoordinator
-    private let windowSwitchCoordinator: WindowSwitchCoordinator
     private let notesCoordinator: NotesCoordinator
     private let extensionCoordinator: ExtensionCoordinator
     /// The backup commands only, which need the live stores to gather from and apply to.
@@ -29,12 +26,9 @@ final class LauncherCoordinator {
         customCommandCoordinator: CustomCommandCoordinator,
         systemActionCoordinator: SystemActionCoordinator,
         quicklinkCoordinator: QuicklinkCoordinator,
-        windowCommandCoordinator: WindowCommandCoordinator,
-        windowLayoutCoordinator: WindowLayoutCoordinator,
         snippetCoordinator: SnippetCoordinator,
         fileSearchCoordinator: FileSearchCoordinator,
         menuSearchCoordinator: MenuSearchCoordinator,
-        windowSwitchCoordinator: WindowSwitchCoordinator,
         notesCoordinator: NotesCoordinator,
         extensionCoordinator: ExtensionCoordinator,
         core: AppCore
@@ -46,12 +40,9 @@ final class LauncherCoordinator {
         self.customCommandCoordinator = customCommandCoordinator
         self.systemActionCoordinator = systemActionCoordinator
         self.quicklinkCoordinator = quicklinkCoordinator
-        self.windowCommandCoordinator = windowCommandCoordinator
-        self.windowLayoutCoordinator = windowLayoutCoordinator
         self.snippetCoordinator = snippetCoordinator
         self.fileSearchCoordinator = fileSearchCoordinator
         self.menuSearchCoordinator = menuSearchCoordinator
-        self.windowSwitchCoordinator = windowSwitchCoordinator
         self.notesCoordinator = notesCoordinator
         self.extensionCoordinator = extensionCoordinator
         self.core = core
@@ -90,17 +81,6 @@ final class LauncherCoordinator {
             systemActionCoordinator.runSystemAction(id: action.id)
             return
         }
-        if app.kind == .windowCommand {
-            guard let command = WindowCommandCatalog.command(forEntryID: app.id) else { return }
-            windowCommandCoordinator.runWindowCommand(id: command.id)
-            return
-        }
-        if app.kind == .windowLayout {
-            // The coordinator hides the palette itself: a layout must not restore focus first.
-            guard let id = WindowLayout.id(fromEntryID: app.id) else { return }
-            windowLayoutCoordinator.runWindowLayout(id: id)
-            return
-        }
         // Before the palette hides: a view command takes the palette over rather than closing it.
         if app.kind == .extensionCommand {
             extensionCoordinator.runExtensionCommand(app, arguments: arguments)
@@ -123,7 +103,7 @@ final class LauncherCoordinator {
         case .snippet:
             let snippetID = String(app.id.dropFirst("snippet:".count))
             snippetCoordinator.expandSnippet(id: snippetID, target: previous)
-        case .command, .customCommand, .systemAction, .windowCommand, .windowLayout,
+        case .command, .customCommand, .systemAction,
             .quicklink, .extensionCommand:
             break  // handled above
         }
@@ -142,8 +122,6 @@ final class LauncherCoordinator {
             fileSearchCoordinator.show()
         case .searchMenuItems:
             menuSearchCoordinator.show()
-        case .switchWindows:
-            windowSwitchCoordinator.show()
         case .openInBrowser, .runShellCommand:
             break  // Query-driven: each runs where the typed text is, never through this funnel.
         case .showNotes:
@@ -162,12 +140,6 @@ final class LauncherCoordinator {
         case .createSnippet:
             dismissPalette()
             snippetCoordinator.editSnippet(nil)
-        case .createWindowLayout:
-            dismissPalette()
-            windowLayoutCoordinator.editWindowLayout(nil)
-        case .captureWindowLayout:
-            dismissPalette()
-            windowLayoutCoordinator.captureWindowLayout()
         case .createQuicklink:
             dismissPalette()
             quicklinkCoordinator.editQuicklink(nil)

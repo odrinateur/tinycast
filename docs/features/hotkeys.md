@@ -42,8 +42,8 @@ the keycap rendering — only the _engine_ differs.
 Bindings persist as JSON strings under `hotkey.<action>` UserDefaults keys, computed in one place —
 `HotKeyAction.defaultsKey`, which doubles as the `HotKeyCenter` registration id. The set of bound
 bundle IDs lives in `boundAppBundleIDs` and is re-registered on launch. System Settings panes use
-`boundPaneBundleIDs`; custom commands, quicklinks and window layouts use their stable UUIDs in
-`boundCustomCommandIDs`, `boundQuicklinkIDs` and `boundWindowLayoutIDs`. Those three are the per-item
+`boundPaneBundleIDs`; custom commands and quicklinks use their stable UUIDs in
+`boundCustomCommandIDs` and `boundQuicklinkIDs`. Those two are the per-item
 case — unlike a fixed catalog, there is no `allCases` to walk — so each needs an index for `start()`
 to re-register from
 and to prune bindings whose record was deleted while Tinycast wasn't running. That prune is why
@@ -68,18 +68,16 @@ own pane when `SettingsTab.ownedCommands` names it. `hotkey.togglePalette` is th
 no command row. `HotKeyManager` names them all through `CommandID`, so a conflict callout spells an
 action exactly as its command row does.
 
-Like a window command, the chord registers regardless of the launcher row. Search Files and Notes both
+The chord registers regardless of the launcher row. Search Files and Notes both
 re-check their feature switches before opening; see [file-search.md](file-search.md#invocation) and
 [notes.md](notes.md#ownership-and-enablement). A hidden launcher row does not disable its shortcut, but
 disabling the feature does. `SettingsBackup.HotkeyBackup` carries them as one `commands` map keyed by
 `CommandID` raw value.
 
-System actions and window commands are the fixed-catalog case: they persist under
-`hotkey.systemAction.<raw-id>` and `hotkey.windowCommand.<raw-id>`
+System actions are the fixed-catalog case: they persist under
+`hotkey.systemAction.<raw-id>`
 and need **no** bound-ID index, because `start()` and `conflictOwner` can just iterate `allCases` and
-`register` no-ops on an unbound item. A registered window-command shortcut still runs nothing while the
-feature switch is off — `WindowCommandCoordinator.runWindowCommand` re-checks it (see
-[window-management.md](window-management.md)); a system-action shortcut likewise goes through
+`register` no-ops on an unbound item. A system-action shortcut goes through
 `SystemActionCoordinator.runSystemAction(id:)`, so the confirmation gate holds for a hotkey exactly as it does for the
 palette.
 

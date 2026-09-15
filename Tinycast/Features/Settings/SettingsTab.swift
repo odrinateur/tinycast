@@ -1,6 +1,6 @@
 enum SettingsTab: CaseIterable, Identifiable {
     case general, applications, systemSettings, systemActions, commands, quicklinks, fallbacks,
-        fileSearch, notes, snippets, navigation, windowManagement, clipboard, emoji,
+        fileSearch, notes, snippets, navigation, clipboard, emoji,
         extensions, permissions, backup, about
     /// The case, never an index: a selectable `List` flattens section and row IDs together.
     var id: Self { self }
@@ -18,7 +18,6 @@ enum SettingsTab: CaseIterable, Identifiable {
         case .notes: return "Notes"
         case .snippets: return "Snippets"
         case .navigation: return "Navigation"
-        case .windowManagement: return "Window Management"
         case .clipboard: return "Clipboard"
         case .emoji: return "Emoji & Symbols"
         case .extensions: return "Extensions"
@@ -41,7 +40,6 @@ enum SettingsTab: CaseIterable, Identifiable {
         case .notes: return "text.page"
         case .snippets: return "curlybraces"
         case .navigation: return "arrow.left.arrow.right"
-        case .windowManagement: return "macwindow"
         case .clipboard: return "doc.on.clipboard"
         case .emoji: return "face.smiling"
         case .extensions: return "puzzlepiece.extension"
@@ -77,7 +75,7 @@ enum SettingsSection: CaseIterable, Identifiable {
         case .features:
             return [
                 .fileSearch, .notes, .snippets, .navigation,
-                .windowManagement, .clipboard, .emoji, .extensions
+                .clipboard, .emoji, .extensions
             ]
         case .advanced: return [.backup, .about]
         }

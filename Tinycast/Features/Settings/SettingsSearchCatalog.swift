@@ -110,7 +110,7 @@ enum SettingsSearchCatalog {
     static let entries: [SettingsSearchEntry] =
         general + applications + systemSettings
         + systemActions + commands + quicklinks + fallbacks + fileSearch + notes
-        + snippets + navigation + windowManagement + clipboard + emoji
+        + snippets + navigation + clipboard + emoji
         + extensions + permissions + backup + about
 
     private static let general: [SettingsSearchEntry] = [
@@ -300,10 +300,10 @@ enum SettingsSearchCatalog {
     private static let navigation: [SettingsSearchEntry] = [
         .init(
             pane: .navigation,
-            keywords: ["window", "switch", "menu bar", "focus", "raise"]),
+            keywords: ["menu bar", "focus", "raise"]),
         .init(
             .navigationNavigation, "Enable navigation",
-            keywords: ["window switcher", "menu bar", "accessibility"]),
+            keywords: ["menu bar", "accessibility"]),
         .init(
             group: .navigationCommands, "Navigation commands",
             keywords: ["shortcut", "hotkey", "alias", "launcher"]),
@@ -313,42 +313,6 @@ enum SettingsSearchCatalog {
         .init(
             .navigationMenuSearch, "Disabled Applications",
             keywords: ["exclude", "password manager", "ignore", "privacy", "menu bar"])
-    ]
-
-    private static let windowManagement: [SettingsSearchEntry] = [
-        .init(
-            pane: .windowManagement,
-            keywords: ["tile", "halves", "thirds", "maximize", "snap", "layouts", "arrangement"]),
-        .init(
-            .windowManagementWindowManagement, "Enable window management",
-            keywords: ["tile", "accessibility"]),
-        .init(
-            .windowManagementOptions, "Cycling",
-            keywords: ["repeat", "thirds", "halves", "displays", "monitor", "screens"]),
-        .init(
-            .windowManagementOptions, "Gap between windows",
-            keywords: ["padding", "spacing", "margin", "points"]),
-        .init(
-            group: .windowManagementOptions, "Window commands",
-            keywords: ["shortcut", "left half", "maximize", "center"]),
-        .init(
-            group: .windowManagementLayoutCommands, "Layout commands",
-            keywords: ["shortcut", "launcher", "create layout", "capture"]),
-        .init(
-            group: .windowManagementLayouts, "Window Layouts",
-            keywords: [
-                "layout", "arrangement", "workspace", "preset", "restore windows",
-                "multi display", "monitor"
-            ]),
-        .init(
-            .windowManagementLayouts, "Show layouts in launcher",
-            keywords: ["hide", "visibility", "search"]),
-        .init(
-            .windowManagementLayouts, "New Layout",
-            keywords: ["add", "create", "arrangement", "preset"]),
-        .init(
-            .windowManagementLayouts, "Create Layout from Current Windows",
-            keywords: ["capture", "snapshot", "current", "save arrangement"])
     ]
 
     private static let clipboard: [SettingsSearchEntry] = [

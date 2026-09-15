@@ -10,7 +10,6 @@ final class AppCore {
     let appIndex: AppIndex
     let customCommands = CustomCommandStore()
     let quicklinks = QuicklinkStore()
-    let windowLayouts = WindowLayoutStore()
     let clipboardStore = ClipboardStore()
     @ObservationIgnored private var clipboardTextIndexer: ClipboardTextIndexer?
     let clipboardManager: ClipboardManager
@@ -20,8 +19,6 @@ final class AppCore {
     let textInjector: TextInjector
     let hotKeys = HotKeyManager()
     let hyperKeyTap = HyperKeyTap()
-    let windowMover = WindowMover()
-    let spaceSwitcher = SpaceSwitcher()
     let inputSourceSwitcher = InputSourceSwitcher()
     let settings: AppSettings
     @ObservationIgnored private var appearanceObservation: NSKeyValueObservation?
@@ -41,7 +38,6 @@ final class AppCore {
     let palette = PaletteState()
     let fileSearch = FileSearchSession()
     let menuSearch = MenuSearchSession()
-    let windowSwitch = WindowSwitchSession()
     let activationPolicy = ActivationPolicy()
     let uninstall = UninstallSession()
     let customCommandArguments = CustomCommandArgumentSession()
@@ -52,8 +48,6 @@ final class AppCore {
     var pendingQuicklinkEdit: QuicklinkEditRequest?
     /// Set when a snippet editor should open with Settings; the pane consumes it.
     var pendingSnippetEdit: SnippetEditRequest?
-    /// Set when a layout editor should open with Settings; the pane consumes it.
-    var pendingWindowLayoutEdit: WindowLayoutEditRequest?
 
     @ObservationIgnored private(set) lazy var snippetCoordinator = SnippetCoordinator(
         store: snippetsStore, listener: snippetListener, injector: textInjector,
@@ -72,7 +66,7 @@ final class AppCore {
 
     @ObservationIgnored private(set) lazy var paletteCoordinator = PaletteCoordinator(
         palette: palette, settings: settings, appIndex: appIndex,
-        fileSearch: fileSearch, menuSearch: menuSearch, windowSwitch: windowSwitch,
+        fileSearch: fileSearch, menuSearch: menuSearch,
         windowController: windowController)
     /// Its own window and lifecycle: neither coordinator shows or closes the other's surface.
     @ObservationIgnored private(set) lazy var settingsCoordinator = SettingsCoordinator(core: self)
@@ -87,14 +81,6 @@ final class AppCore {
     @ObservationIgnored private(set) lazy var extensionCoordinator = ExtensionCoordinator(
         extensions: extensions, palette: palette, paletteCoordinator: paletteCoordinator,
         settingsCoordinator: settingsCoordinator, settings: settings, core: self)
-    @ObservationIgnored private(set) lazy var windowCommandCoordinator = WindowCommandCoordinator(
-        settings: settings, paletteCoordinator: paletteCoordinator, windowMover: windowMover,
-        spaceSwitcher: spaceSwitcher)
-    @ObservationIgnored private(set) lazy var windowLayoutCoordinator = WindowLayoutCoordinator(
-        store: windowLayouts, settings: settings, appIndex: appIndex, hotKeys: hotKeys,
-        favorites: favorites, visibility: visibility, ranking: launcherRanking, aliases: aliases,
-        paletteCoordinator: paletteCoordinator, settingsCoordinator: settingsCoordinator,
-        core: self)
     @ObservationIgnored private(set) lazy var customCommandCoordinator = CustomCommandCoordinator(
         store: customCommands, argumentSession: customCommandArguments, settings: settings,
         appIndex: appIndex,
@@ -114,11 +100,8 @@ final class AppCore {
         customCommandCoordinator: customCommandCoordinator,
         systemActionCoordinator: systemActionCoordinator,
         quicklinkCoordinator: quicklinkCoordinator,
-        windowCommandCoordinator: windowCommandCoordinator,
-        windowLayoutCoordinator: windowLayoutCoordinator,
         snippetCoordinator: snippetCoordinator, fileSearchCoordinator: fileSearchCoordinator,
         menuSearchCoordinator: menuSearchCoordinator,
-        windowSwitchCoordinator: windowSwitchCoordinator,
         notesCoordinator: notesCoordinator, extensionCoordinator: extensionCoordinator,
         core: self)
     @ObservationIgnored private(set) lazy var fallbackCoordinator = FallbackCoordinator(
@@ -137,9 +120,6 @@ final class AppCore {
         paletteCoordinator: paletteCoordinator, windowController: windowController, core: self)
     @ObservationIgnored private(set) lazy var menuSearchCoordinator = MenuSearchCoordinator(
         settings: settings, appIndex: appIndex, session: menuSearch, palette: palette,
-        paletteCoordinator: paletteCoordinator, core: self)
-    @ObservationIgnored private(set) lazy var windowSwitchCoordinator = WindowSwitchCoordinator(
-        settings: settings, appIndex: appIndex, session: windowSwitch, palette: palette,
         paletteCoordinator: paletteCoordinator, core: self)
     @ObservationIgnored private(set) lazy var updateCoordinator = UpdateCoordinator(
         store: updateChecker, core: self)
@@ -192,7 +172,6 @@ final class AppCore {
             extensions.start(appIndex: appIndex, coordinator: extensionCoordinator)
             extensionCoordinator.applyEnabled()
             fileSearchCoordinator.applyEnabled()
-            windowSwitchCoordinator.applyEnabled()
             menuSearchCoordinator.applyEnabled()
             fileSearchCoordinator.applyPolicy()
             notesCoordinator.applyEnabled()
@@ -200,11 +179,6 @@ final class AppCore {
                 self?.customCommandCoordinator.applyCustomCommandsPresence()
             }
             customCommandCoordinator.applyCustomCommandsPresence()
-            applyWindowCommandsPresence()
-            windowLayouts.onChange = { [weak self] _ in
-                self?.windowLayoutCoordinator.applyWindowLayoutsPresence()
-            }
-            windowLayoutCoordinator.applyWindowLayoutsPresence()
             quicklinks.onChange = { [weak self] _ in
                 self?.quicklinkCoordinator.applyQuicklinksPresence()
             }
@@ -234,12 +208,6 @@ final class AppCore {
             hotKeys.onRunSystemAction = { [weak self] id in
                 self?.systemActionCoordinator.runSystemAction(id: id)
             }
-            hotKeys.onRunWindowCommand = { [weak self] id in
-                self?.windowCommandCoordinator.runWindowCommand(id: id)
-            }
-            hotKeys.onRunWindowLayout = { [weak self] id in
-                self?.windowLayoutCoordinator.runWindowLayout(id: id)
-            }
             hotKeys.onOpenQuicklink = { [weak self] id in
                 self?.quicklinkCoordinator.openQuicklink(id: id)
             }
@@ -265,8 +233,7 @@ final class AppCore {
             }
             hotKeys.start(
                 customCommandIDs: Set(customCommands.commands.map(\.id)),
-                quicklinkIDs: Set(quicklinks.quicklinks.map(\.id)),
-                windowLayoutIDs: Set(windowLayouts.layouts.map(\.id)))
+                quicklinkIDs: Set(quicklinks.quicklinks.map(\.id)))
             // Keeps running while Carbon pauses: the recorder needs its rewritten flags.
             hyperKeyTap.start(settings: settings)
 
@@ -334,11 +301,9 @@ final class AppCore {
             return customCommands.command(id: id)?.name
         case .quicklink(let id):
             return quicklinks.quicklink(id: id)?.name
-        case .windowLayout(let id):
-            return windowLayouts.layout(id: id)?.name
         case .extensionCommand(let entryID):
             return appIndex.apps.first { $0.kind == .extensionCommand && $0.id == entryID }?.name
-        case .togglePalette, .command, .systemAction, .windowCommand:
+        case .togglePalette, .command, .systemAction:
             return nil
         }
     }
@@ -377,7 +342,6 @@ final class AppCore {
         clipboardTextIndexer?.stop()
         // Caps Lock first: its remap is the one teardown that outlives the process.
         hyperKeyTap.prepareForTermination()
-        windowLayoutCoordinator.prepareForTermination()
         inputSourceSwitcher.endSession()
         textInjector.prepareForTermination()
         snippetListener.stop()
@@ -387,16 +351,6 @@ final class AppCore {
     // MARK: - Feature switches
 
     private func observeFeatureSwitches() {
-        track(
-            {
-                _ = $0.windowManagementEnabled
-                _ = $0.windowManagementShowInLauncher
-            }, reproject: { $0.applyWindowCommandsPresence() })
-        track(
-            {
-                _ = $0.windowManagementEnabled
-                _ = $0.windowLayoutsShowInLauncher
-            }, reproject: { $0.windowLayoutCoordinator.applyWindowLayoutsPresence() })
         track(
             {
                 _ = $0.customCommandsEnabled
@@ -412,13 +366,9 @@ final class AppCore {
         track(
             { _ = $0.clipboardTextSearchEnabled }, reproject: { $0.applyClipboardTextSearch() })
         track({ _ = $0.fileSearchEnabled }, reproject: { $0.fileSearchCoordinator.applyEnabled() })
-        // Two features, one switch: each coordinator gates only its own command and mode.
         track(
             { _ = $0.navigationEnabled },
-            reproject: {
-                $0.windowSwitchCoordinator.applyEnabled()
-                $0.menuSearchCoordinator.applyEnabled()
-            })
+            reproject: { $0.menuSearchCoordinator.applyEnabled() })
         track({ _ = $0.notesEnabled }, reproject: { $0.notesCoordinator.applyEnabled() })
         track(
             {
@@ -468,11 +418,6 @@ final class AppCore {
     private func applyHyperChord() {
         guard settings.hyperKey != .none else { return }
         hotKeys.retargetHyperBindings(includesShift: settings.hyperKeyIncludesShift)
-    }
-
-    private func applyWindowCommandsPresence() {
-        let visible = settings.windowManagementEnabled && settings.windowManagementShowInLauncher
-        appIndex.setWindowCommandsVisible(visible)
     }
 
     // MARK: - Interruption

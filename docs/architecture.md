@@ -18,27 +18,23 @@ Independently of the folder tree, every mature subsystem has converged on the sa
 │ SearchScopes · LauncherRankingStore · FileSearch{Query,Result,Scope} ·      │
 │ Calculator/* · EmojiCatalog · EmojiGridGeometry · SystemAction ·            │
 │ VolumeLevel ·                                                              │
-│ WindowCommand · WindowPlacementEngine · WindowActionMemory · WindowLayout/* ·      │
 │ PaletteRowIndex ·                                                          │
 │ Uninstall{Target,SearchRoot,Rules,Protection,Plan} ·                       │
 │ Quicklink{,Destination,Store,Archive} · Notes/Model/* · Snippets/Model/* · │
 │ ShellCommandRunner · DoubleTap{Modifier,Detector} · ClipboardStore ·       │
 │ RaycastDecoder · Scrypt · AppSettingsKey · SettingsBackupCoverage          │
-│ MeetingLink · MeetingEvent · UpcomingWindow · MeetingDay · MenuBarSummary  │
-│ AutoJoinPolicy · EventDraft · SupportReminderSchedule ·                    │
+│ SupportReminderSchedule ·                                                  │
 │ MenuSearch{Item,Shortcut,Query,TreeNode,SnapshotPolicy,Target} ·           │
-│ WindowSwitch{Entry,Order,Query}                                            │
 └──────────────────────────────────┬─────────────────────────────────────────┘
                                    │ consumed by
 ┌─ EFFECT ─────────────────────────▼─────────────────────────────────────────┐
 │ All platform I/O, one folder per feature.                                  │
 │ AppIndex · SpotlightNames · FileSearchService · SettingsPaneScanner ·      │
-│ AXWindowAccess · AXScreens · WindowInventory · WindowLayoutRunner ·        │
-│ IconCache · WindowMover · UninstallScanner · UninstallRunner ·             │
+│ IconCache · UninstallScanner · UninstallRunner ·                           │
 │ SystemActionRunner · QuicklinkLauncher · TextInjector ·             │
 │ SnippetKeywordListener · NotesRepository · CurrencyRateStore · Paster ·    │
 │ HotKeyCenter · HyperKeyTap · DoubleTapMonitor · RunningAppsMonitor ·       │
-│ SupportReminderStore · AXMenuAccess · WindowZOrder · WindowSwitchSweep     │
+│ SupportReminderStore · AXMenuAccess ·                                      │
 └──────────────────────────────────┬─────────────────────────────────────────┘
                                    │ published through
 ┌─ OBSERVABLE STATE ───────────────▼─────────────────────────────────────────┐
@@ -55,7 +51,7 @@ in whichever of the two owns it.
 
 - **`Model/` — pure.** Foundation only, plus SQLite3 or CoreGraphics where the data demands it.
   Everything from the environment is **injected**: `CalcEngine` takes `now` / `calendar` / `rates`,
-  `LauncherRankingStore` takes `now` and its file URL, `WindowActionMemory` takes `now` as a parameter,
+  `LauncherRankingStore` takes `now` and its file URL,
   `UninstallRules` is handed directory *names* rather than URLs, and `QuicklinkStore` is handed the home
   directory. This is the layer that **decides** things.
 - **`Service/` — effects.** Stores, monitors, runners, scanners and AppKit glue. Every `AXUIElement`
@@ -209,7 +205,7 @@ Tinycast/
     PaletteRowIndex.swift   the flat selection index — palette-owned, so it sits at the top
     Launcher/ Clipboard/ Calculator/ Emoji/ FileSearch/ MenuSearch/ Notes/
     Quicklinks/ Snippets/ Uninstall/ SystemActions/ CustomCommands/ HotKeys/ Backup/
-    WindowManagement/ Onboarding/ Updates/ Support/ Settings/
+    Onboarding/ Updates/ Support/ Settings/
     Extensions/
         Model/      pure — the harness inputs
         Service/    effects — stores, monitors, runners, AppKit glue

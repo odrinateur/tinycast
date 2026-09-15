@@ -105,8 +105,6 @@ If a change touches anything in the right column, the harness on the left is man
 | `callout-test` | `DesignSystem/Theme.swift`, `HotKeys/UI/CalloutPlacement.swift` |
 | `system-action-test` | `SystemActions/Model/SystemAction.swift` |
 | `volume-test` | `SystemActions/Model/VolumeLevel.swift` |
-| `window-command-test` | `WindowManagement/WindowCommand.swift`, `WindowPlacementEngine.swift`, `WindowActionMemory.swift` |
-| `window-layout-test` | `WindowManagement/Model/WindowLayout*.swift` — the layout record, its geometry and its inverse, the plan and the store |
 | `custom-command-test` | `CustomCommands/Model/CustomCommand.swift`, `Service/ShellCommandRunner.swift` |
 | `uninstall-test` | all five pure files in `Uninstall/Model/` |
 | `quicklink-test` | all of `Quicklinks/Model/` |
@@ -153,7 +151,6 @@ when touching a pure file:
 - `Calculator/Model/` still takes its clock via `now`/`calendar` and its rates via `rates`
 - `Uninstall/Model/`'s deciding half still receives directory **names** and a `PathFacts`, never URLs
 - `HotKeys/Model/DoubleTap*` still take the clock as a parameter
-- `WindowManagement/Model/` still touches no `NSScreen` and makes no AX call, layouts included
 - `Features/PaletteRowIndex.swift` still imports Foundation alone, despite living under `Features/`
 - `Quicklinks/Model/` is still handed the home directory rather than reading it
 - `FileSearch/Model/` is still handed the home directory rather than reading it
@@ -321,7 +318,7 @@ caches, TCC grants and login item, so this cannot disturb an installed copy.
 - The highlight always sits on the row the footer pill describes
 - With a calculation typed, the calculator card is first and is selected first
 - Section headers appear in order: Favorites, Applications, System Settings, Quicklinks, Snippets,
-  System Actions, Window Management, Custom Commands, Commands
+  System Actions, Custom Commands, Commands
 - With a non-ASCII input source active, ⌘K opens Actions; ↑/↓ move it, ↵ activates, Escape closes it
 - While a menu is open, typing does **not** change the query and the caret is hidden
 - Tab toggles launcher ↔ clipboard; bare Backspace on an empty query backs out of a sub-screen
@@ -460,13 +457,11 @@ caches, TCC grants and login item, so this cannot disturb an installed copy.
   System Settings ▸ General ▸ Language & Region without a relaunch — and nothing prompts for location
 - A crypto query (`1 btc`, `0.5 sol to eur`) answers, and `1 usd to btc` stays in plain notation
 
-### System actions and window management
+### System actions
 
 - A confirmation-gated action (Restart, Quit All) confirms, showing the subject's own glyph
 - Volume actions show the volume HUD; everything else shows the message pill
 - Holding a bound hotkey does **not** stack dialogs
-- Window commands move the window you were last in; cycle-on-repeat steps ½ → ⅓ → ⅔
-- "Top Half" lands flush with the top of the visible frame, on a secondary display too
 
 ### Extensions
 
