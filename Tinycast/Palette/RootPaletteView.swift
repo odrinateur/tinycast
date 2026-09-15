@@ -640,9 +640,10 @@ struct RootPaletteView: View {
             headerGutter(width: metrics.spacing.md * 2)
         }
         // Identical metrics in both states, so typing can't move the search bar.
-        // No band fill: the panel background shows through, with only a hairline below.
+        // Same scrim as the panel behind it, so rows hide beneath with no visible band.
         .frame(height: metrics.size.headerHeight)
         .frame(maxWidth: .infinity)
+        .background(Theme.Colors.panelScrim(transparency: settings.paletteTransparency))
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Theme.Colors.separator)
@@ -765,7 +766,7 @@ struct RootPaletteView: View {
     private func bottomBar(
         pillLabel: String, showActionGroup: Bool, formPrimaryShortcut: Bool, showActions: Bool
     ) -> some View {
-        // No band fill: the panel background shows through, with only a hairline above.
+        // Same scrim as the panel behind it, so rows hide beneath with no visible band.
         HStack(spacing: 0) {
             appMenuButton
             Spacer()
@@ -778,6 +779,7 @@ struct RootPaletteView: View {
         .padding(.horizontal, metrics.spacing.md)
         .frame(height: metrics.size.bottomBarHeight)
         .frame(maxWidth: .infinity)
+        .background(Theme.Colors.panelScrim(transparency: settings.paletteTransparency))
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(Theme.Colors.separator)

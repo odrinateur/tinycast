@@ -13,8 +13,9 @@ Read this before touching any view body, `Theme` value, or the panel chrome.
 Tinycast is a **command palette**: a borderless floating panel whose surface is a nearly
 opaque flat gray — charcoal 0.12 at 96% in Dark, silver 0.93 at 96% in Light — so the desktop
 barely shows through. Everything on that surface is white at a fixed alpha ramp. The header and
-bottom bar carry **no fill of their own** — the panel background shows through uniformly, with
-only a hairline `separator` marking each. Footer actions are **bare buttons on the panel**
+bottom bar carry **the panel's own scrim** — same `panelScrim(transparency:)` as the background
+behind them, so rows hide beneath with no visible band — with only a hairline `separator`
+marking each. Footer actions are **bare buttons on the panel**
 (label + keycaps, primary left of a divider, Actions right of it). Floating menus stay
 **flat `popSurface` fills with a hairline edge**.
 
@@ -26,7 +27,7 @@ Five load-bearing ideas, in priority order:
 
 1. **Surface = flat opaque gray.** A solid-feeling gray scrim over blur; depth comes from layering, not translucency.
 2. **One alpha ramp, never grays.** Ink at fixed stops — white over the dark surface, black over the light one.
-3. **Uniform panel, hairlines only.** Header/footer carry no fill; the scrim runs edge to edge and a `separator` hairline marks each.
+3. **Uniform panel, hairlines only.** Header/footer repeat the panel's own scrim, so the surface reads edge to edge and a `separator` hairline marks each.
 4. **No fades.** `edgeDissolve()` is a no-op kept so call sites need no edits; rows clip behind the solid bars.
 5. **Flat controls only.** The main surface is never glass; menus are `popSurface` + edge, footer actions are bare buttons.
 
@@ -41,7 +42,7 @@ These are the things that quietly break the look if changed. Preserve them unles
 - **No grays, no opaque fills on the surface.** Reach for `Theme.Colors.*` instead of `.gray`, `NSColor.windowBackground`, etc.
 - **Three things stay fixed in both appearances, on purpose.** The `EdgeDissolve`/`OverflowFade` gradients are **mask luminance, not color** — inverting them breaks the dissolve everywhere. `ExtensionTintColors` and a tinted `IconCache` tile keep white ink, because a saturated tile carries its own contrast. And `IconCache` cannot use a dynamic `NSColor` at all: it rasterizes off-main, so the surface is carried explicitly and is part of the cache key.
 - **An icon is drawn for a surface *and* a system icon style, and both move under you.** macOS restyles the icons `NSWorkspace` hands out when System Settings → Appearance → **Icon & widget style** changes, so `IconStyleMonitor` and Tinycast's own appearance both call `IconCache.invalidateStyled()`. **The monitor may not invalidate on the notification itself.** AppKit posts `NSWorkspaceIconAppearanceConfigurationDidChange` before IconServices has swapped what `NSWorkspace` vends — measured at 25–120ms behind, jittering run to run — and the images it hands back are live objects macOS restyles in place, so flattening one on the signal freezes the *outgoing* style into a bitmap nothing ever invalidates again. `IconStyleMonitor` therefore polls `IconCache.styleFingerprint()` until the pixels actually move, and only then invalidates. Waiting also sidesteps the cost: re-flattening every icon the instant a restyle begins forces a cold IconServices regeneration, measured at 160× the settled draw cost. That drops the cached bitmaps, bumps every cache key so an in-flight decode cannot repopulate a stale one, and moves `IconCache.style.generation`. **Any view that draws an icon must key its fetch on that generation** — wrap the view's own key in `IconRequest`, or call `IconCache.observeStyle()` where the icon is resolved synchronously in a `body`. It is reached through `IconCache` rather than injected precisely because icons are drawn in menus, popovers and every list, where a missed injection would be a silent staleness bug.
-- **Hairlines only between the list and the bars.** The header and bottom bar carry no fill; the panel background runs through and a `separator` hairline marks each. (One deliberate exception: the vertical hairline between a list and its preview pane, as the clipboard and file search screens draw.)
+- **Hairlines only between the list and the bars.** The header and bottom bar repeat the panel's scrim and a `separator` hairline marks each — no band fill, no dissolve. (One deliberate exception: the vertical hairline between a list and its preview pane, as the clipboard and file search screens draw.)
 - **The panel corner is clipped once, at the root.** `RootPaletteView.body` ends with `.background(PaletteBackground(window:)) → .clipShape(RoundedRectangle(26, .continuous))`. `PaletteBackground` puts `panelScrim(transparency:)` over `VisualEffectView()`; the center setting returns the original tint. Keep that order, with the clip last.
 - **Don't use the native scroll edge effect.** Inside the panel it renders a hard-bounded rectangle. Lists hide behind the solid bars with no mask — `edgeDissolve()` is a no-op, kept so call sites need no edits. This is a rule about the borderless panels; the Settings window is a titled `NSWindow` whose system titlebar draws the band itself (see "Settings").
 - **Test over a light desktop.** Transparency and corner masking bugs only show over bright wallpaper. Dark wallpaper hides them.
@@ -218,7 +219,7 @@ An extension's own surfaces live in `ExtensionColors` (`Features/Extensions/UI/`
 Source: `Palette/PalettePanel.swift`, `Palette/RootPaletteView.swift`.
 
 - **`PalettePanel`** is a borderless `NSPanel`: `isOpaque = false`, `backgroundColor = .clear`, `.floating` level, `hasShadow`, `animationBehavior = .none`. The two more transparent Dark detents turn off the native shadow and its black outline, adding a one-point white gradient border with a brighter upper edge. It hosts SwiftUI via `NSHostingView`. `PaletteWindowController` centers it slightly above screen center (`+8%`) and dismisses it on `windowDidResignKey`.
-- **The results layer fills the whole panel.** Header and footer carry no fill; the scrim runs edge to edge, a hairline marks each, and the list hides behind them with no dissolve.
+- **The results layer fills the whole panel.** Header and footer repeat the panel scrim, a hairline marks each, and the list hides behind them with no dissolve.
 - **Header** (`headerHeight 44`): a back-chevron _or_ mode glyph, then the plain `TextField` (no border/background). Sub-screens (Clipboard, Calculator History) show the back chevron; the launcher shows a magnifying glass. The search icon aligns horizontally with row content.
 - **Compact keyboard entry:** pressing `↓` in the collapsed launcher expands the results and selects the first row without replacing or defocusing the shared search field.
 - **Bottom bar** (`bottomBarHeight 52`): a hover-only menu mark on the left, bare action buttons on the right — primary action, a `separator` divider, then the Actions toggle (`⌘K`). No container, no fill.
