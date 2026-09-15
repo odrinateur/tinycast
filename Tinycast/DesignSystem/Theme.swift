@@ -76,7 +76,7 @@ enum Theme {
         static let noteTrafficLightInset: CGFloat = 20
         /// Fraction of visible height above the palette's top edge; it grows downward.
         static let paletteTopMarginFraction: CGFloat = 0.18
-        static let headerHeight: CGFloat = 44
+        static let headerHeight: CGFloat = 48
         /// Fixed slot for the header glyph, so the field starts at one x in every mode.
         static let headerIconSlot: CGFloat = 22
         /// Room above the search row, constant so typing never shifts the bar.
@@ -90,7 +90,7 @@ enum Theme {
         /// Dash and gap of the drop guides, equal so the line reads evenly.
         static let dropGuideDash: CGFloat = 4
         static let dropGuideWidth: CGFloat = 2
-        static let bottomBarHeight: CGFloat = 52
+        static let bottomBarHeight: CGFloat = 46
         /// A `BarButton`'s hover capsule, shared by the footer group and the header's filter.
         static let barButtonHeight: CGFloat = 28
         static let rowIcon: CGFloat = 24

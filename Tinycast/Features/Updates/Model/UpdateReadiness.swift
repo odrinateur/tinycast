@@ -4,7 +4,6 @@ import Foundation
 struct UpdateActivity: Sendable {
     var isExpandingSnippet = false
     var isRunningExtension = false
-    var isUninstalling = false
     var isRecordingHotKey = false
     var isPromptingForArguments = false
     var isShowingDialog = false
@@ -16,7 +15,6 @@ enum UpdateReadiness {
     enum Blocker: Equatable, Sendable {
         case expandingSnippet
         case runningExtension
-        case uninstalling
         case recordingHotKey
         case promptingForArguments
         case dialogOpen
@@ -26,7 +24,6 @@ enum UpdateReadiness {
             switch self {
             case .expandingSnippet: return "Waiting for a snippet to finish expanding."
             case .runningExtension: return "Waiting for a running extension command to finish."
-            case .uninstalling: return "Waiting for the uninstaller to finish."
             case .recordingHotKey: return "Finish recording the shortcut first."
             case .promptingForArguments: return "Finish the open command prompt first."
             case .dialogOpen: return "Close the open dialog first."
@@ -39,7 +36,6 @@ enum UpdateReadiness {
     static func evaluate(_ activity: UpdateActivity) -> Blocker? {
         if activity.isExpandingSnippet { return .expandingSnippet }
         if activity.isRunningExtension { return .runningExtension }
-        if activity.isUninstalling { return .uninstalling }
         if activity.isRecordingHotKey { return .recordingHotKey }
         if activity.isPromptingForArguments { return .promptingForArguments }
         if activity.isShowingDialog { return .dialogOpen }

@@ -8,7 +8,6 @@ final class LauncherCoordinator {
     private let paletteCoordinator: PaletteCoordinator
     private let settingsCoordinator: SettingsCoordinator
     private let customCommandCoordinator: CustomCommandCoordinator
-    private let systemActionCoordinator: SystemActionCoordinator
     private let quicklinkCoordinator: QuicklinkCoordinator
     private let snippetCoordinator: SnippetCoordinator
     private let fileSearchCoordinator: FileSearchCoordinator
@@ -24,7 +23,6 @@ final class LauncherCoordinator {
         paletteCoordinator: PaletteCoordinator,
         settingsCoordinator: SettingsCoordinator,
         customCommandCoordinator: CustomCommandCoordinator,
-        systemActionCoordinator: SystemActionCoordinator,
         quicklinkCoordinator: QuicklinkCoordinator,
         snippetCoordinator: SnippetCoordinator,
         fileSearchCoordinator: FileSearchCoordinator,
@@ -38,7 +36,6 @@ final class LauncherCoordinator {
         self.paletteCoordinator = paletteCoordinator
         self.settingsCoordinator = settingsCoordinator
         self.customCommandCoordinator = customCommandCoordinator
-        self.systemActionCoordinator = systemActionCoordinator
         self.quicklinkCoordinator = quicklinkCoordinator
         self.snippetCoordinator = snippetCoordinator
         self.fileSearchCoordinator = fileSearchCoordinator
@@ -76,11 +73,6 @@ final class LauncherCoordinator {
             customCommandCoordinator.runCustomCommand(id: id)
             return
         }
-        if app.kind == .systemAction {
-            guard let action = SystemActionCatalog.action(forEntryID: app.id) else { return }
-            systemActionCoordinator.runSystemAction(id: action.id)
-            return
-        }
         // Before the palette hides: a view command takes the palette over rather than closing it.
         if app.kind == .extensionCommand {
             extensionCoordinator.runExtensionCommand(app, arguments: arguments)
@@ -103,7 +95,7 @@ final class LauncherCoordinator {
         case .snippet:
             let snippetID = String(app.id.dropFirst("snippet:".count))
             snippetCoordinator.expandSnippet(id: snippetID, target: previous)
-        case .command, .customCommand, .systemAction,
+        case .command, .customCommand,
             .quicklink, .extensionCommand:
             break  // handled above
         }

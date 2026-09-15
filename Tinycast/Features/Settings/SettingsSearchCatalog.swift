@@ -109,7 +109,7 @@ enum SettingsSearchCatalog {
 
     static let entries: [SettingsSearchEntry] =
         general + applications + systemSettings
-        + systemActions + commands + quicklinks + fallbacks + fileSearch + notes
+        + commands + quicklinks + fallbacks + fileSearch + notes
         + snippets + navigation + clipboard + emoji
         + extensions + permissions + backup + about
 
@@ -188,15 +188,6 @@ enum SettingsSearchCatalog {
         .init(
             .systemSettingsSystemSettings, "Enable System Settings",
             keywords: ["hide panes", "visibility"])
-    ]
-
-    private static let systemActions: [SettingsSearchEntry] = [
-        .init(
-            pane: .systemActions,
-            keywords: ["sleep", "lock", "restart", "shut down", "empty trash"]),
-        .init(
-            .systemActionsSystemActions, "Enable System Actions",
-            keywords: ["hide", "visibility"])
     ]
 
     private static let commands: [SettingsSearchEntry] = [

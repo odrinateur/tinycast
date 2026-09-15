@@ -15,7 +15,6 @@ struct RootPaletteView: View {
     @Environment(FileSearchSession.self) private var fileSearch
     @Environment(MenuSearchSession.self) private var menuSearch
     /// Observed so the join card's countdown redraws on the minute boundary.
-    @Environment(UninstallSession.self) private var uninstall
     @Environment(QuicklinkStore.self) private var quicklinks
     @Environment(CustomCommandArgumentSession.self) private var customCommandArguments
     @Environment(SnippetsStore.self) private var snippets
@@ -51,9 +50,6 @@ struct RootPaletteView: View {
                 currencyRates: currencyRates, core: core, vm: vm, running: selectionIsRunning,
                 openActions: openActions, openArgumentOptions: openArgumentOptions,
                 scrollToFollow: { scroll = ScrollIntent(kind: .follow) })
-        case .uninstall:
-            return UninstallScreen(
-                session: uninstall, core: core, vm: vm, openActions: openActions)
         case .customCommandArguments:
             return CustomCommandArgumentsScreen(
                 session: customCommandArguments, core: core, vm: vm)
@@ -335,8 +331,6 @@ struct RootPaletteView: View {
                 if menuOpen { closeMenus() }
                 scroll = ScrollIntent(kind: .top)
                 searchFocused = !screen.hidesSearchField
-                // Every way out of the Uninstall screen: back chevron, bare backspace, a fresh summon.
-                if vm.mode != .uninstall { uninstall.cancel() }
                 // Entering with no query is the blank screen's own request for recents.
                 if vm.mode == .fileSearch {
                     fileSearch.search(vm.query, filter: vm.fileSearchFilter)
@@ -753,10 +747,7 @@ struct RootPaletteView: View {
             }
     }
 
-    /// The Uninstall screen's primary action is destructive, so its pill isn't white.
-    private var pillTint: Color {
-        vm.mode == .uninstall ? Theme.Colors.destructive : .primary
-    }
+    private var pillTint: Color { .primary }
 
     private func bottomBar(
         pillLabel: String, showActionGroup: Bool, formPrimaryShortcut: Bool, showActions: Bool

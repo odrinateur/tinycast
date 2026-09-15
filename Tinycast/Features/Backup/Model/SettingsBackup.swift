@@ -86,7 +86,6 @@ struct SettingsBackup: Codable {
         var apps: [String: HotKeyBinding]?
         var panes: [String: HotKeyBinding]?
         var customCommands: [String: HotKeyBinding]?
-        var systemActions: [String: HotKeyBinding]?
         var quicklinks: [String: HotKeyBinding]?
     }
 
@@ -182,10 +181,6 @@ extension SettingsBackup {
         hotkeys.customCommands = Dictionary(
             uniqueKeysWithValues: hk.boundCustomCommandIDs.compactMap { id in
                 hk.binding(for: .customCommand(id: id)).map { (id.uuidString.lowercased(), $0) }
-            })
-        hotkeys.systemActions = Dictionary(
-            uniqueKeysWithValues: SystemAction.ID.allCases.compactMap { id in
-                hk.binding(for: .systemAction(id: id)).map { (id.rawValue, $0) }
             })
         hotkeys.quicklinks = Dictionary(
             uniqueKeysWithValues: hk.boundQuicklinkIDs.compactMap { id in
@@ -474,10 +469,6 @@ extension SettingsBackup {
                 continue
             }
             apply(b, .customCommand(id: id))
-        }
-        for (rawID, b) in hotkeys.systemActions ?? [:] {
-            guard let id = SystemAction.ID(rawValue: rawID) else { continue }
-            apply(b, .systemAction(id: id))
         }
         for (rawID, b) in hotkeys.quicklinks ?? [:] {
             guard let id = UUID(uuidString: rawID), core.quicklinks.quicklink(id: id) != nil else {

@@ -83,15 +83,6 @@ enum AppActionsMenu {
                     core.launcherCoordinator.quit(app)
                 })
         }
-        if app.kind == .application {
-            items.append(
-                PopoverMenuItem(
-                    title: "Uninstall Application", systemImage: "trash", startsSection: true,
-                    isDestructive: true
-                ) {
-                    core.uninstallCoordinator.beginUninstall(app)
-                })
-        }
         if app.kind == .extensionCommand {
             if core.extensions.isBackgroundSchedulable(for: app) {
                 let enabled = core.extensions.isBackgroundEnabled(for: app)

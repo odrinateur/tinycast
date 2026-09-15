@@ -8,7 +8,6 @@ final class HotKeyManager {
     /// The launcher's own command funnel, so a shortcut and a palette row run the same thing.
     var onRunCommand: ((CommandID) -> Void)?
     var onRunCustomCommand: ((UUID) -> Void)?
-    var onRunSystemAction: ((SystemAction.ID) -> Void)?
     var onOpenQuicklink: ((UUID) -> Void)?
     var onRunExtensionCommand: ((String) -> Void)?
     /// Names what only the stores know; the fixed catalogs resolve here. Set in `AppCore.start()`.
@@ -134,7 +133,7 @@ final class HotKeyManager {
             var set = Set(boundExtensionCommandEntryIDs)
             if binding == nil { set.remove(entryID) } else { set.insert(entryID) }
             UserDefaults.standard.set(Array(set), forKey: boundExtensionCommandKey)
-        case .togglePalette, .command, .systemAction:
+        case .togglePalette, .command:
             break
         }
         candidateActionsCache = nil
@@ -175,7 +174,6 @@ final class HotKeyManager {
         actions += boundCustomCommandIDs.map { .customCommand(id: $0) }
         actions += boundQuicklinkIDs.map { .quicklink(id: $0) }
         actions += boundExtensionCommandEntryIDs.map { .extensionCommand(entryID: $0) }
-        actions += SystemAction.ID.allCases.map { .systemAction(id: $0) }
         candidateActionsCache = actions
         return actions
     }
@@ -190,8 +188,6 @@ final class HotKeyManager {
             return displayName?(action) ?? bundleID
         case .customCommand:
             return displayName?(action) ?? "Custom Command"
-        case .systemAction(let id):
-            return SystemActionCatalog.action(id: id).name
         case .quicklink:
             return displayName?(action) ?? "Quicklink"
         case .extensionCommand:
@@ -226,7 +222,6 @@ final class HotKeyManager {
         case .app(let bundleID): AppLauncher.toggle(bundleID: bundleID)
         case .settingsPane(let bundleID): AppLauncher.openSettingsPane(bundleID: bundleID)
         case .customCommand(let id): onRunCustomCommand?(id)
-        case .systemAction(let id): onRunSystemAction?(id)
         case .quicklink(let id): onOpenQuicklink?(id)
         case .extensionCommand(let entryID): onRunExtensionCommand?(entryID)
         }

@@ -147,7 +147,7 @@ panel, the shortcut-recorder callout and the Notes switcher, and `menuRow` is de
 
 ### Size (`Theme.Size`)
 
-`panelWidth 750` · `panelHeight 475` · `headerHeight 44` · `bottomBarHeight 52` · `barButtonHeight 28` ·
+`panelWidth 750` · `panelHeight 475` · `headerHeight 48` · `bottomBarHeight 46` · `barButtonHeight 28` ·
 `rowIcon 24` · `keyCap 18` · `recorderKeyCap 16` · `menuButton 36` · `clipboardListWidth 290` ·
 `menuWidth 276` · `clipboardFilterMenuWidth 200` · `fileSearchFilterMenuWidth 200` ·
 `emojiCategoryMenuWidth 220` · `menuIcon 20` ·
@@ -220,9 +220,9 @@ Source: `Palette/PalettePanel.swift`, `Palette/RootPaletteView.swift`.
 
 - **`PalettePanel`** is a borderless `NSPanel`: `isOpaque = false`, `backgroundColor = .clear`, `.floating` level, `hasShadow`, `animationBehavior = .none`. The two more transparent Dark detents turn off the native shadow and its black outline, adding a one-point white gradient border with a brighter upper edge. It hosts SwiftUI via `NSHostingView`. `PaletteWindowController` centers it slightly above screen center (`+8%`) and dismisses it on `windowDidResignKey`.
 - **The results layer fills the whole panel.** Header and footer repeat the panel scrim, a hairline marks each, and the list hides behind them with no dissolve.
-- **Header** (`headerHeight 44`): a back-chevron _or_ mode glyph, then the plain `TextField` (no border/background). Sub-screens (Clipboard, Calculator History) show the back chevron; the launcher shows a magnifying glass. The search icon aligns horizontally with row content.
+- **Header** (`headerHeight 48`): a back-chevron _or_ mode glyph, then the plain `TextField` (no border/background). Sub-screens (Clipboard, Calculator History) show the back chevron; the launcher shows a magnifying glass. The search icon aligns horizontally with row content.
 - **Compact keyboard entry:** pressing `↓` in the collapsed launcher expands the results and selects the first row without replacing or defocusing the shared search field.
-- **Bottom bar** (`bottomBarHeight 52`): a hover-only menu mark on the left, bare action buttons on the right — primary action, a `separator` divider, then the Actions toggle (`⌘K`). No container, no fill.
+- **Bottom bar** (`bottomBarHeight 46`): a hover-only menu mark on the left, bare action buttons on the right — primary action, a `separator` divider, then the Actions toggle (`⌘K`). No container, no fill.
 - **`BarButton`** is the shared bar control: bare label at rest, a `rowHover` capsule on hover, `barButtonHeight 28`. It carries the footer's two buttons and the clipboard header's type filter, so those hover identically. Hover state lives inside it, so sweeping one never re-renders the palette body.
 
 ---

@@ -11,7 +11,6 @@ struct SettingsDetailView: View {
             case .general: GeneralSettingsView()
             case .applications: ApplicationsSettingsView()
             case .systemSettings: SystemSettingsSettingsView()
-            case .systemActions: SystemActionsSettingsView()
             case .commands: CommandsSettingsView()
             case .quicklinks: QuicklinksSettingsView()
             case .fallbacks: FallbacksSettingsView()

@@ -7,7 +7,6 @@ struct AppEntry: Identifiable, Hashable, Sendable {
         case command
         case customCommand
         case snippet
-        case systemAction
         case quicklink
         case extensionCommand
 
@@ -38,11 +37,6 @@ struct AppEntry: Identifiable, Hashable, Sendable {
                     label: "Snippet", sectionTitle: "Snippets",
                     openVerb: "Paste Snippet", canHideFromSearch: false,
                     canRevealInFinder: true, isSymbolIcon: true)
-            case .systemAction:
-                return KindDescriptor(
-                    label: "System Action", sectionTitle: "System Actions",
-                    openVerb: "Run System Action", canHideFromSearch: true,
-                    canRevealInFinder: false, isSymbolIcon: true)
             case .quicklink:
                 return KindDescriptor(
                     label: "Quicklink", sectionTitle: "Quicklinks",
@@ -138,8 +132,6 @@ struct AppEntry: Identifiable, Hashable, Sendable {
             return bundleID.map { .settingsPane(bundleID: $0) }
         case .customCommand:
             return CustomCommand.id(fromEntryID: id).map { .customCommand(id: $0) }
-        case .systemAction:
-            return SystemActionCatalog.action(forEntryID: id).map { .systemAction(id: $0.id) }
         case .quicklink:
             return Quicklink.id(fromEntryID: id).map { .quicklink(id: $0) }
         case .snippet, .extensionCommand:
@@ -167,7 +159,6 @@ struct AppEntry: Identifiable, Hashable, Sendable {
         case .snippet: return "text.quote"
         case .customCommand: return CustomCommand.sfSymbol
         case .command: return CommandCatalog.command(for: self)?.sfSymbol ?? "questionmark"
-        case .systemAction: return SystemActionCatalog.action(forEntryID: id)?.sfSymbol ?? "questionmark"
         case .application, .systemSettings, .extensionCommand: return "questionmark"
         }
     }
@@ -235,15 +226,6 @@ final class AppIndex {
     @ObservationIgnored private var resultsMemo = Memo<ResultsKey, [AppEntry]>()
     /// Bumped whenever `apps` changes, so both memos above name the entry set they were built from.
     private var entriesRevision = 0
-
-    private static let systemActionEntries: [AppEntry] = SystemActionCatalog.all
-        .map { command in
-            AppEntry(
-                id: command.entryID, name: command.name,
-                url: URL(string: "tinycast://system-action/" + command.id.rawValue)!,
-                bundleID: nil, kind: .systemAction)
-        }
-        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
 
     private var discoveredEntries: [AppEntry] = []
     private var customCommandEntries: [AppEntry] = []
@@ -447,7 +429,7 @@ final class AppIndex {
         let updated =
             discoveredEntries
             +             Self.named(
-                extensionEntries + quicklinkEntries + snippetEntries + Self.systemActionEntries
+                extensionEntries + quicklinkEntries + snippetEntries
                     + customCommandEntries
                     + commandEntries)
         guard updated != apps else { return }
