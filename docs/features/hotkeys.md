@@ -68,18 +68,11 @@ own pane when `SettingsTab.ownedCommands` names it. `hotkey.togglePalette` is th
 no command row. `HotKeyManager` names them all through `CommandID`, so a conflict callout spells an
 action exactly as its command row does.
 
-The chord registers regardless of the launcher row. Search Files and Notes both
-re-check their feature switches before opening; see [file-search.md](file-search.md#invocation) and
-[notes.md](notes.md#ownership-and-enablement). A hidden launcher row does not disable its shortcut, but
+The chord registers regardless of the launcher row. Search Files
+re-checks its feature switch before opening; see [file-search.md](file-search.md#invocation).
+A hidden launcher row does not disable its shortcut, but
 disabling the feature does. `SettingsBackup.HotkeyBackup` carries them as one `commands` map keyed by
 `CommandID` raw value.
-
-System actions are the fixed-catalog case: they persist under
-`hotkey.systemAction.<raw-id>`
-and need **no** bound-ID index, because `start()` and `conflictOwner` can just iterate `allCases` and
-`register` no-ops on an unbound item. A system-action shortcut goes through
-`SystemActionCoordinator.runSystemAction(id:)`, so the confirmation gate holds for a hotkey exactly as it does for the
-palette.
 
 ## Double-tap modifiers
 

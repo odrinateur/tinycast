@@ -7,7 +7,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
     case fileSearch
     case menuSearch
     case quicklinks
-    case snippets
     /// Collects a custom command's positional arguments, held on its own session.
     case customCommandArguments
     /// A Raycast extension command rendering into the palette.
@@ -26,7 +25,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .menuSearch: return "menubar.rectangle"
         case .quicklinks: return Quicklink.sfSymbol
         case .customCommandArguments: return CustomCommand.sfSymbol
-        case .snippets: return "curlybraces"
         case .extensionCommand: return "puzzlepiece.extension"
         }
     }
@@ -38,7 +36,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .fileSearch: return "Search files and folders…"
         case .menuSearch: return "Search menu bar items…"
         case .quicklinks: return "Search quicklinks…"
-        case .snippets: return "Search snippets…"
         // Replaced by the pending argument's name; only reached if the session vanished mid-render.
         case .customCommandArguments: return "Enter a value…"
         // Replaced by the command's own `searchBarPlaceholder` whenever it declares one.

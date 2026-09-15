@@ -56,9 +56,8 @@ assertion, and it is the more important one.
 A harness also runs in your own login session against the real system, with no sandbox and no fixture
 world, so it must never mutate state the machine shares with the apps you use. `NSPasteboard.general`
 is the trap: a running Tinycast records every write to it as a genuine copy, so a fixture left there
-lands in clipboard history looking like something the user copied. `notes-editor-test` seeded one on
-every run from #232 onward by calling the native `copy:`/`cut:`/`paste:` actions; it now drives the
-`writeSelection(to:types:)` and `readSelection(from:)` primitives those actions delegate to, against
+lands in clipboard history looking like something the user copied. Seed it only through
+the `writeSelection(to:types:)` and `readSelection(from:)` primitives, against
 `NSPasteboard.withUniqueName()`. Same AppKit path, no shared side effect. `pasteboard-test` is the
 second case, and it is why `ClipboardManager.fileURLs(on:volatileRoots:)` and `Paster.write(_:store:to:)`
 each take the thing they act on as a parameter: a seam that exists so the harness never has to reach
@@ -94,8 +93,6 @@ If a change touches anything in the right column, the harness on the left is man
 | `clipboard-text-test` | Apple Vision/PDF extraction, scheduling, retry backoff and recovery |
 | `clipboard-test` | `Clipboard/Model/ClipboardStore.swift`, `ClipboardFilter.swift`, `ClipboardFileKind.swift`, the colour trio |
 | `pasteboard-test` | `Clipboard/Service/ClipboardManager.swift` capture and `Paster.write` — what a Finder copy reads as, and what a file entry writes back |
-| `emoji-test` | `Emoji/Model/EmojiCatalog.swift`, `EmojiGridGeometry.swift`, the generated data |
-| `emoji-search-test` | `Emoji/Service/EmojiIndex.swift`, `FrequentEmojiStore.swift`, `Scripts/gen-emoji.js`'s keyword format |
 | `palette-navigation-test` | `Palette/PaletteState.swift`'s screen motions — `prepare`, `replace`, `push`, `pop` |
 | `palette-selection-test` | `Features/PaletteRowIndex.swift` |
 | `interface-size-test` | `DesignSystem/InterfaceMetrics.swift`, `Features/Settings/InterfaceSize.swift`, `Extensions/Model/ExtensionFormMetrics.swift` |
@@ -103,14 +100,8 @@ If a change touches anything in the right column, the harness on the left is man
 | `hotkey-test` | `HotKeys/Model/DoubleTapModifier.swift`, `DoubleTapDetector.swift`, `HyperKey.swift`, `HotKeyAction.swift`, `Service/KeyShortcut.swift`, and the command→action mapping in `Launcher/Model/CommandID.swift` |
 | `fallback-test` | `Launcher/Model/Fallback.swift`, plus the `CommandID` and `Quicklink` ids it is built from |
 | `callout-test` | `DesignSystem/Theme.swift`, `HotKeys/UI/CalloutPlacement.swift` |
-| `system-action-test` | `SystemActions/Model/SystemAction.swift` |
-| `volume-test` | `SystemActions/Model/VolumeLevel.swift` |
 | `custom-command-test` | `CustomCommands/Model/CustomCommand.swift`, `Service/ShellCommandRunner.swift` |
-| `uninstall-test` | all five pure files in `Uninstall/Model/` |
 | `quicklink-test` | all of `Quicklinks/Model/` |
-| `snippets-test` | all of `Snippets/Model/` and `Snippets/Service/`, plus `Platform/HealthTicker.swift` |
-| `notes-test` | all of `Notes/Model/` and `Notes/Service/`, plus the real fuzzy matcher and signposts |
-| `notes-editor-test` | the literal Notes editor with real TextKit 2 and AppKit editing objects |
 | `raycast-test` | `Backup/Service/RaycastDecoder.swift`, `Scrypt.swift`, `Platform/Compression/Zlib.swift` |
 | `symbols-test` | `Extensions/Service/SymbolCatalog.swift`, against this machine's CoreGlyphs |
 | `ext-store-test` | `Extensions/Model/` — the registry model and both registry APIs' parsers |
@@ -149,7 +140,6 @@ Beyond the imports, the injected-environment half is not mechanically checkable,
 when touching a pure file:
 
 - `Calculator/Model/` still takes its clock via `now`/`calendar` and its rates via `rates`
-- `Uninstall/Model/`'s deciding half still receives directory **names** and a `PathFacts`, never URLs
 - `HotKeys/Model/DoubleTap*` still take the clock as a parameter
 - `Features/PaletteRowIndex.swift` still imports Foundation alone, despite living under `Features/`
 - `Quicklinks/Model/` is still handed the home directory rather than reading it
@@ -193,8 +183,8 @@ search result that navigates and then sits there.
 ## Performance measurement
 
 `Platform/Signposts.swift` emits eight intervals on the `com.tinycast.perf` subsystem: `AppCore.start`,
-`AppIndex.scan`, `AppIndex.rank`, `PaletteWindowController.show`, `UninstallScanner.discover` and
-`UninstallScanner.measure`, `FileSearchService.search`, and `Notes.search`. Open the Time Profiler or
+`AppIndex.scan`, `AppIndex.rank`, `PaletteWindowController.show`,
+`FileSearchService.search`. Open the Time Profiler or
 `os_signpost` instrument in Instruments and filter to that subsystem; nothing needs recompiling.
 
 None of the benchmarks below join the suite, so each is registered in `run-tests.sh` as `run index`
@@ -244,18 +234,6 @@ swiftc -O -swift-version 6 Tinycast/Platform/PasteboardFiles.swift \
 /tmp/clipboard-file-performance
 ```
 
-`Tests/emoji-search-performance.swift` times uncached queries, typing prefixes and memo hits against
-the loaded catalog, with process RSS and footprint as JSON; `--names` also lists every catalog name
-missing from its own top five results:
-
-```sh
-swiftc -O -swift-version 6 Tinycast/Features/Emoji/Model/{EmojiCatalog,EmojiData.generated}.swift \
-    Tinycast/Features/Emoji/Service/{EmojiIndex,FrequentEmojiStore}.swift \
-    Tinycast/Features/Launcher/Model/SearchRelevance.swift Tinycast/Platform/{AppPaths,Memo}.swift \
-    Tests/emoji-search-performance.swift -o /tmp/emoji-search-performance
-/tmp/emoji-search-performance --names
-```
-
 `Signposts.interval` owns an explicit `defer` around the wrapped work on purpose. The obvious spelling
 leaks the interval when the work throws, because the `.end` emit is skipped on the throw path and the
 instrument then shows an interval that never closes.
@@ -277,7 +255,6 @@ Measured at the end of the 2026 refactor, on `main`. Useful as orders of magnitu
 | Comment density | 1,653 of 27,289 source lines (6.1%) |
 | The harness suite | ~15 s wall clock, 11-way parallel (~98 s serial, ~140 s before either) |
 | `palette-selection-test` | 111,684 assertions — a tripwire: a change in this count means the row-order model moved |
-| `SnippetKeywordPolicy` match | 7 µs/keystroke at 50 keywords, 59 µs at 1,000 — the `lowercased()` is 0.09 µs of it |
 | `ClipboardStore.pinnedItems` | 27–127 µs per uncached search, 1,000-row window — no cache earns its invalidation yet |
 | `count items of trash` | 5,000 ms against a cold Finder on an *empty* Trash, 110 ms warm — why AppleScript is detached |
 
@@ -297,7 +274,7 @@ caches, TCC grants and login item, so this cannot disturb an installed copy.
 
 - Palette hotkey opens the launcher; pressing it again closes it; Escape clears a non-empty query,
   then hides on a second press; clicking away closes it
-- Search a mode command (Clipboard History, Search Emoji, Search Quicklinks, Search Files)
+- Search a mode command (Clipboard History, Search Quicklinks, Search Files)
   and run it: Escape returns to the launcher **with the query still typed and the row still
   selected**, and the next press clears it. The same screen from its own global hotkey hides the
   palette instead, and shows its own header icon rather than a back chevron
@@ -314,11 +291,11 @@ caches, TCC grants and login item, so this cannot disturb an installed copy.
   overlaps it; cancelling composition brings the placeholder back, and the list filters only once the
   candidate is committed — check on a second summon too, where first responder never moved
 - Typing filters instantly; ↑/↓ move the highlight and scroll it into view without yanking the list
-- ⌃N/⌃P move the highlight as ↓/↑ do; ⌃F/⌃B step the emoji grid's selection, and the caret elsewhere
+- ⌃N/⌃P move the highlight as ↓/↑ do, and the caret elsewhere
 - The highlight always sits on the row the footer pill describes
 - With a calculation typed, the calculator card is first and is selected first
-- Section headers appear in order: Favorites, Applications, System Settings, Quicklinks, Snippets,
-  System Actions, Custom Commands, Commands
+- Section headers appear in order: Favorites, Applications, System Settings, Quicklinks,
+  Custom Commands, Commands
 - With a non-ASCII input source active, ⌘K opens Actions; ↑/↓ move it, ↵ activates, Escape closes it
 - While a menu is open, typing does **not** change the query and the caret is hidden
 - Tab toggles launcher ↔ clipboard; bare Backspace on an empty query backs out of a sub-screen
@@ -350,23 +327,14 @@ caches, TCC grants and login item, so this cannot disturb an installed copy.
 
 ### Hotkeys
 
-- The palette, clipboard, emoji, File Search, and all three Notes shortcuts fire; a per-app shortcut
+- The palette, clipboard and File Search shortcuts fire; a per-app shortcut
   toggles that app
 - Recording captures a shortcut, and the old binding does not fire while recording
 - A conflicting binding is rejected and names its current owner
 - A double-tap binding fires; Hyper Key remaps and its status dot is green
 - Every binding survives quit and relaunch
-- `Enable Commands` off leaves every pane-owned command listed, searchable and firing — Notes,
-  Clipboard, Emoji, File Search, Snippets, Quicklinks and the two layout commands
-
-### Uninstall
-
-- The launcher's Uninstall action opens the scan screen; the bundle is first, leftovers sorted by path
-- Rows appear with no loading copy at any point; folder sizes fill in behind them and totals climb
-- Locked rows cannot be checked; filtering by name works
-- Confirming moves items to the Trash and they are **recoverable from it**
-- Escaping mid-scan cancels promptly with no spinner left behind
-- Hiding and immediately restoring the screen never strands an in-flight file icon as a placeholder
+- `Enable Commands` off leaves every pane-owned command listed, searchable and firing —
+  Clipboard, File Search and Quicklinks
 
 ### Quicklinks
 
@@ -397,56 +365,6 @@ caches, TCC grants and login item, so this cannot disturb an installed copy.
 - Search Files is absent from Settings ▸ Commands, and `Enable Commands` off leaves its shortcut live
 - Export, clear both lists and the shortcut, re-import: all three return, defaults undo not duplicated
 
-### Notes
-
-- With Notes **off**: all three commands are absent, their shortcuts no-op, and the Notes directory is
-  not created
-- Enabling in Settings projects Show Notes, Create Note, and Search Notes immediately; the pane's
-  visibility checkboxes and recorders are the only ones — Settings > Commands lists none of the three
-- Show Notes opens the last active note and focuses an already visible window without hiding it
-- Create Note makes one unique Untitled file, including as the first action in an empty channel
-- Command-P and the Browse button focus search, arrows move selection, Return opens, and Command-N
-  creates
-- Empty switcher search reads the complete recent list; title and body searches rank correctly and a
-  superseded query never publishes
-- An Untitled note titles itself from its first line as it is typed, in the title bar and — after the
-  autosave — in the browse list; naming it replaces that, and clearing the name brings it back
-- Inline rename updates the Markdown filename without changing source, and starts from that filename
-  even where the row shows a derived title; collisions receive a suffix
-- Delete confirms through Tinycast, moves the file to Trash, and selecting another note never loses an
-  unsaved edit
-- An existing `Floating Note.md` appears as an ordinary note without conversion
-- Markdown source remains completely literal: markers stay visible, links are not activated, and task
-  syntax is ordinary text; there is no preview, formatting menu, or task overlay
-- Return, Tab, Delete, and formatting-looking shortcuts retain native plain-text behavior
-- Edit one note, switch to a shorter note, then Undo and Redo: the new note remains intact and the app
-  does not terminate
-- Marked-text input, emoji, combining marks, Copy, Cut, Paste, Select All, Undo, Redo, and Find preserve
-  exact source
-- An empty note shows `Start writing…`; the footer count is right after typing, pasting and undoing
-- Traffic lights sit top-left, the title is centred **on the window**, and the capsule is top-right, all
-  on one line; the yellow light is disabled and green zooms
-- Each capsule button shows a hover capsule and a native tooltip, and fires its action
-- Dragging the title bar moves the window and dragging an edge resizes it; both survive relaunch
-- Clicking another app leaves the panel visible; Escape, Command-W, and the red light hide it
-- Command-Q does nothing anywhere; with Settings in front, Command-W closes Settings
-- Hiding restores the previous external app or Tinycast window
-- Open Notes Folder opens Finder with the active Markdown file selected, or the folder with no note
-- Deleting every note closes the browse list and leaves one clean empty state with no character count;
-  Command-N from there creates and selects one note
-- The browse list fades only at its bottom edge and rests opaque once it reaches the end
-- Quitting inside the debounce window saves the last edit
-- Over a light desktop, the corner matches the palette's, the shadow follows it, and no dark edge shows
-  around the glass controls
-
-### Snippets
-
-- With snippets **off**: no launcher entries, no keyword expansion, and no permission prompt at launch
-- Enabling shows the consent dialog **before** the Accessibility prompt
-- Declining leaves the feature off and prompts for nothing
-- After enabling, a keyword expands in a text field; an argument-bearing snippet prompts then delivers
-- Editing a snippet file externally reloads it
-
 ### Calculator and currency
 
 - `2+2` shows a card; ↵ copies and records to history; unit and date conversions work
@@ -456,12 +374,6 @@ caches, TCC grants and login item, so this cannot disturb an installed copy.
 - A bare amount (`1 usd`) answers in the Mac's region currency, and follows a change to
   System Settings ▸ General ▸ Language & Region without a relaunch — and nothing prompts for location
 - A crypto query (`1 btc`, `0.5 sol to eur`) answers, and `1 usd to btc` stays in plain notation
-
-### System actions
-
-- A confirmation-gated action (Restart, Quit All) confirms, showing the subject's own glyph
-- Volume actions show the volume HUD; everything else shows the message pill
-- Holding a bound hotkey does **not** stack dialogs
 
 ### Extensions
 
@@ -495,9 +407,8 @@ tccutil reset Accessibility com.tinycast.app.dev 2>/dev/null || true
 ```
 
 - Launches with every store directory absent — no crash, no hang; onboarding runs
-- Palette opens and lists apps; clipboard, quicklinks, snippets and calculator history are all empty
+- Palette opens and lists apps; clipboard, quicklinks and calculator history are all empty
   and all accept a first entry
-- Notes creates no directory until Show, Create, or Search is first used, then accepts its first edit
 - **Every setting shows its intended default.** Walk the panes: this is what catches a broken
   absence-versus-`false` read
 - Quit and relaunch: everything created above persisted

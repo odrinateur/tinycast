@@ -2,7 +2,7 @@
 //
 //   pnpm install && node gen-enums.mjs && node build.mjs
 //
-// The output is committed (like EmojiData.generated.swift) so building Tinycast never needs Node.
+// The output is committed so building Tinycast never needs Node.
 
 import { build } from "esbuild";
 import { mkdirSync, statSync, writeFileSync } from "node:fs";

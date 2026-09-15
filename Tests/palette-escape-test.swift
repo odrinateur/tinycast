@@ -68,9 +68,9 @@ struct PaletteEscapeTests {
             .hidePalette,
             "an empty argument field hides the palette, which cancels the pending command")
         expect(
-            resolve(query: "smile", mode: .emoji),
+            resolve(query: "report", mode: .fileSearch),
             .clearQuery,
-            "an unsent emoji query clears before emoji itself is left")
+            "an unsent file search query clears before file search itself is left")
 
         // Provenance, not the mode, decides whether there is anywhere to go back to.
         expect(
@@ -82,13 +82,13 @@ struct PaletteEscapeTests {
             .hidePalette,
             "the same screen summoned by its own hotkey is a root, so it hides")
         expect(
-            resolve(mode: .emoji, canGoBack: true),
+            resolve(mode: .fileSearch, canGoBack: true),
             .goBack,
-            "emoji is no different: reached from the root, it goes back to it")
+            "file search is no different: reached from the root, it goes back to it")
         expect(
-            resolve(mode: .emoji),
+            resolve(mode: .fileSearch),
             .hidePalette,
-            "emoji summoned by its own hotkey hides rather than falling back to the launcher")
+            "file search summoned by its own hotkey hides rather than falling back to the launcher")
         expect(
             resolve(query: "notes", mode: .clipboard, canGoBack: true),
             .clearQuery,
@@ -113,9 +113,9 @@ struct PaletteEscapeTests {
             "a menu outranks the behavior setting beneath it")
 
         expect(
-            resolve(menuOpen: true, mode: .emoji),
+            resolve(menuOpen: true, mode: .fileSearch),
             .closeMenu,
-            "a menu outranks the emoji screen it is drawn over")
+            "a menu outranks the file search screen it is drawn over")
         expect(
             resolve(menuOpen: true, mode: .extensionCommand),
             .closeMenu,

@@ -80,28 +80,7 @@ enum SnippetTemplateEngine {
         case percentEncoding
     }
 
-    private static let maximumReferenceDepth = 5
-    private static let comparisonLocale = Locale(identifier: "en_US_POSIX")
-
-    static func expand(
-        _ record: StoredSnippet,
-        snippets: [StoredSnippet],
-        context: ExpansionContext,
-        userArguments: [String: String] = [:]
-    ) -> ExpansionResult {
-        result(
-            of: expandText(
-                record.snippet.text,
-                snippets: snippets.sorted { $0.id < $1.id },
-                context: context,
-                userArguments: userArguments,
-                encoding: .none,
-                depth: 0,
-                visitedIDs: [record.id]
-            ))
-    }
-
-    /// Expands a non-snippet template; `{snippet:…}` has nothing to resolve and stays as text.
+    /// Expands a template; `{snippet:…}` has nothing to resolve and stays as text.
     static func expand(
         text: String,
         context: ExpansionContext,
@@ -111,12 +90,9 @@ enum SnippetTemplateEngine {
         result(
             of: expandText(
                 text,
-                snippets: [],
                 context: context,
                 userArguments: userArguments,
-                encoding: encoding,
-                depth: 0,
-                visitedIDs: []
+                encoding: encoding
             ))
     }
 
@@ -238,12 +214,9 @@ enum SnippetTemplateEngine {
 
     private static func expandText(
         _ text: String,
-        snippets: [StoredSnippet],
         context: ExpansionContext,
         userArguments: [String: String],
-        encoding: ValueEncoding,
-        depth: Int,
-        visitedIDs: Set<StoredSnippet.ID>
+        encoding: ValueEncoding
     ) -> Expansion {
         var result = Expansion()
         for segment in parseSegments(text) {
@@ -272,26 +245,8 @@ enum SnippetTemplateEngine {
                 }
             case .cursor:
                 result.markCursor()
-            case .snippetReference(let key, let source):
-                guard depth < maximumReferenceDepth,
-                    let target = resolveReference(key, snippets: snippets),
-                    !visitedIDs.contains(target.id)
-                else {
-                    result.append(source)
-                    continue
-                }
-                var nestedVisited = visitedIDs
-                nestedVisited.insert(target.id)
-                result.append(
-                    expandText(
-                        target.snippet.text,
-                        snippets: snippets,
-                        context: context,
-                        userArguments: userArguments,
-                        encoding: encoding,
-                        depth: depth + 1,
-                        visitedIDs: nestedVisited
-                    ))
+            case .snippetReference(_, let source):
+                result.append(source)
             }
         }
         return result
@@ -662,29 +617,5 @@ enum SnippetTemplateEngine {
             }
         }
         return nil
-    }
-
-    // MARK: - References
-
-    private static func resolveReference(
-        _ key: String,
-        snippets: [StoredSnippet]
-    ) -> StoredSnippet? {
-        let normalizedKey = normalizeReference(key)
-        // A disabled snippet is not expandable alone, so nesting must not make it so.
-        let candidates = snippets.filter { $0.snippet.isEnabled }
-        if let nameMatch = candidates.first(where: {
-            normalizeReference($0.snippet.name) == normalizedKey
-        }) {
-            return nameMatch
-        }
-        return candidates.first(where: {
-            guard let keyword = $0.snippet.keyword else { return false }
-            return normalizeReference(keyword) == normalizedKey
-        })
-    }
-
-    private static func normalizeReference(_ value: String) -> String {
-        value.folding(options: [.caseInsensitive], locale: comparisonLocale)
     }
 }

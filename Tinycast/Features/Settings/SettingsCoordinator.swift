@@ -44,7 +44,6 @@ final class SettingsCoordinator {
             .environment(core.aliases)
             .environment(core.fallbacks)
             .environment(core.customCommands)
-            .environment(core.snippetsStore)
             .environment(core.quicklinks)
             // Propagates down so the window's materials show through, not each list's backing.
             .scrollContentBackground(.hidden)

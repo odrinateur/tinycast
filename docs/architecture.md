@@ -16,11 +16,8 @@ Independently of the folder tree, every mature subsystem has converged on the sa
 │                                                                            │
 │ SearchRelevance · EntryNaming · ScriptRomanization · LauncherOrder ·       │
 │ SearchScopes · LauncherRankingStore · FileSearch{Query,Result,Scope} ·      │
-│ Calculator/* · EmojiCatalog · EmojiGridGeometry · SystemAction ·            │
-│ VolumeLevel ·                                                              │
+│ Calculator/* · Quicklink{,Destination,Store,Archive} ·                       │
 │ PaletteRowIndex ·                                                          │
-│ Uninstall{Target,SearchRoot,Rules,Protection,Plan} ·                       │
-│ Quicklink{,Destination,Store,Archive} · Notes/Model/* · Snippets/Model/* · │
 │ ShellCommandRunner · DoubleTap{Modifier,Detector} · ClipboardStore ·       │
 │ RaycastDecoder · Scrypt · AppSettingsKey · SettingsBackupCoverage          │
 │ SupportReminderSchedule ·                                                  │
@@ -30,9 +27,8 @@ Independently of the folder tree, every mature subsystem has converged on the sa
 ┌─ EFFECT ─────────────────────────▼─────────────────────────────────────────┐
 │ All platform I/O, one folder per feature.                                  │
 │ AppIndex · SpotlightNames · FileSearchService · SettingsPaneScanner ·      │
-│ IconCache · UninstallScanner · UninstallRunner ·                           │
-│ SystemActionRunner · QuicklinkLauncher · TextInjector ·             │
-│ SnippetKeywordListener · NotesRepository · CurrencyRateStore · Paster ·    │
+│ IconCache · QuicklinkLauncher · TextInjector · Paster ·                    │
+│ CurrencyRateStore ·                                                        │
 │ HotKeyCenter · HyperKeyTap · DoubleTapMonitor · RunningAppsMonitor ·       │
 │ SupportReminderStore · AXMenuAccess ·                                      │
 └──────────────────────────────────┬─────────────────────────────────────────┘
@@ -51,8 +47,7 @@ in whichever of the two owns it.
 
 - **`Model/` — pure.** Foundation only, plus SQLite3 or CoreGraphics where the data demands it.
   Everything from the environment is **injected**: `CalcEngine` takes `now` / `calendar` / `rates`,
-  `LauncherRankingStore` takes `now` and its file URL,
-  `UninstallRules` is handed directory *names* rather than URLs, and `QuicklinkStore` is handed the home
+  `LauncherRankingStore` takes `now` and its file URL, and `QuicklinkStore` is handed the home
   directory. This is the layer that **decides** things.
 - **`Service/` — effects.** Stores, monitors, runners, scanners and AppKit glue. Every `AXUIElement`
   call, `CGEventTap`, `NSWorkspace.open`, `URLSession` request, `FileManager` walk and CoreAudio read
@@ -66,7 +61,7 @@ the signal that a decision leaked into the effect layer, or an effect into the d
 The boundary keeps effects out of decisions: `CalcEngine.evaluate` is handed a finished
 `CurrencyRates?` rather than reaching for one, which is what keeps it Foundation-only and testable.
 Confirmation gates live in the coordinator, never in the runner — which is why `ShellCommandRunner`
-and `SystemActionRunner` stay harness-compilable while the "are you sure?" step still cannot be bypassed.
+stays harness-compilable while the "are you sure?" step still cannot be bypassed.
 
 Two things sit deliberately outside a feature folder: `Features/PaletteRowIndex.swift`, because the
 palette rather than any one feature owns the flat selection index, and `DesignSystem/` + `Platform/`,
@@ -75,13 +70,13 @@ the shared primitives and system shims every feature draws on. Neither may depen
 ## Single-owner core
 
 `AppCore.shared` (`App/AppCore.swift`) is a `@MainActor` singleton owning every long-lived thing in the
-app: the stores (`AppIndex`, `ClipboardStore`, `SnippetsStore`, `QuicklinkStore`, `CustomCommandStore`,
+app: the stores (`AppIndex`, `ClipboardStore`, `QuicklinkStore`, `CustomCommandStore`,
 `FavoritesStore`, `VisibilityStore`, `AliasStore`, `LauncherRankingStore`, `CalculatorHistoryStore`,
-`CurrencyRateStore`, `FrequentEmojiStore`), the managers, monitors and clocks
+`CurrencyRateStore`), the managers, monitors and clocks
 (`ClipboardManager`, the opt-in `ClipboardTextIndexer`,
-`HotKeyManager`, `HyperKeyTap`, `RunningAppsMonitor`, `SnippetKeywordListener`), the shared state
-(`AppSettings`, `PaletteState`, `FileSearchSession`, `MenuSearchSession`, `UninstallSession`,
-`CustomCommandArgumentSession`), `NotesStore`, the feature coordinators, and the
+`HotKeyManager`, `HyperKeyTap`, `RunningAppsMonitor`), the shared state
+(`AppSettings`, `PaletteState`, `FileSearchSession`, `MenuSearchSession`,
+`CustomCommandArgumentSession`), the feature coordinators, and the
 window controllers.
 
 `AppDelegate.applicationDidFinishLaunching` calls `AppCore.shared.start()` and nothing else. That is the
@@ -93,7 +88,7 @@ hotkey to a coordinator. Views inject `AppCore` through `@Environment` and use i
 those coordinators — `core.quicklinkCoordinator.deleteQuicklink(…)` is the shape, and the alternative
 is injecting fifteen coordinators separately for no gain. Reading a store off `AppCore` to render it is
 fine too; deciding something with one is what the rule forbids. `showNotice`, `confirm`,
-`reportFailure`, `showMessage` and `pickVolume` are forwarders on `AppCore` itself, so
+`reportFailure` and `showMessage` are forwarders on `AppCore` itself, so
 `DialogController` and `MessageHUDController` stay single-owned.
 
 New long-lived state belongs on `AppCore`, wired in `start()`. Do not create a competing singleton: this is a singleton, not a container.
@@ -120,11 +115,6 @@ everything else visible is driven imperatively from AppKit.
   by `SettingsCoordinator` and `OnboardingCoordinator`. SwiftUI `Settings` and `Window` scenes are
   unreliable for accessory apps, so this is deliberate. Their lifecycles are independent of the
   palette's in both directions.
-- **Notes** — a persistent, titled, non-activating `NotesPanel` managed by `NotesWindowController`.
-  The user owns its size and AppKit autosaves the frame; its literal-source TextKit 2 editor switches
-  among local Markdown files and stays visible on focus loss. The displayed string is the canonical
-  file source; Notes has no parser, rendered preview, or source/display mapping.
-  See [features/notes.md](features/notes.md).
 - **The main menu** — shaped by `TinycastApp`'s `.commands`, which rebinds ⌘Q to Close Settings. It is
   only ever on screen while a titled window is open, so it is Settings' menu bar. It must stay
   declarative.
@@ -203,8 +193,8 @@ Tinycast/
   Assets.xcassets/  the app icon and the bundled image sets some catalog symbols resolve to
   Features/
     PaletteRowIndex.swift   the flat selection index — palette-owned, so it sits at the top
-    Launcher/ Clipboard/ Calculator/ Emoji/ FileSearch/ MenuSearch/ Notes/
-    Quicklinks/ Snippets/ Uninstall/ SystemActions/ CustomCommands/ HotKeys/ Backup/
+    Launcher/ Clipboard/ Calculator/ FileSearch/ MenuSearch/
+    Quicklinks/ CustomCommands/ HotKeys/ Backup/
     Onboarding/ Updates/ Support/ Settings/
     Extensions/
         Model/      pure — the harness inputs

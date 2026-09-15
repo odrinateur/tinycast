@@ -79,8 +79,7 @@ timers, `fetch`, `URL`, `URLSearchParams`, `Blob`/`File`/`FormData`, `DOMExcepti
 
 ## The JS runtime
 
-`Tinycast/Resources/RaycastRuntime.generated.js` (~200 KB minified) is **generated and committed**, the
-same arrangement as `EmojiData.generated.swift`: building Tinycast never needs Node. Sources live in
+`Tinycast/Resources/RaycastRuntime.generated.js` (~200 KB minified) is **generated and committed**: building Tinycast never needs Node. Sources live in
 [`Scripts/raycast-runtime/`](../../Scripts/raycast-runtime):
 
 | File | What it is |
@@ -154,7 +153,7 @@ palette shows one screen.
 ## Rendering
 
 `ExtensionScreen` is the single source of truth for row order, so the flat `selection` index the rest of
-the palette relies on maps 1:1 onto visible rows — the same invariant the launcher, clipboard and emoji
+the palette relies on maps 1:1 onto visible rows — the same invariant the launcher and clipboard
 screens hold (see [palette.md](palette.md)).
 
 - **List / Grid** — sections and items flattened in render order. When `filtering` is on (Raycast's

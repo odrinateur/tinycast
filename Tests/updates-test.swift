@@ -432,9 +432,6 @@ struct UpdatesTests {
             UpdateReadiness.evaluate(busy) == .promptingForArguments,
             "an argument prompt holds the update")
 
-        busy = UpdateActivity()
-        busy.isUninstalling = true
-        expect(UpdateReadiness.evaluate(busy) == .uninstalling, "a running uninstall holds the update")
 
         busy = UpdateActivity()
         busy.isRunningExtension = true

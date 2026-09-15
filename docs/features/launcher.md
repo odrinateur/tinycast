@@ -19,7 +19,7 @@ earliest scope wins).
 - **One command, one pane, one switch.** `SettingsTab.ownedCommands` is the whole table of which pane
   lists a command's shortcut, alias and launcher checkbox. A feature that names its commands there
   already decides whether they exist, so `Enable Commands` neither lists nor gates them — two switches
-  over one row is how somebody ends up with Notes on and its shortcut dead. Everything the table does
+  over one row is how somebody ends up with a feature on and its shortcut dead. Everything the table does
   not name belongs to Settings › Commands and answers to that switch.
 - **`Model/SearchRelevance.swift` is Foundation-only and pure**, so `fuzz-test` compiles the shipped
   scorer. It owns `FuzzyMatch`, `SearchAlias` and the cell table.
@@ -30,7 +30,7 @@ earliest scope wins).
   `EntryNaming.Sources` and a line in `aliases(for:)`; adding a `Role` case, or a row to
   `SearchRelevance.cell`, means the criterion was modelled wrong.
 - **`EntryNaming.aliases` runs over every kind, once per index change**, so a naming rule can never
-  apply to applications and quietly skip snippets — and nothing is built per keystroke. `AppIndex.scan`
+  apply to applications — and nothing is built per keystroke. `AppIndex.scan`
   names the app slice on its own, off-main: romanizing a CJK index costs ~50 ms per 1,500 entries, and
   `publishEntries` runs on the main actor whenever any unrelated slice changes.
 - **Aliases stay separate strings** — flattening them into one blob loses the role, which is half of
@@ -84,7 +84,7 @@ next naming demand is a new producer, not a new rung.
 | Role | What lands in it | Looseness |
 | --- | --- | --- |
 | `.userAlias` | the alias the user typed in Tinycast, for any entry kind | literal |
-| `.name` | display name, a snippet's keyword, an `.app` bundle the user renamed on disk | fuzzy |
+| `.name` | display name, an `.app` bundle the user renamed on disk | fuzzy |
 | `.translation` | localizations, Spotlight alternate names, romanizations | fuzzy |
 | `.owner` | the extension a command came from | literal |
 | `.technical` | bundle identifier, `CFBundleExecutable` | literal (full id: exact) |
@@ -228,7 +228,7 @@ deliberate: an extension titled `Safari` can never take that query from the real
 
 A query that *equals* a category's own name lists that whole category under its section header, in the
 order the section shows when the field is empty. Both words a kind already carries work — the section
-title and the singular label, `Snippets`/`Snippet` — read straight
+title and the singular label — read straight
 off `KindDescriptor` by `AppEntry.Kind.named(by:)`, so no category name is written a second time and a
 new `Kind` case gets its category word for free.
 
@@ -319,7 +319,7 @@ revealed: `activate` routes to `FallbackCoordinator.run` instead of `LauncherCoo
 ### User aliases
 
 `AliasStore` (`Launcher/Service/`) keeps one user-chosen alias per entry, keyed by `preferenceKey`
-like favorites and learned ranking, so every entry kind — apps, commands, quicklinks, snippets —
+like favorites and learned ranking, so every entry kind — apps, commands, quicklinks —
 can carry one. An alias is deliberate in a way no vendor field is, so a hit **from its start** —
 exact or prefix — occupies the top band and ranks its entry first. A hit *inside* the alias ranks
 with the Spotlight aliases instead (`term` inside `iterm` must not beat Terminal's own prefix),
@@ -424,65 +424,11 @@ launch counted the same as the 31st. `confidence` is what makes prefix recall sa
 `zed` has the whole bucket to itself, while the same habit recalled under `z` competes with every
 other `z…` pick, so its override budget collapses on its own.
 
-## System actions
-
-`SystemActionCatalog` is a Foundation-only inventory of the macOS actions Tinycast exposes. Its
-stable entry IDs, labels, symbols and confirmation policy are covered by
-`Tests/system-action-test.swift`; platform side effects live separately in `SystemActionRunner`.
-`SystemActionCoordinator.runSystemAction(id:)` remains the one execution funnel — shared by palette activation and a
-global hotkey — hiding the floating palette before any confirmation or value dialog and surfacing
-permission-aware failures. With the palette closed it targets the frontmost app, so Hide Others and
-Quit All act on the same window a palette launch would have.
-
-System actions occupy their own launcher section and their own Settings pane. The empty-query publication
-order is applications, System Settings, quicklinks, snippets, system actions, custom
+The empty-query publication
+order is applications, System Settings, quicklinks, custom
 commands, then built-in commands; the sectioned view filters in that same order so the visible rows remain
 identical to the flat selection index.
-Search, favorites, visibility and learned ranking work through the normal `AppEntry` path, and every
-action is bindable to a global shortcut from Settings › System Actions
-(see [hotkeys.md](hotkeys.md)).
-
-Public AppKit, CoreAudio and workspace APIs are preferred. Actions without a stable public macOS API
-use fixed system tools, Apple Events, Accessibility, or a dynamically resolved Bluetooth power API.
-Those routes run only on explicit activation. Automation, Accessibility or Bluetooth permission is
-requested at first use, and denial produces an alert linking to the relevant System Settings pane.
-Toggle System Appearance changes macOS; Tinycast follows it only while its own Appearance is System.
-
-Restart, Shut Down, Log Out, Empty Trash and Quit All Applications confirm before execution: ↵ runs
-the action, Escape cancels. Every dialog is Tinycast's own: confirmations, failure reports and the Set
-Volume slider all render through `DialogController` rather than an `NSAlert`
-(see [ui.md](../ui.md#dialogs--hud)). Each confirmation carries the action's own icon — Restart shows
-`arrow.clockwise`, Empty Trash `trash.slash` — so the dialog is recognizably about the row that
-opened it. Volume and mute actions also show Tinycast's transient volume HUD, since macOS only draws
-its own for real media keys. Volume Up/Down walk a 5% grid (`VolumeLevel.stepped`, covered by
-`Tests/volume-test.swift`): an off-grid level snaps to the next line rather than past it, so from 37%
-up lands on 40% and down on 35%, and repeated presses stay on round numbers.
-
-An action whose effect is invisible reports back through a pill (`MessageHUDController`, the same one
-Custom Commands and Snippets confirm through) rather than finishing silently:
-`SystemActionRunner.run` returns a `SystemActionFeedback` naming the state it landed in
-(`Trash Emptied`, `Hidden Files Shown`, `Dark Appearance`, `Bluetooth Off`, `3 Disks Ejected`), and
-`AppCore` shows it with a `DialogTone` derived from the feedback's `isNoOp` flag: `.success` when
-something actually changed, `.neutral` when there was nothing to do, shown as the glyph trailing the
-message rather than a per-action icon, since the message already names the state. Actions that are
-their own confirmation, such as Show Desktop, Hide Others,
-Quit All and the power actions, return nothing. Volume and mute are the one case that stays on the
-palette's own box HUD, since that one has an actual level and number to show, not just a message.
-
-**Nothing-to-do is an outcome, not a failure.** Empty Trash asks Finder for `count items of trash`
-first and reports `Trash Is Already Empty`, because Finder raises an error when told to empty an empty
-Trash. The count deliberately goes through Finder instead of reading `~/.Trash` directly: that folder
-is TCC-protected, so an unprivileged read fails in a way indistinguishable from "empty", which would
-silently skip a real empty. Eject All Disks, Dismiss Notifications and Unhide All Apps report the same
-way when there is nothing to act on. Volume and mute fall back to the output's preferred stereo channels when the device exposes
-no master element (common on HDMI), and Toggle Mute parks the level at zero when there is no mute
-control at all. Multi-disk ejection takes every external or ejectable volume — a dock's fixed-media
-HDD reports as neither ejectable nor removable, so external alone qualifies — while excluding
-internal, network and root volumes, treats a sibling volume that the same physical eject already
-unmounted as done, counts a volume whose eject errored but whose mount is gone as ejected, and
-reports remaining failures together.
-Preference-backed toggles refuse to write when the current value can't be read, and notification
-dismissal matches Accessibility subroles rather than English labels.
+Search, favorites, visibility and learned ranking work through the normal `AppEntry` path.
 
 ## Quicklinks
 
@@ -504,18 +450,6 @@ Only the display name is indexed. Activation resolves the stable UUID through th
 to `ShellCommandRunner`; see [custom-commands.md](custom-commands.md) for persistence, hotkeys and
 execution semantics.
 
-## Notes commands
-
-`CommandID.showNotes`, `.createNote`, and `.searchNotes` publish the three Notes entry points while the
-feature is enabled. Activation hides the palette without restoring focus and calls the matching
-`NotesCoordinator` action; each `HotKeyAction` reaches that same boundary and rechecks enablement.
-
-`AppIndex` projects the three commands together from `notesEnabled`, independently of File Search and
-Quicklinks. They represent collection actions rather than individual notes, so Notes adds no
-`AppEntry.Kind` or launcher section — it owns them through `SettingsTab.ownedCommands` instead, which
-is what keeps them out of Settings › Commands while they stay in the launcher's Commands section. See
-[notes.md](notes.md).
-
 ## Pane-owned commands
 
 `SettingsTab.ownedCommands` names, per pane, the commands that pane lists itself. `CommandID.owner`
@@ -525,8 +459,8 @@ and three places read it: `FeatureCommandsSection` draws the pane's rows from it
 category gate for it in both `isVisible` and `allowsHotKey`. Stamping the entry rather than sniffing its
 id is what keeps "which pane owns this" out of the entry-ID namespace.
 
-Seven panes own commands today — File Search, Notes, Snippets, Navigation,
-Clipboard, Emoji and Quicklinks. What is left in Settings › Commands is
+Four panes own commands today — File Search, Navigation,
+Clipboard and Quicklinks. What is left in Settings › Commands is
 the set no feature switch governs: Calculator History, the three backup commands, Check
 for Updates, Settings, About, Support and Quit.
 
@@ -628,8 +562,8 @@ favorite, alias and learned ranking survive the round trip, and its shortcut kee
 
 The row is offered only where Settings can undo it, and `KindDescriptor.canHideFromSearch` is that
 rule — per kind, and a new `Kind` case has to answer it to compile. Applications, System Settings,
-Commands, System Actions, Window Commands, Window Layouts and extension commands each
-draw a per-row checkbox in their pane, so they carry it. Custom commands, quicklinks and snippets do
+Commands and extension commands each
+draw a per-row checkbox in their pane, so they carry it. Custom commands and quicklinks do
 not: their panes list a record with its own switches, not a launcher checkbox — a hide nothing in
 Settings can visibly undo is a trap, not a shortcut.
 `AppActionsMenu` adds the query-driven guard the favorites row already uses: a typed URL lives only
@@ -670,12 +604,6 @@ running dot and the availability of the running-only actions:
   user leaves standing, relaunches nothing and leaves that app running. The palette dismisses the
   moment the quit is asked for and never restores focus — either the relaunch takes it, or the app
   that refused the quit is the one asking for it.
-- **Quit All Applications** a system action. `AppLauncher.quitAllTargets()` is the
-  policy (every `.regular` app except Finder — `terminate()` only relaunches it — and Tinycast,
-  excluded by PID because About/Settings temporarily flips it to `.regular`). `SystemActionCoordinator.quitAllApps()`
-  resolves that list **once**, confirms it with an `NSAlert`, then terminates exactly what was
-  confirmed. The palette hides before the alert — it is a floating panel and would sit above it.
-
 Both quits are graceful `NSRunningApplication.terminate()`, so an app with unsaved work still puts up
 its own save sheet.
 

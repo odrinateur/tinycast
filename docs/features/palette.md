@@ -95,19 +95,15 @@ answers through `perform(_:at:)`, so a new chord never adds a cast to the shell.
 | `.launcher` | `LauncherScreen` | `LauncherList` |
 | `.clipboard` | `ClipboardScreen` | `ClipboardList` + preview |
 | `.calculatorHistory` | `CalculatorHistoryScreen` | `CalculatorHistoryList` |
-| `.emoji` | `EmojiScreen` | `EmojiGridView` |
 | `.fileSearch` | `FileSearchScreen` | `FileSearchList` (see [file-search.md](file-search.md)) |
-| `.uninstall` | `UninstallScreen` | `UninstallList` (see [uninstall.md](uninstall.md)) |
 | `.quicklinks` | `QuicklinkListScreen` | `QuicklinkList` + preview (see [quicklinks.md](quicklinks.md#search-quicklinks)) |
-| `.snippets` | `SnippetsScreen` | `SnippetsList` + preview (see [snippets.md](snippets.md#search-snippets)) |
 | `.customCommandArguments` | `CustomCommandArgumentsScreen` | `CustomCommandArgumentsView` (see [custom-commands.md](custom-commands.md#arguments)) |
 | `.extensionCommand` | `ExtensionCommandScreen` | `ExtensionCommandView` (see [extensions.md](extensions.md)) |
 
 **Tab rings the two surfaces a reader opens directly — launcher → clipboard → launcher**
 — unless the screen claims it through `tabTarget(from:backwards:)` (an extension's `Form` walks its
 own fields), or the selected row declares arguments, in which case it walks those fields first (see
-below); every other mode stays off the ring, and is reached by a command or a global hotkey, with
-Uninstall only from a launcher app's Actions menu, scoped to that app.
+below); every other mode stays off the ring, and is reached by a command or a global hotkey.
 
 ### Navigation
 
@@ -167,16 +163,15 @@ dropped into a filter matches nothing. `.ask` is its own case rather than a `car
 the text is submitted, not seeded, and the hint reads the case back out (`== .ask`) instead of
 restating the rule.
 
-**A ring hop is a step, so Escape walks back out the way Tab came in** — launcher → chat → clipboard
-takes two presses to unwind, and the back chevron's tooltip stops promising a step it cannot take.
+**A ring hop is a step, so Escape walks back out the way Tab came in** — launcher → clipboard
+takes one press to unwind, and the back chevron's tooltip stops promising a step it cannot take.
 The launcher is the ring's root, so the hop that closes the ring resets the stack instead of stacking
 a third screen; ringing round forever therefore never grows the stack past two.
 
 `.customCommandArguments` — `PaletteMode.isArgumentForm` — is the one mode where the search field is
 not a search field: it _is_ the current argument's input, so its placeholder names that argument and ↵
 submits rather than activating a row. It has no rows, which is why `isArgumentForm` is what keeps the
-↵ pill drawn. Its state lives on `AppCore.customCommandArguments`, the way `.uninstall`'s target lives
-on `UninstallSession`, and leaving the mode cancels the pending run. A bare backspace steps back an
+↵ pill drawn. Its state lives on `AppCore.customCommandArguments`, and leaving the mode cancels the pending run. A bare backspace steps back an
 argument before it falls through to the usual back step; Escape erases the half-typed answer
 first, and a second press hides the palette, ending the pending work with it. **Quicklinks used to be
 the other half of this pair and no longer are** — they collect their values in the header instead, so
@@ -411,8 +406,8 @@ list under itself (Move Favorite Up/Down) is no exception, so no row ever runs a
 `PopoverMenuItem.startsSection` draws a separator with 6pt above and below it. That height joins the
 menu's exact sizing, but the separator takes no selection index, so navigation still walks only rows.
 Built-in action menus mark boundaries between opening or copying, managing the item, settings, and
-deletion. Menus offering one kind of action, such as calculator copies, color formats, or emoji
-transfers, keep their rows in one group.
+deletion. Menus offering one kind of action, such as calculator copies or color formats,
+keep their rows in one group.
 
 ### The menu's own window
 
@@ -486,9 +481,6 @@ handled in `PalettePanel.sendEvent` before `super` hands the event to the respon
   `onKeyPress(keys: ["."])` never fires. Pin (⌘.) therefore arrives through `onCommandShortcut`,
   which bumps `PaletteState.pinChordToken`; `RootPaletteView` observes that and resolves the row
   through the current screen, so **which** row gets pinned still comes from `screen.rows` alone.
-- **Emoji zoom chords.** `⌘0`, `⌘+` and `⌘-` take the same `onCommandShortcut` path on the emoji
-  screen, Shift allowed since `+` is a shifted `=`. They bump `PaletteState.emojiGridZoomToken`, and
-  `EmojiScreen.zoom` applies the same bounded change as its Actions rows.
 - **Chords the window server keeps for itself.** ⌘⎋ is the one that bites: macOS binds it before any
   app sees it, so unlike ⌘. there is no keystroke left for `sendEvent` to intercept — a handler in
   the responder chain compiles, runs never, and looks like a palette bug. `CommandEscapeTap` takes it
@@ -504,8 +496,7 @@ whether macOS has claimed the chord, before assuming the handler is wrong.
 
 ## Emacs navigation chords
 
-⌃N/⌃P and ⌃F/⌃B navigate exactly as ↓/↑ and →/← do — on the emoji grid all four step the selection,
-and everywhere else the horizontal pair falls through to the caret, which is what a native search field
+⌃N/⌃P and ⌃F/⌃B navigate exactly as ↓/↑ and →/← do — the horizontal pair falls through to the caret, which is what a native search field
 does.
 
 None of them reach `onKeyPress` on their own: AppKit's key-binding table hands the field editor
@@ -554,6 +545,6 @@ app:
 Both require the Accessibility permission (`Permissions.ensureAccessibility()`).
 
 The same show also mirrors that app into `PaletteState.pasteTarget` (a `PasteTarget`: localized
-name + bundle path), so Clipboard and Emoji can name it — the footer pill reads "Paste to Notes" and
+name + bundle path), so Clipboard can name it — the footer pill reads "Paste to …" and
 the ⌘K paste rows carry the app's icon. Resolved once per summon, never per render, and deliberately
 not cleared by `prepare` (pop-to-root resets the screen, not the target).

@@ -9,7 +9,6 @@ final class LauncherCoordinator {
     private let settingsCoordinator: SettingsCoordinator
     private let customCommandCoordinator: CustomCommandCoordinator
     private let quicklinkCoordinator: QuicklinkCoordinator
-    private let snippetCoordinator: SnippetCoordinator
     private let fileSearchCoordinator: FileSearchCoordinator
     private let menuSearchCoordinator: MenuSearchCoordinator
     private let extensionCoordinator: ExtensionCoordinator
@@ -23,7 +22,6 @@ final class LauncherCoordinator {
         settingsCoordinator: SettingsCoordinator,
         customCommandCoordinator: CustomCommandCoordinator,
         quicklinkCoordinator: QuicklinkCoordinator,
-        snippetCoordinator: SnippetCoordinator,
         fileSearchCoordinator: FileSearchCoordinator,
         menuSearchCoordinator: MenuSearchCoordinator,
         extensionCoordinator: ExtensionCoordinator,
@@ -35,7 +33,6 @@ final class LauncherCoordinator {
         self.settingsCoordinator = settingsCoordinator
         self.customCommandCoordinator = customCommandCoordinator
         self.quicklinkCoordinator = quicklinkCoordinator
-        self.snippetCoordinator = snippetCoordinator
         self.fileSearchCoordinator = fileSearchCoordinator
         self.menuSearchCoordinator = menuSearchCoordinator
         self.extensionCoordinator = extensionCoordinator
@@ -81,7 +78,6 @@ final class LauncherCoordinator {
             quicklinkCoordinator.openQuicklink(id: id, values: arguments)
             return
         }
-        let previous = windowController.previousTarget
         paletteCoordinator.hidePalette(restoreFocus: false)
         switch app.kind {
         case .application:
@@ -89,9 +85,6 @@ final class LauncherCoordinator {
         case .systemSettings:
             guard let bundleID = app.bundleID else { return }
             AppLauncher.openSettingsPane(bundleID: bundleID)
-        case .snippet:
-            let snippetID = String(app.id.dropFirst("snippet:".count))
-            snippetCoordinator.expandSnippet(id: snippetID, target: previous)
         case .command, .customCommand,
             .quicklink, .extensionCommand:
             break  // handled above
@@ -113,11 +106,6 @@ final class LauncherCoordinator {
             break  // Query-driven: each runs where the typed text is, never through this funnel.
         case .searchQuicklinks:
             paletteCoordinator.togglePalette(mode: .quicklinks)
-        case .searchSnippets:
-            snippetCoordinator.showSnippets()
-        case .createSnippet:
-            dismissPalette()
-            snippetCoordinator.editSnippet(nil)
         case .createQuicklink:
             dismissPalette()
             quicklinkCoordinator.editQuicklink(nil)

@@ -37,11 +37,6 @@ struct DialogView: View {
                 Spacer(minLength: 0)
             }
 
-            switch request.accessory {
-            case .snippetArguments(let arguments): SnippetArgumentFields(state: arguments)
-            case nil: EmptyView()
-            }
-
             HStack(spacing: Theme.Spacing.md) {
                 Spacer(minLength: 0)
                 ForEach(visualOrder, id: \.self) { index in

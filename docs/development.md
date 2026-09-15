@@ -49,8 +49,8 @@ executable name stays fixed even when release builds override the app's product 
 
 Debug builds are a separate channel: **`Tinycast Dev.app`**, bundle id `com.tinycast.app.dev`. Every
 persisted thing is keyed by bundle id — `~/Library/Preferences/<id>.plist` (settings and hotkey
-bindings), `~/Library/Application Support/<id>/` (the onboarding marker, Notes, snippets, quicklinks,
-clipboard history, calculator history, launch ranking and frequent emoji),
+bindings), `~/Library/Application Support/<id>/` (the onboarding marker, quicklinks,
+clipboard history, calculator history and launch ranking),
 `~/Library/Caches/<id>/` (exchange rates, the update check, staged downloads), the `SMAppService`
 login item, and the Accessibility / Input Monitoring (TCC) grants — so a local build can neither read
 nor clobber an installed app's state, and both run side by side.
@@ -144,8 +144,7 @@ The comment policy in [standards.md](standards.md#comments) is deliberately not 
 and this script cannot disagree. `.swift-format` at the repo root tunes it to this tree; without it the
 stock config defaults to 2-space indent and rewrites all 200 files.
 
-Every `*.generated.swift` file is excluded: formatting one is hand-editing it, and the next
-`node Scripts/gen-emoji.js` would revert it. swift-format also refuses any file that does not parse, so
+Every `*.generated.swift` file is excluded: formatting one is hand-editing it. swift-format also refuses any file that does not parse, so
 a failure from either command is a syntax error rather than a tooling problem — and it is why ⌘S looks
 like it does nothing while a file is mid-edit with unbalanced braces.
 
@@ -168,11 +167,10 @@ finding out from a review.
 
 ## Generated data
 
-Three Swift files are emitted by scripts and must never be hand-edited. Each downloads its source, so
+Two Swift files are emitted by scripts and must never be hand-edited. Each downloads its source, so
 run them online, then commit the result:
 
 ```sh
-node Scripts/gen-emoji.js            # -> Tinycast/Features/Emoji/Model/EmojiData.generated.swift
 node Scripts/gen-currencies.js       # -> Tinycast/Features/Calculator/Model/CurrencyData.generated.swift
 node Scripts/gen-countries.js        # -> Tinycast/Features/Calculator/Model/CountryZoneData.generated.swift
 ```

@@ -110,7 +110,7 @@ enum SettingsSearchCatalog {
     static let entries: [SettingsSearchEntry] =
         general + applications + systemSettings
         + commands + quicklinks + fallbacks + fileSearch
-        + snippets + navigation + clipboard
+        + navigation + clipboard
         + extensions + permissions + backup + about
 
     private static let general: [SettingsSearchEntry] = [
@@ -258,24 +258,6 @@ enum SettingsSearchCatalog {
         .init(
             group: .fileSearchIgnorePatterns, "Ignore Patterns",
             keywords: ["exclude", "glob", "node_modules", "skip"])
-    ]
-
-    private static let snippets: [SettingsSearchEntry] = [
-        .init(
-            pane: .snippets,
-            keywords: ["expansion", "keyword", "text replacement", "template"]),
-        .init(
-            .snippetsSnippets, "Enable snippets",
-            keywords: ["expansion", "keystrokes", "accessibility"]),
-        .init(
-            group: .snippetsCommands, "Snippet commands",
-            keywords: ["shortcut", "hotkey", "launcher", "browser"]),
-        .init(
-            .snippetsLibrary, "New Snippet",
-            keywords: ["add", "keyword", "expansion"]),
-        .init(
-            .snippetsLibrary, "Snippets Folder",
-            keywords: ["reveal", "finder", "markdown", "files"])
     ]
 
     private static let navigation: [SettingsSearchEntry] = [

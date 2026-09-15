@@ -3,8 +3,8 @@
 Export and import of Tinycast's own data as a single `.tinycast` file, plus the entry point for
 importing a Raycast export. The feature lives in `Features/Backup/`.
 
-A backup carries five independently selectable categories, ticked on export and again on import:
-**Settings & Shortcuts**, **Clipboard History**, **Snippets**, **Notes** and **Launcher Learning**.
+A backup carries three independently selectable categories, ticked on export and again on import:
+**Settings & Shortcuts**, **Clipboard History** and **Launcher Learning**.
 
 ## Invariants
 
@@ -66,9 +66,7 @@ manifest.json              format, app version, createdAt, per-category counts
 settings.json              SettingsBackup, exactly as it encoded before
 clipboard/items.jsonl      one clip per line
 clipboard/images/<uuid>.png
-snippets/<name>.md         copied verbatim
-notes/<name>.md            copied verbatim
-learning/{ranking,emoji,calculator}.json
+learning/{ranking,calculator}.json
 ```
 
 A category the user didn't tick has no key in `counts` and no files in the archive, which is how the
@@ -130,10 +128,6 @@ Per category:
   UI. A row is deduped on its text, or on the path its image takes; the blob keeps the name the bundle
   gave it, so importing one file twice lands on the same path and adds nothing. Only a file inside
   `imagesDir` is one retention can ever reclaim, which is why the blob moves there before the row lands.
-- **Snippets** merge through `importSnippets`, deduped on name and body so importing the same file
-  twice doesn't leave a second copy of everything. Importing snippets does not enable snippets.
-- **Notes** land as new files through `NotesRepository.importNotes`, which suffixes a title that is
-  already taken rather than overwriting it.
 - **Learning** replaces. Merging two Macs' frecency tables produces a table describing neither.
 
 An `id` never travels with a clip: `items.id` is `UNIQUE`, so a re-import minting fresh identities is

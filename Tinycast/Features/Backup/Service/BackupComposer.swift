@@ -9,7 +9,6 @@ enum BackupComposer {
         var appVersion: String
         var settings: Data?
         var clipboardDatabase: URL?
-        var snippetsDirectory: URL?
         var learning: [BackupBundle.LearningPart: Data] = [:]
         var learningRecords = 0
     }
@@ -29,9 +28,6 @@ enum BackupComposer {
             plan.settings = try? SettingsBackup.gather(from: core).encoded()
         }
         if categories.contains(.clipboard) { plan.clipboardDatabase = core.clipboardStore.dbURL }
-        if categories.contains(.snippets) {
-            plan.snippetsDirectory = core.snippetsStore.snippetsDirectory
-        }
         if categories.contains(.learning) {
             // From memory, not the files: the ranking store persists asynchronously.
             let encoder = BackupBundle.encoder
@@ -57,10 +53,6 @@ enum BackupComposer {
             let outcome = try writeClipboard(from: database, into: bundle)
             counts[BackupCategory.clipboard.rawValue] = outcome.written
             missingImages = outcome.missing
-        }
-        if let directory = plan.snippetsDirectory {
-            counts[BackupCategory.snippets.rawValue] = try copyDocuments(
-                from: directory, to: bundle.snippetsDirectory)
         }
         if !plan.learning.isEmpty {
             for (part, data) in plan.learning { try bundle.write(data, to: bundle.learningURL(part)) }

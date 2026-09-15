@@ -58,8 +58,8 @@ before the placeholders are resolved.
 
 ## Placeholders
 
-Quicklinks reuse Tinycast's one template engine — the same
-[`SnippetTemplateEngine`](snippets.md#template-tokens) snippets use, so every token and every modifier
+Quicklinks reuse Tinycast's one template engine —
+`TextInjection/Service/SnippetTemplateEngine.swift` — so every token and every modifier
 is available and there is no second parser to keep in sync. `{cursor}` and `{snippet:…}` are text
 concerns with nothing to resolve against in a destination, so they are left literal.
 
@@ -68,7 +68,7 @@ https://google.com/search?q={argument}
 https://github.com/search?q={argument name="Repository"}
 https://translate.google.com/?text={selection}
 https://chat.openai.com/?q={clipboard}
-~/Notes/{date format="yyyy-MM-dd"}.md
+~/Documents/{date format="yyyy-MM-dd"}.md
 ```
 
 **Values going into a URL or deeplink are percent-encoded automatically**, so a search term with a
@@ -118,7 +118,7 @@ what lets the strip be drawn without capturing anything.
 `openQuicklink(id:forcingDefaultApp:values:)` is the single funnel, and it captures the expansion
 context on **every** call rather than holding one across a session, so `{clipboard}`, `{selection}` and
 `{date}` are read at the moment the link opens. Reached from a global shortcut with the palette closed
-too: the frontmost app is recorded first, the way `runSystemAction` does, so the selection comes from
+too: the frontmost app is recorded first, so the selection comes from
 the window the user was actually in.
 
 ↵ with the chips filled opens straight away, wherever the row was reached from — root search carries
@@ -156,8 +156,8 @@ Tinycast's own dialog and leaves no partial state.
 
 ## Search and pinning
 
-Quicklinks are their own `AppEntry.Kind`, their own `AppIndex` slice and their own launcher section,
-between System Settings and Snippets. Only the **name** is indexed; the destination is not searchable
+Quicklinks are their own `AppEntry.Kind`, their own `AppIndex` slice and their own launcher section.
+Only the **name** is indexed; the destination is not searchable
 (a URL is a subsequence of almost any query) — beside the name, a quicklink answers to whatever
 [user alias](launcher.md#user-aliases) its Settings row carries, which is why a hidden one dims the
 field. Per-quicklink "Show in root search" filters the slice;
@@ -177,7 +177,7 @@ feature. The Search Quicklinks screen gives pins their own section, like the cli
 ## Search Quicklinks
 
 `PaletteMode.quicklinks` is a sub-screen reached from the `Search Quicklinks` command. It is shaped
-like Search Snippets and the clipboard: the list on the left, a **detail pane** on the right showing
+like the clipboard: the list on the left, a **detail pane** on the right showing
 the selected quicklink's glyph over an Information block (name, link, the app it opens with, its
 shortcut, when it was created). Like Calculator History it stays out of the Tab cycle and exits via the
 back chevron or a bare backspace.

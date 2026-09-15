@@ -6,7 +6,6 @@ struct AppEntry: Identifiable, Hashable, Sendable {
         case systemSettings
         case command
         case customCommand
-        case snippet
         case quicklink
         case extensionCommand
 
@@ -32,11 +31,6 @@ struct AppEntry: Identifiable, Hashable, Sendable {
                     label: "Custom Command", sectionTitle: "Custom Commands",
                     openVerb: "Run Custom Command", canHideFromSearch: false,
                     canRevealInFinder: false, isSymbolIcon: true)
-            case .snippet:
-                return KindDescriptor(
-                    label: "Snippet", sectionTitle: "Snippets",
-                    openVerb: "Paste Snippet", canHideFromSearch: false,
-                    canRevealInFinder: true, isSymbolIcon: true)
             case .quicklink:
                 return KindDescriptor(
                     label: "Quicklink", sectionTitle: "Quicklinks",
@@ -74,7 +68,7 @@ struct AppEntry: Identifiable, Hashable, Sendable {
     var subtitle: String?
     /// Background-refresh dot for a scheduled extension command; nil everywhere else.
     var backgroundRefresh: ExtensionRefreshState?
-    /// Other names as strong as the display name: a snippet's keyword, the name in an Info.plist.
+    /// Other names as strong as the display name: the name in an Info.plist.
     var matchAliases: [String] = []
     /// Per-item symbol, for the one kind whose glyph is the user's choice. Nil elsewhere.
     var symbolName: String?
@@ -134,7 +128,7 @@ struct AppEntry: Identifiable, Hashable, Sendable {
             return CustomCommand.id(fromEntryID: id).map { .customCommand(id: $0) }
         case .quicklink:
             return Quicklink.id(fromEntryID: id).map { .quicklink(id: $0) }
-        case .snippet, .extensionCommand:
+        case .extensionCommand:
             return nil
         }
     }
@@ -156,7 +150,6 @@ struct AppEntry: Identifiable, Hashable, Sendable {
     private var kindSymbol: String {
         switch kind {
         case .quicklink: return Quicklink.sfSymbol
-        case .snippet: return "text.quote"
         case .customCommand: return CustomCommand.sfSymbol
         case .command: return CommandCatalog.command(for: self)?.sfSymbol ?? "questionmark"
         case .application, .systemSettings, .extensionCommand: return "questionmark"
@@ -202,8 +195,6 @@ extension AppEntry.Kind {
 @Observable
 final class AppIndex {
     private(set) var apps: [AppEntry] = []
-
-    private var snippetEntries: [AppEntry] = []
 
     private struct MatchKey: Equatable {
         let query: String
@@ -302,25 +293,6 @@ final class AppIndex {
     func setExtensionCommands(_ entries: [AppEntry]) {
         guard entries != extensionEntries else { return }
         extensionEntries = entries
-        publishEntries()
-    }
-
-    func updateSnippets(_ records: [StoredSnippet]) {
-        let entries =
-            records
-            .filter { $0.snippet.isEnabled }
-            .map { record in
-                AppEntry(
-                    id: "snippet:\(record.id)",
-                    name: record.snippet.name,
-                    url: record.fileURL,
-                    bundleID: nil,
-                    kind: .snippet,
-                    matchAliases: [record.snippet.keyword].compactMap { $0 })
-            }
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        guard entries != snippetEntries else { return }
-        snippetEntries = entries
         publishEntries()
     }
 
@@ -429,7 +401,7 @@ final class AppIndex {
         let updated =
             discoveredEntries
             +             Self.named(
-                extensionEntries + quicklinkEntries + snippetEntries
+                extensionEntries + quicklinkEntries
                     + customCommandEntries
                     + commandEntries)
         guard updated != apps else { return }

@@ -15,8 +15,6 @@ final class QuicklinkCoordinator {
     private let windowController: PaletteWindowController
     private let paletteCoordinator: PaletteCoordinator
     private let settingsCoordinator: SettingsCoordinator
-    /// `{clipboard offset=N}` reads the history a snippet expansion does; one owner, one depth.
-    private let clipboardHistory: @MainActor () -> [String]
     /// Dialogs, the HUD, and the `pendingQuicklinkEdit` handoff to the Settings pane.
     private unowned let core: AppCore
 
@@ -36,7 +34,6 @@ final class QuicklinkCoordinator {
         windowController: PaletteWindowController,
         paletteCoordinator: PaletteCoordinator,
         settingsCoordinator: SettingsCoordinator,
-        clipboardHistory: @escaping @MainActor () -> [String],
         core: AppCore
     ) {
         self.store = store
@@ -51,7 +48,6 @@ final class QuicklinkCoordinator {
         self.windowController = windowController
         self.paletteCoordinator = paletteCoordinator
         self.settingsCoordinator = settingsCoordinator
-        self.clipboardHistory = clipboardHistory
         self.core = core
     }
 
@@ -114,6 +110,22 @@ final class QuicklinkCoordinator {
             let first = SnippetTemplateEngine.declaredArguments(in: quicklink.link).first
         else { return openQuicklink(id: id) }
         openQuicklink(id: id, values: [first.name: seed])
+    }
+
+    /// How far back `{clipboard offset=N}` reaches.
+    private static let clipboardHistoryDepth = 20
+
+    /// Clipboard history, most recent first, for `{clipboard}` reads in a link.
+    private func clipboardHistory() -> [String] {
+        var history = core.clipboardStore.items
+            .filter { $0.kind == .text }
+            .sorted { $0.createdAt > $1.createdAt }
+            .prefix(Self.clipboardHistoryDepth)
+            .compactMap(\.text)
+        if let current = NSPasteboard.general.string(forType: .string), current != history.first {
+            history.insert(current, at: 0)
+        }
+        return history
     }
 
     /// `{selection}` promoted to a field when unreadable and the setting says ask.

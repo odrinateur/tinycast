@@ -15,7 +15,6 @@ struct RootPaletteView: View {
     /// Observed so the join card's countdown redraws on the minute boundary.
     @Environment(QuicklinkStore.self) private var quicklinks
     @Environment(CustomCommandArgumentSession.self) private var customCommandArguments
-    @Environment(SnippetsStore.self) private var snippets
     @Environment(ExtensionManager.self) private var extensions
     @Environment(AppSettings.self) private var settings
     @Environment(\.metrics) private var metrics
@@ -55,9 +54,6 @@ struct RootPaletteView: View {
             return QuicklinkListScreen(
                 store: quicklinks, core: core, vm: vm, openActions: openActions,
                 openArgumentOptions: openArgumentOptions)
-        case .snippets:
-            return SnippetsScreen(
-                store: snippets, core: core, vm: vm, openActions: openActions)
         case .fileSearch:
             return FileSearchScreen(
                 session: fileSearch, core: core, vm: vm, openActions: openActions)

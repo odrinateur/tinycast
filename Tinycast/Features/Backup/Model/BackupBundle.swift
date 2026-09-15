@@ -29,7 +29,6 @@ struct BackupBundle: Sendable {
     var clipboardImagesDirectory: URL {
         directory(for: .clipboard).appendingPathComponent("images", isDirectory: true)
     }
-    var snippetsDirectory: URL { directory(for: .snippets) }
 
     func learningURL(_ part: LearningPart) -> URL {
         directory(for: .learning).appendingPathComponent("\(part.rawValue).json")
@@ -41,7 +40,6 @@ struct BackupBundle: Sendable {
     func prepare(_ categories: Set<BackupCategory>) throws {
         try create(root)
         if categories.contains(.clipboard) { try create(clipboardImagesDirectory) }
-        if categories.contains(.snippets) { try create(snippetsDirectory) }
         if categories.contains(.learning) { try create(directory(for: .learning)) }
     }
 

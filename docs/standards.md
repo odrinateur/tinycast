@@ -50,7 +50,7 @@ Full detail in [architecture.md](architecture.md); the rules a new feature has t
 
 Feature work reaches the app through a **coordinator**, called by `AppCore` and by views via
 `@Environment`. Confirmation gates live in the coordinator, never in the runner — which is what lets
-`ShellCommandRunner` and `SystemActionRunner` stay harness-compilable while the "are you sure?" step
+`ShellCommandRunner` stays harness-compilable while the "are you sure?" step
 remains unbypassable.
 
 ## Naming

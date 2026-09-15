@@ -8,7 +8,7 @@ between them are both gone, deleted rather than carried.
 
 - **`RaycastDecoder` stays platform-UI-free** so `raycast-test` compiles it standalone. Which is why the
   decoder returns the payload's own bytes and `RaycastImportReader`, not the decoder, validates them
-  against `PopToRootTimeout` / `EmojiSkinTone` / `HyperKeyPhysicalKey` / `KeyShortcut`.
+  against `PopToRootTimeout` / `HyperKeyPhysicalKey` / `KeyShortcut`.
 - **Recognition is the container signature and nothing else.** `RaycastDecoder.isExport` needs no
   passphrase, so the Backup pane runs it the moment a file is chosen and a wrong passphrase reports a
   wrong passphrase instead of "not a Raycast export".
@@ -30,7 +30,7 @@ key  = scrypt(passphrase, salt, N=16384, r=8, p=1, dkLen=32)
 
 The header carries `schemaVersion`, `iv` and `salt`, hex-encoded, 16 bytes each. `schemaVersion` is
 Raycast's own container number and is **3**; anything else is rejected. The payload is category-keyed
-JSON: `settings`, `clipboardHistory`, a top-level `snippets` whose entries name themselves `title`,
+JSON: `settings`, `clipboardHistory`,
 and a `quicklinks` object holding `quicklinks` plus `openWithPlatforms`.
 
 Raycast encrypts even when the user never chose a password — it generates one and stores it in the

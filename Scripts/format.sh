@@ -12,8 +12,7 @@ FORMAT=$(xcrun --find swift-format 2>/dev/null)
     exit 2
 }
 
-# Generated files are never hand-edited, and formatting one is exactly that — the next
-# `node Scripts/gen-emoji.js` would revert it.
+# Generated files are never hand-edited, and formatting one is exactly that.
 # Built with a read loop rather than `mapfile`, which is bash 4 — macOS ships bash 3.2.
 files=()
 while IFS= read -r f; do files+=("$f"); done < <(

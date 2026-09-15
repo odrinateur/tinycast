@@ -47,10 +47,10 @@ These are the things that quietly break the look if changed. Preserve them unles
 - **Don't use the native scroll edge effect.** Inside the panel it renders a hard-bounded rectangle. Lists hide behind the solid bars with no mask — `edgeDissolve()` is a no-op, kept so call sites need no edits. This is a rule about the borderless panels; the Settings window is a titled `NSWindow` whose system titlebar draws the band itself (see "Settings").
 - **Test over a light desktop.** Transparency and corner masking bugs only show over bright wallpaper. Dark wallpaper hides them.
 - **No `NSAlert`, no `NSSlider`, no system popovers.** Every confirmation, failure report, value prompt and transient readout is Tinycast's own SwiftUI surface (see "Dialogs & HUD"). An Aqua alert on an alpha-over-vibrancy app reads as a different product, and its `runModal` run loop keeps Carbon hotkeys firing underneath.
-- **A dialog has three independent axes; never let one infer another.** The **icon** (`DialogRequest.symbol`, required) is always the *subject's* own glyph — a command being confirmed uses its `SystemAction.sfSymbol`, so the Restart dialog shows the same icon as the Restart row. Tone never picks an icon. The **tone** (`DialogTone`: `.neutral` / `.success` / `.danger`) tints only that glyph. The **button** takes its color from `DialogAction.Role` (`.standard` white / `.destructive` red / `.cancel` secondary), so a red-glyph security warning can still carry a plain white button — as "Import executable commands?" does.
+- **A dialog has three independent axes; never let one infer another.** The **icon** (`DialogRequest.symbol`, required) is always the *subject's* own glyph — a custom command being confirmed uses `terminal`, the same glyph as its launcher row. Tone never picks an icon. The **tone** (`DialogTone`: `.neutral` / `.success` / `.danger`) tints only that glyph. The **button** takes its color from `DialogAction.Role` (`.standard` white / `.destructive` red / `.cancel` secondary), so a red-glyph security warning can still carry a plain white button — as "Import executable commands?" does.
 - **Resolve every glyph through `SymbolImage`, not `Image(systemName:)`.** Some catalog symbols are bundled assets in `Assets.xcassets` (`toggleBluetooth`), and `Image(systemName:)` silently renders nothing for those.
 - **↵ runs the primary action, Escape cancels, and Cancel always renders leading** (the left button), matching macOS convention. A button never prints its key cap; hovering it shows a `Tooltip` instead, styled like the palette's own keycap chips.
-- **A transient readout is a HUD, not a dialog.** `VolumeHUDController`'s box is volume and mute only, since that one needs an actual level and number; every other success or info confirmation goes through `MessageHUDController`'s pill, whose trailing glyph *is* its `DialogTone`. A pill has no subject to name, so the icon rule above does not apply to it — and that mapping stays file-scoped so nothing can reach for it when building a `DialogRequest`. A new HUD means a new presenter, not a second shape bolted onto an existing controller.
+- **A transient readout is a HUD, not a dialog.** Every success or info confirmation goes through `MessageHUDController`'s pill, whose trailing glyph *is* its `DialogTone`. A pill has no subject to name, so the icon rule above does not apply to it — and that mapping stays file-scoped so nothing can reach for it when building a `DialogRequest`. A new HUD means a new presenter, not a second shape bolted onto an existing controller.
 - **Flat fills for controls; content takes the panel recipe.** Floating controls (action capsule, menu circle, `PopoverMenu`, dialog buttons) use the solid `popSurface` fill with a hairline `border` edge — no lensing, no translucency. Both HUDs use `panelScrim` → `VisualEffectView()` → `clipShape`, exactly like a dialog.
 
 ---
@@ -66,7 +66,7 @@ Add a token rather than a magic number when introducing a new value.
 
 `AppSettings.interfaceSize` scales the palette and the surfaces that float with it — the ⌘K menu, the
 extension list panel, dialogs and HUDs. Settings, Onboarding,
-Support, Update, About and Notes never scale.
+Support, Update and About never scale.
 
 `DesignSystem/InterfaceMetrics.swift` stores **only a scale** and derives every value from the `Theme`
 literal, so `Theme` stays the one place a number is written down. **In any view a scaled surface can
@@ -93,8 +93,7 @@ Row content insets are `md`; list horizontal inset is `md`; the search icon alig
 
 Section-header rhythm has two dedicated tokens: `sectionHeaderBottom` (header → first row) and
 `sectionSpacing` (gap above every header **except the list's first**, which reads as the previous
-section's closing padding). The emoji grid uses the roomier `emojiSectionSpacing` between its tile
-groups. See "Section headers" below.
+section's closing padding. See "Section headers" below.
 
 ### Radius (`Theme.Radius`)
 
@@ -106,8 +105,6 @@ the way a native pop-up button does — a rectangle, not a pill.
 **The footer actions are bare buttons, not a control.** No capsule, no rectangle, no fill:
 the primary action and the Actions toggle sit directly on the panel, parted by a `separator`
 divider. Any container there reads as a second surface floating over the footer.
-
-Notes has no corner of its own: it clips to `panel`, so the two floating surfaces read as siblings.
 
 `dialog` sits between `menuPanel` and `panel` so a dialog reads as a smaller sibling of the palette, not a second palette.
 
@@ -142,7 +139,7 @@ round every row to 18 for no reason.
 If a pair ever does need closing, **move the gap, not the curve** — but only once you have checked
 what else is anchored to that gap. A radius is shared by surfaces across several features, a
 placement constant is not: `Radius.menuPanel` alone dresses the ⌘K menu, the extensions actions
-panel, the shortcut-recorder callout and the Notes switcher, and `menuRow` is deliberately equal to
+panel and the shortcut-recorder callout, and `menuRow` is deliberately equal to
 `row` so a row pill is one shape everywhere.
 
 ### Size (`Theme.Size`)
@@ -150,15 +147,10 @@ panel, the shortcut-recorder callout and the Notes switcher, and `menuRow` is de
 `panelWidth 750` · `panelHeight 475` · `headerHeight 48` · `bottomBarHeight 46` · `barButtonHeight 28` ·
 `rowIcon 24` · `keyCap 18` · `recorderKeyCap 16` · `menuButton 36` · `clipboardListWidth 290` ·
 `menuWidth 276` · `clipboardFilterMenuWidth 200` · `fileSearchFilterMenuWidth 200` ·
-`emojiCategoryMenuWidth 220` · `menuIcon 20` ·
-`emojiGridInset 16` ·
+`menuIcon 20` ·
 `menuOverflowFade 30` ·
 `settingsSidebar 215` · `settingsRowIcon 20` · `dialogWidth 420` · `dialogIcon 32` · `hudWidth 200` ·
-`hudHeight 100` · `volumeTrackHeight 6` · `volumeKnob 16` · `volumeReadout 38`
-
-Notes adds `noteWindow 520×420` (opening size on a first run only), `noteWindowMinimum 320×220`,
-`noteTitlebar 44`, `noteTitleInset 120`, `noteEditorInset 16`, `noteSearchHeight 34`,
-`noteFooterHeight 28`, `noteGlyph 16`, and `noteEmptyGlyph 28`.
+`hudHeight 100`
 
 `keyCap` sizes the palette's keycap chips; `recorderKeyCap` (both size and radius) is the intentionally-smaller Settings shortcut-recorder chip.
 
@@ -189,7 +181,7 @@ shipped. Light is the same stop with the ink inverted, and is the only column op
 | `separator`       | white 0.10     | black 0.12     | a list↔preview hairline (clipboard, file search) |
 | `controlSurface`  | white 0.10     | black 0.08     | filled keycaps, glyph tiles                      |
 | `border`          | white 0.20     | black 0.18     | outlined keycap borders                          |
-| `textPrimary`     | white 1.00     | black 1.00     | search text and caret, volume fill and knob      |
+| `textPrimary`     | white 1.00     | black 1.00     | search text and caret                            |
 | `textSecondary`   | white 0.60     | black 0.60     | secondary labels                                 |
 | `textTertiary`    | white 0.40     | black 0.42     | placeholders, trailing kind labels               |
 | `menuSymbol`      | white 0.70     | black 0.70     | native popover-menu symbols                      |
@@ -198,7 +190,6 @@ shipped. Light is the same stop with the ink inverted, and is the only column op
 | `cardFill`        | white 0.05     | black 0.04     | settings/calc card fill                          |
 | `cardStroke`      | white 0.10     | black 0.10     | settings/calc card border + inset dividers       |
 | `popSurface`      | gray 0.30 solid | gray 1.00 solid | flat popover/control fill, replaces glass      |
-| `noteText`        | white 0.90     | black 0.85     | Notes Markdown source                            |
 | `dropGuide`       | white 0.35     | black 0.35     | the palette's drop guides while dragging         |
 
 `popSurface` is solid in **both** — floating controls sit opaque over panel content with
@@ -227,53 +218,6 @@ Source: `Palette/PalettePanel.swift`, `Palette/RootPaletteView.swift`.
 
 ---
 
-## Notes panel
-
-Source: `Features/Notes/UI/`.
-
-Notes is a sibling surface, not a palette mode. `NotesPanel` is a **titled**, resizable,
-non-activating panel — AppKit draws the traffic lights, the drag and the resize — but it keeps the
-palette's transparent recipe and deliberately does not dismiss on resign-key. `NotesView`'s root
-applies `panelScrim` → `VisualEffectView()` → one continuous **`panel`** corner clip, so
-Notes and the palette round identically. The clip is larger than the theme frame's own corner, so it
-is what shows; `invalidateShadow()` on every show recuts the shadow to match.
-
-The title bar is a 44-point band, and both halves of it are deliberate. `titleVisibility` is
-`.hidden` and `NotesView` draws the title itself, centred on the **window**: a titlebar accessory
-drops `NSThemeFrame` off its centred-title layout, so the native title would sit beside the traffic
-lights. The drawn title is not hit-testable, so clicks fall through to the real title bar and drag
-the window. The three actions cannot do that, so they live in an `NSTitlebarAccessoryViewController`
-at `.trailing` — `NoteTitlebarActions`, the launcher's footer capsule (`BarButton` in a
-`frosted(in: Capsule())`) with glyphs in place of pills. Its 44-point height is what sizes the band.
-
-`NotesWindowController` no longer computes frames: the user owns the size, and AppKit autosaves both
-position and size under `"Notes Window"`. The window shows exactly one surface at a time — editor,
-switcher, or the "No Notes" empty state — and the character count is part of the editor surface, so
-it never appears without a note.
-
-The header keeps a fixed slot for status so Saving, Saved, failure, and conflict symbols cannot move
-the controls. Failure and conflict symbols can be clicked to reopen their recovery report after a
-dismissal. A title click opens the in-window note switcher; dragging the title, note icon, or otherwise
-empty header moves the panel after a three-point threshold. Create, Reveal, Hide, and actionable status
-remain click-only controls. Escape closes the switcher before hiding, while Command-W and the hide
-control order the panel out. Show Notes only shows or focuses; focus loss leaves the panel visible.
-
-The editor is one native TextKit 2 surface. Its string is the canonical Markdown source, using one
-system font and the `noteText` color. Markdown markers remain visible and receive no parsing, rendering,
-formatting controls, task overlays, or link behavior. AppKit owns editing, undo, selection, Find, and
-marked text.
-
-The switcher is its own glass panel over the editor, sized to its list up to a 240-point ceiling and
-never resizing the note window. Its plain search field and
-keyboard-navigable rows use the shared selection/hover ramp; rename and Trash remain row actions rather
-than adding another toolbar or window.
-
-The switcher exposes activation, Rename, and Move to Trash as VoiceOver actions with the actual note
-title. Its hover buttons are hidden from accessibility so those actions are announced once. See
-[features/notes.md](features/notes.md).
-
----
-
 ## The edge dissolve
 
 Source: `DesignSystem/Scrolling/EdgeDissolve.swift`.
@@ -283,8 +227,7 @@ behind the uniform panel with no gradient mask. The type `EdgeDissolveMask` stay
 call-site history is visible, but nothing attaches it. Do not reintroduce a fade without
 reverting the uniform panel first.
 
-**Palette lists underlap nothing.** A Settings list uses `.overflowFade()` instead —
-and so does the Notes switcher, whose search row is a sibling in a `VStack`, not a floating bar.
+**Palette lists underlap nothing.** A Settings list uses `.overflowFade()` instead.
 
 ---
 
@@ -292,12 +235,12 @@ and so does the Notes switcher, whose search row is a sibling in a `VStack`, not
 
 Source: `DesignSystem/Scrolling/OverflowFade.swift`.
 
-The counterpart for any list with no bars over it — the Settings lists and the Notes switcher — and
+The counterpart for any list with no bars over it — the Settings lists — and
 deliberately a separate type: sharing one modifier would tie such a list to geometry that only means
 something under a bar. Attach with `.overflowFade()` on the `ScrollView`, before `.thinScrollbar()`,
 or pass `includingTop: true` for a bounded popup whose title and rows scroll together.
 
-- **Bottom by default.** Settings and Notes have nothing above their lists; popups opt into the top
+- **Bottom by default.** Settings has nothing above its lists; popups opt into the top
   edge because their content, including the title, can scroll past it.
 - Fade band: **24px** with the original single-stop curve by default; popups opt into the progressive
   top-and-bottom curve and their own 30pt band.
@@ -310,13 +253,13 @@ or pass `includingTop: true` for a bounded popup whose title and rows scroll tog
 ## Rows, selection, hover
 
 Source: `Launcher/UI/LauncherList.swift`, `Clipboard/UI/ClipboardView.swift`,
-`FileSearch/UI/FileSearchList.swift`, `Uninstall/UI/UninstallView.swift`.
+`FileSearch/UI/FileSearchList.swift`.
 
 All lists share one row grammar so launcher and clipboard look identical:
 
 - `HStack(spacing: lg)`: leading 24pt icon/thumbnail, title (`.body`, `lineLimit(1)`), optional trailing keycaps/kind label, `Spacer`. Insets: `.horizontal md`, `.vertical sm`.
-- **The leading slot is always `Theme.Size.rowIcon`, whatever fills it.** A glyph smaller than an app icon — the uninstall list's 16pt checkbox — is centred _inside_ that 24pt slot rather than sizing the slot to itself. Every list then starts its title at the same x, so switching palette modes doesn't jog the column sideways. The slot doubles as the hit target.
-- Background is a `RoundedRectangle(row, .continuous)` filled by `fill`: **selection → hover → clear**, in that precedence. This `fill` computed property is copy-identical across `AppRow`, `ClipboardRow` and `UninstallRow` — keep them in sync. The launcher's lead cards don't restate it: `.leadCard(selected:)` (`Features/Launcher/UI/LeadCard.swift`) owns their fill and hover, so a card can't answer a selection differently from its siblings.
+- **The leading slot is always `Theme.Size.rowIcon`, whatever fills it.** Every list starts its title at the same x, so switching palette modes doesn't jog the column sideways. The slot doubles as the hit target.
+- Background is a `RoundedRectangle(row, .continuous)` filled by `fill`: **selection → hover → clear**, in that precedence. This `fill` computed property is copy-identical across `AppRow` and `ClipboardRow` — keep them in sync. The launcher's lead cards don't restate it: `.leadCard(selected:)` (`Features/Launcher/UI/LeadCard.swift`) owns their fill and hover, so a card can't answer a selection differently from its siblings.
 - **Hover state lives on the row**, not the list, so a mouse sweep repaints only the rows entering/leaving (a list-level hover rebuilds every row per move — don't do that).
 - **Hover is armed by pointer movement, not by the pointer's position** (`armedHover`, `Palette/HoverArming.swift`). A palette shown under a resting pointer lights nothing, and keys or a scroll drop the highlight until the pointer moves clear of the slop radius around where it stood — a row must never light up because it *slid under* a still pointer. Two measured facts the rule rests on: SwiftUI fires hover phases for rows arriving under a stationary pointer, but **not** for a lit row that merely shifts, so `PaletteState.hoverDisarmToken` clears what is already lit; and a wheel gesture ends with a mouse-moved event carrying no displacement, so *event type is not evidence the pointer moved*. `Tests/hover-arming-test.swift` pins both halves.
 - **Scroll moves only on keyboard nav/reset**, driven by a `ScrollIntent` (`DesignSystem/Scrolling/ScrollIntent.swift`) — mouse selection targets a visible row and never yanks scroll. `.top` scrolls to the origin anchor that `scrollOriginAnchor()` installs — a zero-height overlay applied to the scrolled content _after_ its padding, so it marks offset 0 without joining the layout and the restored origin is exact (targeting the first row instead leaves the top padding hidden under the header); it is restated when the header's inset settles after mount, which moves the resting offset. A `.follow` that lands on flat index 0 restores the origin instead, so that row's section header comes back into view. One intent state serves every mode — they never coexist.
@@ -325,7 +268,7 @@ All lists share one row grammar so launcher and clipboard look identical:
 
 ### Section headers
 
-All six palette lists (App Launcher, Clipboard, Emoji, File Search, Calculator History, Uninstall) render category labels
+All four palette lists (App Launcher, Clipboard, File Search, Calculator History) render category labels
 through one shared **`SectionHeader`** (`.subheadline.medium`, secondary — `Features/Launcher/UI/SectionHeader.swift`).
 The launcher shows a single "Results" header over search matches, and per-kind sections
 (Favorites / Applications / System Settings / Commands) for the empty query; clipboard/history use
@@ -347,7 +290,7 @@ Floating controls are **flat**, never glass.
 
 - `View.frosted(in:)` = solid `popSurface` fill + hairline `border` edge. Used on `PopoverMenu` and a dialog's buttons. The footer menu mark and action buttons carry no fill: hover only. Neither HUD uses it: both take the panel recipe instead (see "Dialogs & HUD").
 - **Menus are in-window overlays, not system popovers.** `.contextMenu`/`NSMenu` stall clicks for seconds inside a `LazyVStack` and spill outside the panel. Use `PopoverMenu` anchored to a corner via `.overlay`, inset `menuInset` (8pt) so its own corner isn't clipped by the panel's. A menu hung off a control instead of a corner — the clipboard type filter, `.topTrailing` — insets by that control's own metrics so their edges line up.
-- **A menu's `width` is fixed, never intrinsic**, so it can't jitter as its rows change. Every header menu states its own at its `RootPaletteView.menuContent` case — `menuWidth 276`, or a token of its own where that reads too wide (`clipboardFilterMenuWidth`, `fileSearchFilterMenuWidth`, `emojiCategoryMenuWidth`) — so retuning one never moves another.
+- **A menu's `width` is fixed, never intrinsic**, so it can't jitter as its rows change. Every header menu states its own at its `RootPaletteView.menuContent` case — `menuWidth 276`, or a token of its own where that reads too wide (`clipboardFilterMenuWidth`, `fileSearchFilterMenuWidth`) — so retuning one never moves another.
 - **`PopoverMenu`** uses the flat `popSurface` fill with `menuPanel 12` corners and **no hand-tuned shadow** — a solid fill carries its own elevation; adding a drop shadow reads heavy. A footer menu raises only its attached bottom corner to the controls' 18-point radius, so the two silhouettes meet exactly.
 - `PopoverMenuRow`: leading glyph, label, trailing shortcut glyph, `menuHover` fill on hover, `menuRow 10` corner. Menus animate in with opacity and scale from the anchored corner, stretching briefly to 1.003 before settling; `Theme.MenuMotion` owns the entry, settle and shorter exit timings.
 - The glyph is a `PopoverMenuIcon`: `.symbol` (SF Symbol, `monochrome`, `menuSymbol` — or **red** when `isDestructive`) or `.file` (a real app icon via `IconCache`, used by the paste rows to show the paste target). `PopoverMenuItem` keeps a `systemImage:` convenience init, so symbol rows read exactly as before.
@@ -366,10 +309,9 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
 - **Three independent axes.** The **icon** says _what_, the **tone** says _how serious_, the **button
   role** says _what happens if you click_. None of them derives another — that separation is the
   whole point of the design, and collapsing any two of them back together is a regression.
-- **Icon.** `DialogRequest.symbol` is required and is always the subject's own glyph: a system
-  command passes its `SystemAction.sfSymbol`, so the Restart dialog shows `arrow.clockwise` and
-  Empty Trash shows `trash.slash` — the same glyph as the launcher row the user just activated.
-  Custom commands use `terminal`, the backup flows `square.and.arrow.up` / `.down`. Symbols render
+- **Icon.** `DialogRequest.symbol` is required and is always the subject's own glyph: a custom
+  command passes `terminal` — the same glyph as its launcher row — and
+  the backup flows use `square.and.arrow.up` / `.down`. Symbols render
   through `SymbolImage` (`DesignSystem/SymbolImage.swift`), never raw `Image(systemName:)`, because some
   catalog symbols are bundled template assets rather than SF Symbols — `toggleBluetooth` ships its
   own artwork since the logo is a SIG trademark, and a raw `Image(systemName:)` draws nothing for it.
@@ -380,24 +322,17 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
   only ever told apart by the icon's shape, which the action-derived icon now owns.
   `MessageHUDController.show(message:tone:)` (the pill; see below) takes the same `DialogTone` for its
   status dot, so the pill and the dialogs speak one tint vocabulary even though they render it
-  differently. `AppCore` derives a system action's tone from `SystemActionFeedback.isNoOp`, so
-  "Trash Emptied" reads `.success` and "Trash Is Already Empty" reads `.neutral`, rather than every
-  pill defaulting to the same green dot regardless of whether anything happened.
+  differently.
 - **Button role.** `DialogAction.Role` colors the label: `.standard` `Color.primary`, `.destructive`
   `Theme.Colors.destructive`, `.cancel` `textSecondary`. Because role is independent of tone, a
   red-glyph security warning can carry a plain white button — "Import executable commands?" does,
   since importing a file destroys nothing — and running a shell command the user wrote themselves is
   `.neutral` + `.standard` rather than a red alarm.
 - **Surface.** A dialog reuses the palette's recipe `panelScrim` → `VisualEffectView()` →
-  `clipShape(RoundedRectangle(dialog 20))`, in that order at `dialogWidth 420`. Glass is reserved for
-  the buttons, matching the "glass only on floating controls" rule. The **volume HUD takes the same
-  recipe**, and so does the **message pill**. That is the line: glass needs a backdrop to lens, so it
-  only works _inside_ a window that already has a `VisualEffectView` behind it — the action capsule,
-  the menu circle, `PopoverMenu`, a dialog's buttons. On a bare borderless panel of its own it falls
-  back to an opaque backing that shows as a dark edge outside the shape, which is exactly what the
-  pill did before it moved to the recipe.
+  `clipShape(RoundedRectangle(dialog 14))`, in that order at `dialogWidth 420`. The **message pill**
+  takes the same recipe.
 - **Layout.** Leading glyph (`dialogIcon 32`), title (`.headline`) + wrapped secondary message,
-  optional volume slider, then buttons at the trailing edge with **Cancel rendered leading** among
+  then buttons at the trailing edge with **Cancel rendered leading** among
   them, matching macOS convention. `DialogView.visualOrder` reorders only the display;
   `onChoose(index)` still dispatches against `DialogRequest.actions`' original order, so a caller
   never has to think about layout position when it builds a request.
@@ -407,9 +342,7 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
   handles (`↵`, `esc`), styled like the palette's own `KeyCapChip` but hover-triggered instead of
   always-on, so a shown cap can't drift from behavior. **↵ runs the dialog's primary action; Escape
   cancels**, on every dialog including destructive ones.
-  Arrow keys walk the volume slider along the same 5% grid the volume commands use (`DialogPanel`
-  reports `.increment` / `.decrement` and `DialogController` applies `VolumeLevel.stepped`, so the
-  panel never learns what a volume step is); click-away resolves as a dismissal.
+  Click-away resolves as a dismissal.
 - **Async, not modal.** Presentation is `async` (`withCheckedContinuation`), so there is no nested run
   loop. A held hotkey can't stack dialogs: while one is up, a second request resolves immediately as a
   dismissal — which is why the old `isConfirmingCommand` re-entrancy flag is gone. The guard is keyed
@@ -424,44 +357,22 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
   cached from the scaled-down first frame. `fadeOut` (`Duration.exit`, 0.12s) is interruptible: its
   handler hides the window only if the alpha is still 0, so a `cancelFade()` from a re-show can't be
   undone by the fade it replaced. For a dialog the continuation resumes **first** and the panel fades
-  afterwards, so confirming Restart is never held up by an animation. The pill fades without the
+  afterwards, so confirming is never held up by an animation. The pill fades without the
   scale — a growing capsule reads bouncy.
 - **Non-activating**, like the palette: the dialog takes key focus for its own keys without pulling app
   focus off whatever the user was in. It sits at `.modalPanel`, above the palette's `.floating`, and is
   centred on the **cursor's** display with the same slight optical lift the palette uses.
-- **`VolumeSlider`** is hand-drawn (track `volumeTrackHeight 6`, knob `volumeKnob 16`, `controlSurface`
-  rail under a white-0.85 fill) with a monospaced-digit percentage in the same `volumeReadout 38` slot
-  the HUD uses, so the track doesn't resize between `0%` and `100%`. A click anywhere on the track jumps
-  the level; the arrows walk the 5% grid.
-- **`VolumeHUDController`'s box** is the readout for the volume/mute commands, since macOS only
-  draws its own HUD for real media keys and a CoreAudio change would otherwise be silent. It exists
-  because a level needs an actual bar and number, not a one-line message: speaker glyph
-  (`dialogIcon 32`, neutral `Color.primary` — a level isn't a success/warning statement), the bar, then
-  the level as monospaced text beside it, in a fixed `volumeReadout 38` slot so the track can't resize
-  as the number runs 0% → 100% — the same trick `VolumeSlider` uses, since the two now read as one
-  control in two places. That slot is measured, not guessed: 38 is the widest string it ever holds
-  ("Muted", 36pt in `rowTrailing`) plus a hair, because every point of slack is subtracted straight off
-  the track. Fixed `hudWidth 200 × hudHeight 100`, with **asymmetric padding** — `xxl` 20 vertical,
-  `xl` 12 horizontal — since 20pt of side padding costs a fifth of a 200pt box where the same token on
-  a 420pt dialog costs a twentieth, and the bar is the content here.
-  Muted prints `Muted`, not `0%`: the bar is already empty, so a
-  number would either contradict it or hide the level the user comes back to. Auto-dismisses after
-  `Duration.volumeHUD` (1.6s); a repeat command updates the shared `VolumeState` and calls
-  `HUDPresenter.extend()`, so the bar slides to its new value in place instead of replaying the
-  entrance.
-- **`MessageHUDController`'s pill** is every _other_ transient
-  confirmation: Custom Commands and Snippets confirming a run, and every system action whose effect
-  is invisible (`Trash Emptied`, `Hidden Files Shown`, `Bluetooth Off`). One capsule shape, sized to
+- **`MessageHUDController`'s pill** is the transient
+  confirmation: a Custom Command confirming a run, an import landing. One capsule shape, sized to
   its message (`hudMaxWidth 420` ceiling), clipped to a `Capsule()`, with the message first and a
   filled glyph trailing it: `checkmark.circle.fill` green for `.success`, `exclamationmark.circle.fill`
   red for `.danger`, `info.circle.fill` secondary for `.neutral`. **Here the glyph is the tone** — the
   one place that's true, because a pill has no subject to name the way a dialog does; the message
-  already says what happened ("Trash Emptied"), so the icon only has to say how it went. The mapping is
+  already says what happened, so the icon only has to say how it went. The mapping is
   `fileprivate` in `MessageHUDView.swift` precisely so nobody can reach for it when building a
   `DialogRequest`, where the icon rule is the opposite. It trails rather than leads because a pill is
   read left to right and the outcome is the last thing you want to land on. Auto-dismisses after
-  `Duration.messageHUD` (2.4s) — longer than the volume box, since a sentence needs reading time and a
-  level only needs a glance — and a repeat call replaces rather than stacks.
+  `Duration.messageHUD` (2.4s) — a sentence needs reading time — and a repeat call replaces rather than stacks.
 - **The same pill reports work still running**, through `showProgress(message:)`: a job with no panel
   to watch says `Working…` in its place and the result message replaces it when done. Its trailing
   mark is a spinner rather than a tone, which is why `MessageHUDView.Accessory` exists — a tone says
@@ -470,10 +381,10 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
   every tint given to it, so a blue spinner is only reachable as a symbol. Progress has no natural
   dwell, so it is shown with `dwells: false` and stays up until something replaces it or
   `HUDPresenter.dismiss()` runs — the caller owns that.
-- **`HUDPresenter`** is what keeps those two controllers from duplicating each other: one panel at a
-  time, replace rather than stack, fade in, sit out its dwell, fade away, centred horizontally on
-  a screen. The two HUDs differ only in their content, their anchor (`edgeInset(hudEdgeOffset 48)` for
-  the pill, `heightFraction(0.12)` for the box) and how long they dwell — so those are the presenter's
+- **`HUDPresenter`** owns the one-panel-at-a-time, auto-dismiss and fade policy: replace rather
+  than stack, fade in, sit out its dwell, fade away, centred horizontally on
+  a screen. The pill differs only in its content, its anchor (`edgeInset(hudEdgeOffset 48)`)
+  and how long it dwells — so those are the presenter's
   three arguments. **It sizes its window from a local, never from `host.frame` after attaching the
   content view**: assigning a content view resizes it to the window's current content rect, which is
   zero on a fresh panel, and a zero-width window "centers" with its leading edge on the screen's
@@ -489,7 +400,7 @@ Custom thin overlay scrollbar (the native one flashes and reserves a gutter insi
 style; `.thinScrollbar()` on the scroll view draws a hairline thumb (`Color.primary` alpha 0.30 rest →
 0.42 hover → 0.5 drag) that fattens on hover, with a faint rail revealed only while hovering/dragging.
 
-Routing: the palette lists (App Launcher, Clipboard history, Emoji, File Search, Calculator history) use
+Routing: the palette lists (App Launcher, Clipboard history, File Search, Calculator history) use
 `.thinScrollbar()` + `.hideNativeScrollers()`; the Clipboard preview (right pane), every Settings
 pane and the update window take the native scroller as-is. Don't reintroduce native scrollers on the palette lists.
 
@@ -504,13 +415,8 @@ per-scroll-view shim: chasing that flip after the fact is what caused the flash.
 
 ## Dialog accessories
 
-A dialog carries at most one control beyond its buttons, and `DialogAccessory` makes that structural
-rather than a convention — `.volume` for the Set Volume prompt,
-`.snippetArguments` for a snippet's `{argument}` values. Text fields take `dialogTextField()` and
-choices are `DialogChip`s, never a menu `Picker`. One thing follows from the enum:
-
-- **Arrow keys belong to the accessory, not the panel.** `DialogPanel.handlesArrowKeys` is set from
-  `DialogAccessory.claimsArrowKeys`, so the slider still steps on ←/→.
+Retired with the snippet argument prompt: a dialog is title, message, glyph and buttons only.
+Text fields take `dialogTextField()` and choices are `DialogChip`s, never a menu `Picker`.
 
 ## Settings
 
@@ -564,7 +470,7 @@ system-drawn and a pane reads exactly as macOS System Settings does.
 - **`SettingsSearchCatalog` is hand-written, and that is the only option.** A `Form` cannot be asked
   what rows it holds, so a new row is searchable only once it is listed there — with its anchor, its
   title and the keywords the title doesn't contain ("caps lock" for Hyper Key).
-  Matching reuses `FuzzyMatch` (`Launcher/Model/SearchRelevance.swift`), multi-term like `NoteSearch`:
+  Matching reuses `FuzzyMatch` (`Launcher/Model/SearchRelevance.swift`), multi-term:
   every term must hit the title, the breadcrumb or a keyword, a title hit outranks the rest, and a
   pane outranks its own rows so a bare "clipboard" lands on the pane. `Tests/settings-history-test.swift`
   pins that every pane is covered and that identities are unique; row-level drift is caught in review.
