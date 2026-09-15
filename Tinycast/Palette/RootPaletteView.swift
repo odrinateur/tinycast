@@ -647,10 +647,9 @@ struct RootPaletteView: View {
             headerGutter(width: metrics.spacing.md * 2)
         }
         // Identical metrics in both states, so typing can't move the search bar.
-        // Solid full-bleed band, flush to the panel top: rows hide behind it, no dissolve.
+        // No band fill: the panel background shows through, with only a hairline below.
         .frame(height: metrics.size.headerHeight)
         .frame(maxWidth: .infinity)
-        .background(Theme.Colors.barFill)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Theme.Colors.separator)
@@ -773,7 +772,7 @@ struct RootPaletteView: View {
     private func bottomBar(
         pillLabel: String, showActionGroup: Bool, formPrimaryShortcut: Bool, showActions: Bool
     ) -> some View {
-        // Solid footer band with a top divider; rows hide behind it, no dissolve.
+        // No band fill: the panel background shows through, with only a hairline above.
         HStack(spacing: 0) {
             appMenuButton
             Spacer()
@@ -786,7 +785,6 @@ struct RootPaletteView: View {
         .padding(.horizontal, metrics.spacing.md)
         .frame(height: metrics.size.bottomBarHeight)
         .frame(maxWidth: .infinity)
-        .background(Theme.Colors.barFill)
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(Theme.Colors.separator)
@@ -800,11 +798,11 @@ struct RootPaletteView: View {
         }
     }
 
-    /// The footer control group: primary action and Actions toggle sharing one flat control.
+    /// The footer actions: bare buttons on the panel, separated the way Raycast separates them.
     private func actionGroup(
         pillLabel: String, formPrimaryShortcut: Bool, showActions: Bool
     ) -> some View {
-        HStack(spacing: 2) {
+        HStack(spacing: metrics.spacing.md) {
             BarButton(action: activateSelection) {
                 HStack(spacing: metrics.spacing.sm) {
                     Text(pillLabel)
@@ -821,6 +819,9 @@ struct RootPaletteView: View {
                 }
             }
             if showActions {
+                Rectangle()
+                    .fill(Theme.Colors.separator)
+                    .frame(width: Theme.Size.hairline, height: 16)
                 BarButton(action: toggleActions) {
                     HStack(spacing: metrics.spacing.sm) {
                         Text("Actions")
@@ -834,15 +835,6 @@ struct RootPaletteView: View {
                 }
             }
         }
-        .padding(metrics.spacing.xs)
-        .background(
-            Theme.Colors.popSurface,
-            in: RoundedRectangle(cornerRadius: metrics.radius.row, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: metrics.radius.row, style: .continuous)
-                .stroke(Theme.Colors.border, lineWidth: 0.5)
-        )
     }
 
     /// The one path opening the Actions menu, sampling the state its rows depend on.
@@ -1189,7 +1181,6 @@ private struct MenuCircleButton: View {
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }
-        .frosted(in: Circle())
     }
 }
 

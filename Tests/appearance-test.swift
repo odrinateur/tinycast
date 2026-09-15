@@ -58,7 +58,6 @@ struct AppearanceTests {
         dark("cardFill", c.cardFill, is: Color.white.opacity(0.05))
         dark("cardStroke", c.cardStroke, is: Color.white.opacity(0.10))
         dark("popSurface", c.popSurface, is: Color(nsColor: .srgbInk(0.30, alpha: 1)))
-        dark("barFill", c.barFill, is: Color(nsColor: .srgbInk(0.22, alpha: 1)))
         dark("dropGuide", c.dropGuide, is: Color.white.opacity(0.35))
         dark("brand", c.brand, is: Color(red: 0.525, green: 0.231, blue: 1.0))
 
@@ -76,7 +75,7 @@ struct AppearanceTests {
             ("controlSurface", c.controlSurface), ("border", c.border),
             ("textPrimary", c.textPrimary), ("textSecondary", c.textSecondary),
             ("textTertiary", c.textTertiary), ("noteText", c.noteText), ("cardFill", c.cardFill),
-            ("cardStroke", c.cardStroke), ("popSurface", c.popSurface), ("barFill", c.barFill),
+            ("cardStroke", c.cardStroke), ("popSurface", c.popSurface),
             ("dropGuide", c.dropGuide),
             ("iconPlaceholder", c.iconPlaceholder), ("sheen", c.sheen)
         ] {
