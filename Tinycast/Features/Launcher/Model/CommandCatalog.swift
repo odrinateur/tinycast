@@ -53,7 +53,6 @@ extension SettingsTab {
         case .quicklinks:
             [.createQuicklink, .searchQuicklinks, .importQuicklinks, .exportQuicklinks]
         case .fileSearch: [.searchFiles]
-        case .notes: [.showNotes, .createNote, .searchNotes]
         case .snippets: [.searchSnippets, .createSnippet]
         case .navigation: [.searchMenuItems]
         case .clipboard: [.clipboardHistory]

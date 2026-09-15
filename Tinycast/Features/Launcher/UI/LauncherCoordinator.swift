@@ -12,7 +12,6 @@ final class LauncherCoordinator {
     private let snippetCoordinator: SnippetCoordinator
     private let fileSearchCoordinator: FileSearchCoordinator
     private let menuSearchCoordinator: MenuSearchCoordinator
-    private let notesCoordinator: NotesCoordinator
     private let extensionCoordinator: ExtensionCoordinator
     /// The backup commands only, which need the live stores to gather from and apply to.
     private unowned let core: AppCore
@@ -27,7 +26,6 @@ final class LauncherCoordinator {
         snippetCoordinator: SnippetCoordinator,
         fileSearchCoordinator: FileSearchCoordinator,
         menuSearchCoordinator: MenuSearchCoordinator,
-        notesCoordinator: NotesCoordinator,
         extensionCoordinator: ExtensionCoordinator,
         core: AppCore
     ) {
@@ -40,7 +38,6 @@ final class LauncherCoordinator {
         self.snippetCoordinator = snippetCoordinator
         self.fileSearchCoordinator = fileSearchCoordinator
         self.menuSearchCoordinator = menuSearchCoordinator
-        self.notesCoordinator = notesCoordinator
         self.extensionCoordinator = extensionCoordinator
         self.core = core
     }
@@ -114,15 +111,6 @@ final class LauncherCoordinator {
             menuSearchCoordinator.show()
         case .openInBrowser, .runShellCommand:
             break  // Query-driven: each runs where the typed text is, never through this funnel.
-        case .showNotes:
-            dismissPalette()
-            notesCoordinator.toggle()
-        case .createNote:
-            dismissPalette()
-            notesCoordinator.createNote()
-        case .searchNotes:
-            dismissPalette()
-            notesCoordinator.searchNotes()
         case .searchQuicklinks:
             paletteCoordinator.togglePalette(mode: .quicklinks)
         case .searchSnippets:

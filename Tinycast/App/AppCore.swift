@@ -37,7 +37,6 @@ final class AppCore {
     let menuSearch = MenuSearchSession()
     let activationPolicy = ActivationPolicy()
     let customCommandArguments = CustomCommandArgumentSession()
-    let notesStore: NotesStore
     let extensions: ExtensionManager
 
     /// Set when a quicklink editor should open with Settings; the pane consumes it.
@@ -77,12 +76,6 @@ final class AppCore {
         paletteCoordinator: paletteCoordinator, settingsCoordinator: settingsCoordinator,
         hotKeys: hotKeys, favorites: favorites, visibility: visibility,
         ranking: launcherRanking, aliases: aliases, activationPolicy: activationPolicy, core: self)
-    @ObservationIgnored private(set) lazy var notesCoordinator = NotesCoordinator(
-        store: notesStore,
-        settings: settings,
-        appIndex: appIndex,
-        core: self)
-
     @ObservationIgnored private(set) lazy var launcherCoordinator = LauncherCoordinator(
         ranking: launcherRanking, windowController: windowController,
         paletteCoordinator: paletteCoordinator,
@@ -91,7 +84,7 @@ final class AppCore {
         quicklinkCoordinator: quicklinkCoordinator,
         snippetCoordinator: snippetCoordinator, fileSearchCoordinator: fileSearchCoordinator,
         menuSearchCoordinator: menuSearchCoordinator,
-        notesCoordinator: notesCoordinator, extensionCoordinator: extensionCoordinator,
+        extensionCoordinator: extensionCoordinator,
         core: self)
     @ObservationIgnored private(set) lazy var fallbackCoordinator = FallbackCoordinator(
         store: fallbacks, quicklinks: quicklinks, settings: settings, core: self)
@@ -132,14 +125,6 @@ final class AppCore {
         textInjector = TextInjector(
             clipboardManager: clipboardManager,
             settings: settings)
-        let noteSelectionKey = "notesActiveFileName"
-        notesStore = NotesStore(
-            repository: NotesRepository(
-                applicationSupportDirectory: AppPaths.applicationSupport()),
-            loadSelection: {
-                UserDefaults.standard.string(forKey: noteSelectionKey).map(NoteID.init(rawValue:))
-            },
-            saveSelection: { UserDefaults.standard.set($0?.rawValue, forKey: noteSelectionKey) })
     }
 
     func start() {
@@ -157,7 +142,6 @@ final class AppCore {
             fileSearchCoordinator.applyEnabled()
             menuSearchCoordinator.applyEnabled()
             fileSearchCoordinator.applyPolicy()
-            notesCoordinator.applyEnabled()
             customCommands.onChange = { [weak self] _ in
                 self?.customCommandCoordinator.applyCustomCommandsPresence()
             }
@@ -284,10 +268,6 @@ final class AppCore {
         }
     }
 
-    func flushNotesForTermination() async {
-        await notesCoordinator.prepareForTermination()
-    }
-
     /// Idempotent: both switches are tracked, and either one flipping re-runs the whole decision.
     func applyClipboardTextSearch() {
         guard settings.clipboardEnabled, settings.clipboardTextSearchEnabled else {
@@ -345,7 +325,6 @@ final class AppCore {
         track(
             { _ = $0.navigationEnabled },
             reproject: { $0.menuSearchCoordinator.applyEnabled() })
-        track({ _ = $0.notesEnabled }, reproject: { $0.notesCoordinator.applyEnabled() })
         track(
             {
                 _ = $0.fileSearchScopes

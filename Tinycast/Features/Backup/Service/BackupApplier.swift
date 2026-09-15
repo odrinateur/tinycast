@@ -8,7 +8,6 @@ enum BackupApplier {
         var clipboard = 0
         var snippets = 0
         var snippetsNeedEnabling = false
-        var notes = 0
         var learning = 0
         /// Reported rather than thrown: a failure here must not abort the categories after it.
         var problems: [String] = []
@@ -35,9 +34,6 @@ enum BackupApplier {
             } catch {
                 summary.problems.append("Couldn't import snippets: \(error.localizedDescription)")
             }
-        }
-        if categories.contains(.notes) {
-            summary.notes = await applyNotes(bundle, to: core)
         }
         if categories.contains(.learning) {
             summary.learning = applyLearning(bundle, to: core)
@@ -100,16 +96,6 @@ enum BackupApplier {
         let fresh = incoming.filter { !existing.contains(Pair($0.name, $0.text)) }
         guard !fresh.isEmpty else { return 0 }
         return try await core.snippetsStore.importSnippets(fresh).count
-    }
-
-    private static func applyNotes(_ bundle: BackupBundle, to core: AppCore) async -> Int {
-        let documents = bundle.documents(in: bundle.notesDirectory, extension: "md")
-        guard !documents.isEmpty else { return 0 }
-        return await core.notesStore.importNotes(
-            documents.map {
-                NotesRepository.Incoming(
-                    title: ($0.name as NSString).deletingPathExtension, source: $0.contents)
-            })
     }
 
     private static func applyLearning(_ bundle: BackupBundle, to core: AppCore) -> Int {
