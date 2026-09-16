@@ -640,3 +640,93 @@ if (!g.TextDecoder) {
     }
   };
 }
+
+
+if (!g.Event) {
+  g.Event = class Event {
+    constructor(type, eventInitDict = {}) {
+      this.type = String(type);
+      this.bubbles = !!eventInitDict.bubbles;
+      this.cancelable = !!eventInitDict.cancelable;
+      this.composed = !!eventInitDict.composed;
+      this.defaultPrevented = false;
+    }
+    preventDefault() {
+      if (this.cancelable) this.defaultPrevented = true;
+    }
+    stopPropagation() {}
+    stopImmediatePropagation() {}
+  };
+}
+
+if (!g.CustomEvent) {
+  g.CustomEvent = class CustomEvent extends (g.Event || Object) {
+    constructor(type, eventInitDict = {}) {
+      super(type, eventInitDict);
+      this.detail = eventInitDict.detail ?? null;
+    }
+  };
+}
+
+if (!g.EventTarget) {
+  g.EventTarget = class EventTarget {
+    constructor() {
+      this._listeners = new Map();
+    }
+    addEventListener(type, listener) {
+      if (!this._listeners.has(type)) this._listeners.set(type, new Set());
+      this._listeners.get(type).add(listener);
+    }
+    removeEventListener(type, listener) {
+      this._listeners.get(type)?.delete(listener);
+    }
+    dispatchEvent(event) {
+      const set = this._listeners.get(event?.type);
+      if (set) {
+        for (const listener of set) {
+          try {
+            if (typeof listener === "function") listener.call(this, event);
+            else if (listener?.handleEvent) listener.handleEvent(event);
+          } catch (e) {
+            reportUncaught(e);
+          }
+        }
+      }
+      return true;
+    }
+  };
+}
+
+if (!g.MessagePort) {
+  class MessagePort extends (g.EventTarget || Object) {
+    constructor() {
+      super();
+      this.onmessage = null;
+      this.onmessageerror = null;
+      this._otherPort = null;
+    }
+    postMessage(data) {
+      if (!this._otherPort) return;
+      const port = this._otherPort;
+      g.queueMicrotask(() => {
+        const event = { type: "message", data, ports: [], target: port };
+        if (typeof port.onmessage === "function") port.onmessage(event);
+        port.dispatchEvent?.(event);
+      });
+    }
+    start() {}
+    close() {}
+  }
+  g.MessagePort = MessagePort;
+}
+
+if (!g.MessageChannel) {
+  g.MessageChannel = class MessageChannel {
+    constructor() {
+      this.port1 = new g.MessagePort();
+      this.port2 = new g.MessagePort();
+      this.port1._otherPort = this.port2;
+      this.port2._otherPort = this.port1;
+    }
+  };
+}

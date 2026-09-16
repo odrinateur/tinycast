@@ -729,6 +729,10 @@ final class ExtensionManager: ExtensionRuntimeDelegate, ExtensionHostContext {
         }
         guard session == sessionID else { return }
         state = .failed(message)
+        if coordinator?.isPaletteVisible != true {
+            coordinator?.showHUD(message)
+            Task { await stop() }
+        }
     }
 
     func runtime(_ runtime: ExtensionRuntime, session: String, navigationDepth depth: Int) {
