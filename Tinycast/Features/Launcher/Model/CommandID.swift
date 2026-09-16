@@ -19,6 +19,7 @@ enum CommandID: String, CaseIterable, Sendable {
     case checkForUpdates = "command:check-for-updates"
     case settings = "command:settings"
     case about = "command:about"
+    case restart = "command:restart"
     case quit = "command:quit"
 
     var name: String {
@@ -40,6 +41,7 @@ enum CommandID: String, CaseIterable, Sendable {
         case .checkForUpdates: return "Check for Updates"
         case .settings: return "Settings"
         case .about: return "About Tinycast"
+        case .restart: return "Restart Tinycast"
         case .quit: return "Quit Tinycast"
         }
     }
@@ -63,6 +65,7 @@ enum CommandID: String, CaseIterable, Sendable {
         case .checkForUpdates: return "arrow.down.circle"
         case .settings: return "gearshape"
         case .about: return "info.circle"
+        case .restart: return "arrow.clockwise"
         case .quit: return "power"
         }
     }
@@ -74,6 +77,6 @@ enum CommandID: String, CaseIterable, Sendable {
 
     /// A chord carries no query, and none should be able to terminate the app outright.
     var hotKeyAction: HotKeyAction? {
-        isQueryDriven || self == .quit ? nil : .command(self)
+        isQueryDriven || self == .quit || self == .restart ? nil : .command(self)
     }
 }

@@ -283,6 +283,12 @@ final class AppCore {
         indexer.start()
     }
 
+    /// `NSApp.terminate`, never `exit`: it flushes a note draft and returns the HID remap.
+    func restart() {
+        RelaunchRunner.relaunchAfterExit(Bundle.main.bundleURL)
+        NSApp.terminate(nil)
+    }
+
     func prepareForTermination() {
         clipboardTextIndexer?.stop()
         // Caps Lock first: its remap is the one teardown that outlives the process.

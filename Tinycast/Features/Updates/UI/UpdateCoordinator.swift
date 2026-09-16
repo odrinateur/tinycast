@@ -142,10 +142,8 @@ final class UpdateCoordinator {
         window.close()
     }
 
-    /// `NSApp.terminate`, never `exit`: it flushes a note draft and returns the HID remap.
     func relaunch() {
-        RelaunchRunner.relaunchAfterExit(Bundle.main.bundleURL)
-        NSApp.terminate(nil)
+        core.restart()
     }
 
     // MARK: - Private

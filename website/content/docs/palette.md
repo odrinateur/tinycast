@@ -152,6 +152,6 @@ AI Chat has its own rule for whether a conversation reopens; see [AI Chat](/docs
 ## The menu bar
 
 The Tinycast menu bar icon has **Open Tinycast**, **Clipboard History**, **Settings…**,
-**Check for Updates…**, **Support Tinycast…** and **Quit Tinycast**.
+**Check for Updates…**, **Support Tinycast…**, **Restart Tinycast** and **Quit Tinycast**.
 
 **Settings → General → Show in menu bar** hides the icon. Your shortcuts keep working without it.

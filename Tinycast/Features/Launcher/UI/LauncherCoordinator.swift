@@ -151,6 +151,9 @@ final class LauncherCoordinator {
         case .about:
             dismissPalette()
             settingsCoordinator.showAbout()
+        case .restart:
+            dismissPalette()
+            core.restart()
         case .quit:
             NSApp.terminate(nil)
         }
