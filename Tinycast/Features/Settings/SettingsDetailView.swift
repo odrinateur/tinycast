@@ -15,7 +15,6 @@ struct SettingsDetailView: View {
             case .quicklinks: QuicklinksSettingsView()
             case .fallbacks: FallbacksSettingsView()
             case .fileSearch: FileSearchSettingsView()
-            case .navigation: NavigationSettingsView()
             case .clipboard: ClipboardSettingsView()
             case .extensions: ExtensionsSettingsView()
             case .permissions: PermissionsSettingsView()

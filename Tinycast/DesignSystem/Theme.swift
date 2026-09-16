@@ -276,7 +276,7 @@ enum Theme {
     /// System text styles (not hardcoded sizes) so the UI honors Dynamic Type.
     enum Typography {
         /// One size, two frameworks: `TextTrailingDragHandle` measures what the field renders.
-        static let searchFieldSize: CGFloat = 20
+        static let searchFieldSize: CGFloat = 16
         static let searchField = Font.system(size: searchFieldSize, weight: .regular)
         /// `NSFont` is not `Sendable`, hence the isolation; every reader is a view anyway.
         @MainActor static let searchFieldNSFont = NSFont.systemFont(
@@ -326,7 +326,7 @@ enum Theme {
         /// The inverse's inverse: the scrim darkens the dark surface and lightens the light one.
         /// Gray and nearly opaque: the panel reads flat Raycast gray, not black glass.
         static let panelScrim = adaptive(
-            dark: .srgbInk(0.12, alpha: 0.96), light: .srgbInk(0.93, alpha: 0.96))
+            dark: .srgbInk(0.12, alpha: 0.96), light: .srgbInk(0.96, alpha: 0.96))
 
         static func panelScrim(transparency: Int) -> Color {
             guard transparency != 0 else { return panelScrim }
@@ -335,7 +335,7 @@ enum Theme {
                 amount > 0 ? baseline * (1 - amount) : baseline - (1 - baseline) * amount
             }
             return adaptive(
-                dark: .srgbInk(0.12, alpha: alpha(0.96)), light: .srgbInk(0.93, alpha: alpha(0.96)))
+                dark: .srgbInk(0.12, alpha: alpha(0.96)), light: .srgbInk(0.96, alpha: alpha(0.96)))
         }
 
         static func panelEdgeHighlight(transparency: Int) -> Color {
@@ -399,7 +399,7 @@ enum Theme {
         /// The two squares of a checkerboard, behind a colour with alpha to show.
         static let checkerLight = Color(nsColor: .srgbInk(1, alpha: 0.22))
         static let checkerDark = Color(nsColor: .srgbInk(0, alpha: 0.22))
-        /// The violet of the app mark, used only to tint the About support callout.
+        /// The violet of the app mark.
         static let brand = Color(red: 0.525, green: 0.231, blue: 1.0)
         /// The palette's drop guides while dragging, and once a release would snap it home.
         static let dropGuide = ramp(dark: 0.35, light: 0.35)

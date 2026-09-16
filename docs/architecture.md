@@ -20,8 +20,6 @@ Independently of the folder tree, every mature subsystem has converged on the sa
 │ PaletteRowIndex ·                                                          │
 │ ShellCommandRunner · DoubleTap{Modifier,Detector} · ClipboardStore ·       │
 │ RaycastDecoder · Scrypt · AppSettingsKey · SettingsBackupCoverage          │
-│ SupportReminderSchedule ·                                                  │
-│ MenuSearch{Item,Shortcut,Query,TreeNode,SnapshotPolicy,Target} ·           │
 └──────────────────────────────────┬─────────────────────────────────────────┘
                                    │ consumed by
 ┌─ EFFECT ─────────────────────────▼─────────────────────────────────────────┐
@@ -30,7 +28,6 @@ Independently of the folder tree, every mature subsystem has converged on the sa
 │ IconCache · QuicklinkLauncher · TextInjector · Paster ·                    │
 │ CurrencyRateStore ·                                                        │
 │ HotKeyCenter · HyperKeyTap · DoubleTapMonitor · RunningAppsMonitor ·       │
-│ SupportReminderStore · AXMenuAccess ·                                      │
 └──────────────────────────────────┬─────────────────────────────────────────┘
                                    │ published through
 ┌─ OBSERVABLE STATE ───────────────▼─────────────────────────────────────────┐
@@ -75,7 +72,7 @@ app: the stores (`AppIndex`, `ClipboardStore`, `QuicklinkStore`, `CustomCommandS
 `CurrencyRateStore`), the managers, monitors and clocks
 (`ClipboardManager`, the opt-in `ClipboardTextIndexer`,
 `HotKeyManager`, `HyperKeyTap`, `RunningAppsMonitor`), the shared state
-(`AppSettings`, `PaletteState`, `FileSearchSession`, `MenuSearchSession`,
+(`AppSettings`, `PaletteState`, `FileSearchSession`,
 `CustomCommandArgumentSession`), the feature coordinators, and the
 window controllers.
 
@@ -122,12 +119,8 @@ everything else visible is driven imperatively from AppKit.
   confirmations, failure reports and value prompts. Presentation is `async`, so nothing blocks the main
   actor, and the presenter refuses a second dialog while one is up — that, not a flag, is what stops a
   held hotkey stacking dialogs.
-- **Support** — a titled `AppWindowController` window owned by `SupportCoordinator`, sized to the
-  height its content measured. Every route into it — the palette's menu circle, Settings → About, the
-  menu bar, the launcher, and the 30-day reminder — lands on `showSupport()`, which is what moves the
-  reminder's anchor. See [features/support.md](features/support.md).
-- **HUDs** are separate, because a dialog asks and a HUD reports: `MessageHUDController` (the pill) and
-  `VolumeHUDController` (the level box), both over a shared `HUDPresenter` that owns the
+- **HUDs** are separate, because a dialog asks and a HUD reports: `MessageHUDController` (the pill)
+  over a shared `HUDPresenter` that owns the
   one-at-a-time, auto-dismiss and fade policy. See [ui.md](ui.md#dialogs--hud).
 
 `NSAlert` is never used, and that is load-bearing. Appearance is a setting: `AppCore.applyAppearance()`
@@ -193,9 +186,9 @@ Tinycast/
   Assets.xcassets/  the app icon and the bundled image sets some catalog symbols resolve to
   Features/
     PaletteRowIndex.swift   the flat selection index — palette-owned, so it sits at the top
-    Launcher/ Clipboard/ Calculator/ FileSearch/ MenuSearch/
+    Launcher/ Clipboard/ Calculator/ FileSearch/
     Quicklinks/ CustomCommands/ HotKeys/ Backup/
-    Onboarding/ Updates/ Support/ Settings/
+    Onboarding/ Updates/ Settings/
     Extensions/
         Model/      pure — the harness inputs
         Service/    effects — stores, monitors, runners, AppKit glue

@@ -110,7 +110,7 @@ enum SettingsSearchCatalog {
     static let entries: [SettingsSearchEntry] =
         general + applications + systemSettings
         + commands + quicklinks + fallbacks + fileSearch
-        + navigation + clipboard
+        + clipboard
         + extensions + permissions + backup + about
 
     private static let general: [SettingsSearchEntry] = [
@@ -260,24 +260,6 @@ enum SettingsSearchCatalog {
             keywords: ["exclude", "glob", "node_modules", "skip"])
     ]
 
-    private static let navigation: [SettingsSearchEntry] = [
-        .init(
-            pane: .navigation,
-            keywords: ["menu bar", "focus", "raise"]),
-        .init(
-            .navigationNavigation, "Enable navigation",
-            keywords: ["menu bar", "accessibility"]),
-        .init(
-            group: .navigationCommands, "Navigation commands",
-            keywords: ["shortcut", "hotkey", "alias", "launcher"]),
-        .init(
-            .navigationMenuSearch, "Show Apple menu items",
-            keywords: ["apple menu", "about this mac", "recent items", "sleep", "logo"]),
-        .init(
-            .navigationMenuSearch, "Disabled Applications",
-            keywords: ["exclude", "password manager", "ignore", "privacy", "menu bar"])
-    ]
-
     private static let clipboard: [SettingsSearchEntry] = [
         .init(
             pane: .clipboard,
@@ -368,9 +350,6 @@ enum SettingsSearchCatalog {
             keywords: ["version", "upgrade", "release"]),
         .init(
             group: .aboutLinks, "Links",
-            keywords: ["github", "source", "issues", "website"]),
-        .init(
-            .aboutLinks, "Support",
-            keywords: ["donate", "sponsor", "funding"])
+            keywords: ["github", "source", "issues", "website"])
     ]
 }

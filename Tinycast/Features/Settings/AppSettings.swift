@@ -300,22 +300,6 @@ final class AppSettings {
         didSet { defaults.set(snippetsShowInLauncher, forKey: Key.snippetsShowInLauncher.rawValue) }
     }
 
-    var navigationEnabled: Bool {
-        didSet { defaults.set(navigationEnabled, forKey: Key.navigationEnabled.rawValue) }
-    }
-
-    /// Bundle IDs whose menu bar Search Menu Bar Items refuses to read at all.
-    var menuSearchDisabledApps: [String] {
-        didSet { defaults.set(menuSearchDisabledApps, forKey: Key.menuSearchDisabledApps.rawValue) }
-    }
-
-    /// Off: the Apple menu is the same on every app, so it would only pad every snapshot.
-    var menuSearchShowsAppleMenu: Bool {
-        didSet {
-            defaults.set(menuSearchShowsAppleMenu, forKey: Key.menuSearchShowsAppleMenu.rawValue)
-        }
-    }
-
     /// Consent to run third-party JavaScript: it confirms, defaults off, rides no backup.
     var extensionsEnabled: Bool {
         didSet { defaults.set(extensionsEnabled, forKey: Key.extensionsEnabled.rawValue) }
@@ -478,11 +462,6 @@ final class AppSettings {
         }
     }
 
-    /// Whether the support window may reopen itself; off means never ask again.
-    var supportRemindersEnabled: Bool {
-        didSet { defaults.set(supportRemindersEnabled, forKey: Key.supportReminders.rawValue) }
-    }
-
     init() {
         // The only feature switch that defaults on, so absence has to outrank a stored `false`.
         clipboardEnabled =
@@ -607,10 +586,6 @@ final class AppSettings {
             defaults.object(forKey: Key.hideCurrentEvent.rawValue)
             .flatMap { $0 as? Int }
             .flatMap(HideCurrentEvent.init(rawValue:)) ?? .dontHide
-        navigationEnabled = defaults.bool(forKey: Key.navigationEnabled.rawValue)
-        menuSearchDisabledApps =
-            defaults.stringArray(forKey: Key.menuSearchDisabledApps.rawValue) ?? []
-        menuSearchShowsAppleMenu = defaults.bool(forKey: Key.menuSearchShowsAppleMenu.rawValue)
         windowManagementEnabled = defaults.bool(forKey: Key.windowManagementEnabled.rawValue)
         windowManagementShowInLauncher =
             defaults.object(forKey: Key.windowManagementShowInLauncher.rawValue) == nil
@@ -631,8 +606,5 @@ final class AppSettings {
         quicklinkConfirmsBeforeDelete =
             defaults.object(forKey: Key.quicklinkConfirmsBeforeDelete.rawValue) == nil
             || defaults.bool(forKey: Key.quicklinkConfirmsBeforeDelete.rawValue)
-        supportRemindersEnabled =
-            defaults.object(forKey: Key.supportReminders.rawValue) == nil
-            || defaults.bool(forKey: Key.supportReminders.rawValue)
     }
 }

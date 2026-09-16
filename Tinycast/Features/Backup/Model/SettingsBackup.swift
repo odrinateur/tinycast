@@ -44,10 +44,6 @@ struct SettingsBackup: Codable {
         var customCommandsEnabled: Bool?
         var customCommandsShowInLauncher: Bool?
         var snippetsShowInLauncher: Bool?
-        // Safe to carry: it grants no permission class paste doesn't already prompt for.
-        var navigationEnabled: Bool?
-        var menuSearchDisabledApps: [String]?
-        var menuSearchShowsAppleMenu: Bool?
         var windowManagementEnabled: Bool?
         var windowManagementShowInLauncher: Bool?
         var windowGap: Int?
@@ -71,8 +67,6 @@ struct SettingsBackup: Codable {
         var calendarMenuBarDisplay: Int?
         var menuBarLinkedEventsOnly: Bool?
         var hideCurrentEvent: Int?
-        // Safe to carry: it silences a prompt rather than granting anything.
-        var supportReminders: Bool?
     }
 
     /// One entry per bindable action. docs/features/hotkeys.md#persistence
@@ -133,9 +127,6 @@ extension SettingsBackup {
             customCommandsEnabled: s.customCommandsEnabled,
             customCommandsShowInLauncher: s.customCommandsShowInLauncher,
             snippetsShowInLauncher: s.snippetsShowInLauncher,
-            navigationEnabled: s.navigationEnabled,
-            menuSearchDisabledApps: s.menuSearchDisabledApps,
-            menuSearchShowsAppleMenu: s.menuSearchShowsAppleMenu,
             windowManagementEnabled: s.windowManagementEnabled,
             windowManagementShowInLauncher: s.windowManagementShowInLauncher,
             windowGap: s.windowGap,
@@ -154,8 +145,7 @@ extension SettingsBackup {
             menuBarEvents: s.menuBarEvents.rawValue,
             calendarMenuBarDisplay: s.calendarMenuBarDisplay.rawValue,
             menuBarLinkedEventsOnly: s.menuBarLinkedEventsOnly,
-            hideCurrentEvent: s.hideCurrentEvent.rawValue,
-            supportReminders: s.supportRemindersEnabled)
+            hideCurrentEvent: s.hideCurrentEvent.rawValue)
 
         let hk = core.hotKeys
         var hotkeys = HotkeyBackup()
@@ -330,18 +320,6 @@ extension SettingsBackup {
             settings.snippetsShowInLauncher = flag
             count += 1
         }
-        if let flag = s.navigationEnabled {
-            settings.navigationEnabled = flag
-            count += 1
-        }
-        if let apps = s.menuSearchDisabledApps {
-            settings.menuSearchDisabledApps = apps
-            count += 1
-        }
-        if let flag = s.menuSearchShowsAppleMenu {
-            settings.menuSearchShowsAppleMenu = flag
-            count += 1
-        }
         if let flag = s.windowManagementEnabled {
             settings.windowManagementEnabled = flag
             count += 1
@@ -420,10 +398,6 @@ extension SettingsBackup {
         }
         if let raw = s.hideCurrentEvent, let hide = HideCurrentEvent(rawValue: raw) {
             settings.hideCurrentEvent = hide
-            count += 1
-        }
-        if let flag = s.supportReminders {
-            settings.supportRemindersEnabled = flag
             count += 1
         }
         return count

@@ -11,7 +11,7 @@ Read this before touching any view body, `Theme` value, or the panel chrome.
 ## The look, in one paragraph
 
 Tinycast is a **command palette**: a borderless floating panel whose surface is a nearly
-opaque flat gray — charcoal 0.12 at 96% in Dark, silver 0.93 at 96% in Light — so the desktop
+opaque flat gray — charcoal 0.12 at 96% in Dark, silver 0.96 at 96% in Light — so the desktop
 barely shows through. Everything on that surface is white at a fixed alpha ramp. The header and
 bottom bar carry **the panel's own scrim** — same `panelScrim(transparency:)` as the background
 behind them, so rows hide beneath with no visible band — with only a hairline `separator`
@@ -157,7 +157,7 @@ panel and the shortcut-recorder callout, and `menuRow` is deliberately equal to
 ### Typography (`Theme.Typography`)
 
 System text styles only — **no fixed point sizes in views**. Two named exceptions are explicit:
-`searchField` (20pt Regular) and the optical SF Symbol treatment `menuSymbol` (14pt Medium). Use
+`searchField` (16pt Regular) and the optical SF Symbol treatment `menuSymbol` (14pt Medium). Use
 `rowTitle` (`.body`), `sectionHeader` (`.subheadline.medium`),
 `rowTrailing`/`bar`/`menuRow`/`keyCap` etc. as named.
 
@@ -174,7 +174,7 @@ shipped. Light is the same stop with the ink inverted, and is the only column op
 
 | Token             | Dark           | Light          | Use                                              |
 | ----------------- | -------------- | -------------- | ------------------------------------------------ |
-| `panelScrim`      | gray 0.12 solid-ish (0.96) | gray 0.93 solid-ish (0.96) | the panel scrim over vibrancy                    |
+| `panelScrim`      | gray 0.12 solid-ish (0.96) | gray 0.96 solid-ish (0.96) | the panel scrim over vibrancy                    |
 | `selection`       | white 0.10     | black 0.09     | selected row fill (keyboard/active selection)    |
 | `rowHover`        | white 0.05     | black 0.045    | mouse-hover fill (always fainter than selection) |
 | `menuHover`       | white 0.10     | black 0.09     | popover-menu row hover                           |
@@ -211,7 +211,7 @@ Source: `Palette/PalettePanel.swift`, `Palette/RootPaletteView.swift`.
 
 - **`PalettePanel`** is a borderless `NSPanel`: `isOpaque = false`, `backgroundColor = .clear`, `.floating` level, `hasShadow`, `animationBehavior = .none`. The two more transparent Dark detents turn off the native shadow and its black outline, adding a one-point white gradient border with a brighter upper edge. It hosts SwiftUI via `NSHostingView`. `PaletteWindowController` centers it slightly above screen center (`+8%`) and dismisses it on `windowDidResignKey`.
 - **The results layer fills the whole panel.** Header and footer repeat the panel scrim, a hairline marks each, and the list hides behind them with no dissolve.
-- **Header** (`headerHeight 48`): a back-chevron _or_ mode glyph, then the plain `TextField` (no border/background). Sub-screens (Clipboard, Calculator History) show the back chevron; the launcher shows a magnifying glass. The search icon aligns horizontally with row content.
+- **Header** (`headerHeight 48`): a back-chevron on sub-screens, then the plain `TextField` (no border/background). Sub-screens (Clipboard, Calculator History) show the back chevron; the launcher drops the slot so the field starts flush with the rows.
 - **Compact keyboard entry:** pressing `↓` in the collapsed launcher expands the results and selects the first row without replacing or defocusing the shared search field.
 - **Bottom bar** (`bottomBarHeight 46`): a hover-only menu mark on the left, bare action buttons on the right — primary action, a `separator` divider, then the Actions toggle (`⌘K`). No container, no fill.
 - **`BarButton`** is the shared bar control: bare label at rest, a `rowHover` capsule on hover, `barButtonHeight 28`. It carries the footer's two buttons and the clipboard header's type filter, so those hover identically. Hover state lives inside it, so sweeping one never re-renders the palette body.

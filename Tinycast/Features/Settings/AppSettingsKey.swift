@@ -31,9 +31,6 @@ enum AppSettingsKey: String, CaseIterable {
     case customCommandsShowInLauncher = "customCommandsShowInLauncher"
     case snippetsEnabled = "snippetsEnabled"
     case snippetsShowInLauncher = "snippetsShowInLauncher"
-    case navigationEnabled = "navigationEnabled"
-    case menuSearchDisabledApps = "menuSearchDisabledApps"
-    case menuSearchShowsAppleMenu = "menuSearchShowsAppleMenu"
     case windowManagementEnabled = "windowManagementEnabled"
     case windowManagementShowInLauncher = "windowManagementShowInLauncher"
     case windowGap = "windowManagementGap"
@@ -78,5 +75,4 @@ enum AppSettingsKey: String, CaseIterable {
     case quickActionPreviews = "quickActionPreviews"
     case quickActionInstructions = "quickActionInstructions"
     case quickActionLanguage = "quickActionLanguage"
-    case supportReminders = "supportReminders"
 }

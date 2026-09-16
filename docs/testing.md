@@ -84,7 +84,6 @@ If a change touches anything in the right column, the harness on the left is man
 | `corpus-test` | the launcher's ranking, over a dense synthetic index — **a new complaint is a new case in `Tests/launcher-corpus/corpus.json`** |
 | `file-search-test` | `FileSearch/Model/`, plus the shared `FuzzyMatch` scorer |
 | `file-search-session-test` | serialized query execution, debounce coalescing and cancellation |
-| `menu-search-test` | `MenuSearch/Model/` decisions, `MenuSearch/Service/` session filtering, the shared `FuzzyMatch` scorer |
 | `ranking-test` | `Launcher/Model/LauncherRankingStore.swift` |
 | `scopes-test` | `Launcher/Model/SearchScopes.swift` |
 | `app-name-test` | `Platform/AppDisplayName.swift` — every path that names a scanned bundle |
@@ -115,7 +114,6 @@ If a change touches anything in the right column, the harness on the left is man
 | `settings-backup-test` | `Settings/AppSettingsKey.swift`, `Backup/Model/SettingsBackupCoverage.swift` |
 | `backup-archive-test` | all of `Backup/Model/`, plus `Backup/Service/BackupStaging.swift` |
 | `updates-test` | `Updates/Model/` — version precedence, channel filtering, install route, readiness |
-| `support-test` | `Support/Model/` — when the support reminder comes due, and a clock moved backwards |
 
 The two harnesses that need a server to talk to bring their own: `Tests/ai-fixtures/codex-stub.js`
 and `mcp-stub.js`, each copied into a scratch directory and put in front of PATH so the locator finds

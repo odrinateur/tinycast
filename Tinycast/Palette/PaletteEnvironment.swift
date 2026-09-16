@@ -26,7 +26,6 @@ extension View {
             .environment(core.calcHistory)
             .environment(core.currencyRates)
             .environment(core.fileSearch)
-            .environment(core.menuSearch)
             .environment(core.runningApps)
             .environment(core.hotKeys)
             .environment(core.quicklinks)

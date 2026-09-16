@@ -5,7 +5,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
     case clipboard
     case calculatorHistory
     case fileSearch
-    case menuSearch
     case quicklinks
     /// Collects a custom command's positional arguments, held on its own session.
     case customCommandArguments
@@ -22,7 +21,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .clipboard: return "doc.on.doc"
         case .calculatorHistory: return "plus.forwardslash.minus"
         case .fileSearch: return "doc.text.magnifyingglass"
-        case .menuSearch: return "menubar.rectangle"
         case .quicklinks: return Quicklink.sfSymbol
         case .customCommandArguments: return CustomCommand.sfSymbol
         case .extensionCommand: return "puzzlepiece.extension"
@@ -34,7 +32,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .clipboard: return "Type to filter entries…"
         case .calculatorHistory: return "Do math, convert units, or search your past calculations…"
         case .fileSearch: return "Search files and folders…"
-        case .menuSearch: return "Search menu bar items…"
         case .quicklinks: return "Search quicklinks…"
         // Replaced by the pending argument's name; only reached if the session vanished mid-render.
         case .customCommandArguments: return "Enter a value…"

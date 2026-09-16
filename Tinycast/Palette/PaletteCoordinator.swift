@@ -7,7 +7,6 @@ final class PaletteCoordinator {
     private let settings: AppSettings
     private let appIndex: AppIndex
     private let fileSearch: FileSearchSession
-    private let menuSearch: MenuSearchSession
     private let windowController: PaletteWindowController
 
     init(
@@ -15,14 +14,12 @@ final class PaletteCoordinator {
         settings: AppSettings,
         appIndex: AppIndex,
         fileSearch: FileSearchSession,
-        menuSearch: MenuSearchSession,
         windowController: PaletteWindowController
     ) {
         self.palette = palette
         self.settings = settings
         self.appIndex = appIndex
         self.fileSearch = fileSearch
-        self.menuSearch = menuSearch
         self.windowController = windowController
     }
 
@@ -79,14 +76,12 @@ final class PaletteCoordinator {
         if let query { palette.query = query }
         windowController.show()
         if palette.mode == .fileSearch { fileSearch.search(palette.query) }
-        if palette.mode == .menuSearch { menuSearch.filter(palette.query) }
         // Re-scan on open so an app uninstalled since the last scan drops out of the launcher.
         if palette.mode == .launcher { Task { await appIndex.refresh() } }
     }
 
     func hidePalette(restoreFocus: Bool = true) {
         fileSearch.cancel()
-        menuSearch.reset()
         windowController.hide(restoreFocus: restoreFocus)
     }
 

@@ -27,11 +27,9 @@ final class AppCore {
     let calcHistory = CalculatorHistoryStore()
     let currencyRates = CurrencyRateStore()
     let updateChecker = UpdateCheckStore()
-    let supportReminders: SupportReminderStore
     let runningApps = RunningAppsMonitor()
     let palette = PaletteState()
     let fileSearch = FileSearchSession()
-    let menuSearch = MenuSearchSession()
     let activationPolicy = ActivationPolicy()
     let customCommandArguments = CustomCommandArgumentSession()
     let extensions: ExtensionManager
@@ -49,7 +47,7 @@ final class AppCore {
 
     @ObservationIgnored private(set) lazy var paletteCoordinator = PaletteCoordinator(
         palette: palette, settings: settings, appIndex: appIndex,
-        fileSearch: fileSearch, menuSearch: menuSearch,
+        fileSearch: fileSearch,
         windowController: windowController)
     /// Its own window and lifecycle: neither coordinator shows or closes the other's surface.
     @ObservationIgnored private(set) lazy var settingsCoordinator = SettingsCoordinator(core: self)
@@ -71,7 +69,6 @@ final class AppCore {
         customCommandCoordinator: customCommandCoordinator,
         quicklinkCoordinator: quicklinkCoordinator,
         fileSearchCoordinator: fileSearchCoordinator,
-        menuSearchCoordinator: menuSearchCoordinator,
         extensionCoordinator: extensionCoordinator,
         core: self)
     @ObservationIgnored private(set) lazy var fallbackCoordinator = FallbackCoordinator(
@@ -85,13 +82,8 @@ final class AppCore {
     @ObservationIgnored private(set) lazy var fileSearchCoordinator = FileSearchCoordinator(
         settings: settings, appIndex: appIndex, session: fileSearch, palette: palette,
         paletteCoordinator: paletteCoordinator, windowController: windowController, core: self)
-    @ObservationIgnored private(set) lazy var menuSearchCoordinator = MenuSearchCoordinator(
-        settings: settings, appIndex: appIndex, session: menuSearch, palette: palette,
-        paletteCoordinator: paletteCoordinator, core: self)
     @ObservationIgnored private(set) lazy var updateCoordinator = UpdateCoordinator(
         store: updateChecker, core: self)
-    @ObservationIgnored private(set) lazy var supportCoordinator = SupportCoordinator(
-        store: supportReminders, core: self)
 
     @ObservationIgnored private lazy var windowController = PaletteWindowController(core: self)
     @ObservationIgnored private lazy var messageHUD = MessageHUDController(settings: settings)
@@ -104,7 +96,6 @@ final class AppCore {
         let settings = AppSettings()
         self.launcherRanking = launcherRanking
         self.settings = settings
-        supportReminders = SupportReminderStore(settings: settings)
         appIndex = AppIndex(ranking: launcherRanking, aliases: aliases)
         let clipboardManager = ClipboardManager(store: clipboardStore, settings: settings)
         self.clipboardManager = clipboardManager
@@ -127,7 +118,6 @@ final class AppCore {
             extensions.start(appIndex: appIndex, coordinator: extensionCoordinator)
             extensionCoordinator.applyEnabled()
             fileSearchCoordinator.applyEnabled()
-            menuSearchCoordinator.applyEnabled()
             fileSearchCoordinator.applyPolicy()
             customCommands.onChange = { [weak self] _ in
                 self?.customCommandCoordinator.applyCustomCommandsPresence()
@@ -146,8 +136,6 @@ final class AppCore {
                 self?.updateCoordinator.presentIfAvailable(release) ?? true
             }
             updateChecker.start()
-            supportReminders.onDue = { [weak self] in self?.supportCoordinator.presentIfDue() }
-            supportReminders.start()
 
             hyperKeyTap.healthTicker = healthTicker
             hotKeys.doubleTapMonitor.healthTicker = healthTicker
@@ -198,7 +186,6 @@ final class AppCore {
         if settingsCoordinator.focusExisting() { return }
         if onboardingCoordinator.focusExisting() { return }
         if updateCoordinator.focusExisting() { return }
-        if supportCoordinator.focusExisting() { return }
         if customCommandCoordinator.focusOutputWindow() { return }
         paletteCoordinator.showPalette(mode: .launcher, restoreAnyMode: true)
     }
@@ -294,9 +281,6 @@ final class AppCore {
             { _ = $0.clipboardTextSearchEnabled }, reproject: { $0.applyClipboardTextSearch() })
         track({ _ = $0.fileSearchEnabled }, reproject: { $0.fileSearchCoordinator.applyEnabled() })
         track(
-            { _ = $0.navigationEnabled },
-            reproject: { $0.menuSearchCoordinator.applyEnabled() })
-        track(
             {
                 _ = $0.fileSearchScopes
                 _ = $0.fileSearchIgnorePatterns
@@ -344,7 +328,7 @@ final class AppCore {
 
     // MARK: - Interruption
 
-    /// What the app is in the middle of; the update prompt and the support reminder both ask first.
+    /// What the app is in the middle of; the update prompt asks first.
     var currentActivity: UpdateActivity {
         UpdateActivity(
             isExpandingSnippet: textInjector.isDelivering,

@@ -28,9 +28,6 @@ enum SettingsBackupCoverage {
         "customCommandsEnabled": .customCommandsEnabled,
         "customCommandsShowInLauncher": .customCommandsShowInLauncher,
         "snippetsShowInLauncher": .snippetsShowInLauncher,
-        "navigationEnabled": .navigationEnabled,
-        "menuSearchDisabledApps": .menuSearchDisabledApps,
-        "menuSearchShowsAppleMenu": .menuSearchShowsAppleMenu,
         "windowManagementEnabled": .windowManagementEnabled,
         "windowManagementShowInLauncher": .windowManagementShowInLauncher,
         "windowGap": .windowGap,
@@ -49,8 +46,7 @@ enum SettingsBackupCoverage {
         "menuBarEvents": .menuBarEvents,
         "calendarMenuBarDisplay": .calendarMenuBarDisplay,
         "menuBarLinkedEventsOnly": .menuBarLinkedEventsOnly,
-        "hideCurrentEvent": .hideCurrentEvent,
-        "supportReminders": .supportReminders
+        "hideCurrentEvent": .hideCurrentEvent
     ]
 
     /// The `SettingsData` fields no `AppSettings` key stands behind, and what they read instead.

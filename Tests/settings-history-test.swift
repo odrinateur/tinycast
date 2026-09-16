@@ -151,7 +151,7 @@ struct SettingsHistoryTests {
             ("caps lock", .general),
             ("launch at login", .general),
             ("paste history", .clipboard),
-            ("navigation", .navigation),
+            ("clipboard", .clipboard),
             ("file search", .fileSearch)
         ]
         for (query, tab) in cases {

@@ -37,9 +37,6 @@ extension SettingsAnchor {
 
 
 
-    static let navigationNavigation = Self(tab: .navigation, title: "Navigation")
-    static let navigationCommands = Self(tab: .navigation, title: "Commands")
-    static let navigationMenuSearch = Self(tab: .navigation, title: "Search Menu Bar Items")
 
     static let clipboardClipboard = Self(tab: .clipboard, title: "Clipboard")
     static let clipboardCommands = Self(tab: .clipboard, title: "Commands")

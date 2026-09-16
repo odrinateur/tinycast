@@ -86,7 +86,7 @@ struct AppearanceTests {
         check(
             "light scrim is light gray",
             components(c.panelScrim, .aqua)
-                == components(Color(nsColor: .srgbInk(0.93, alpha: 0.96)), .aqua))
+                == components(Color(nsColor: .srgbInk(0.96, alpha: 0.96)), .aqua))
         check(
             "dark scrim is dark gray",
             components(c.panelScrim, .darkAqua)

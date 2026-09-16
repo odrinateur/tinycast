@@ -11,7 +11,6 @@ struct RootPaletteView: View {
     /// Observed so the card re-evaluates when a snapshot lands or consent changes.
     @Environment(CurrencyRateStore.self) private var currencyRates
     @Environment(FileSearchSession.self) private var fileSearch
-    @Environment(MenuSearchSession.self) private var menuSearch
     /// Observed so the join card's countdown redraws on the minute boundary.
     @Environment(QuicklinkStore.self) private var quicklinks
     @Environment(CustomCommandArgumentSession.self) private var customCommandArguments
@@ -57,9 +56,6 @@ struct RootPaletteView: View {
         case .fileSearch:
             return FileSearchScreen(
                 session: fileSearch, core: core, vm: vm, openActions: openActions)
-        case .menuSearch:
-            return MenuSearchScreen(
-                session: menuSearch, core: core, vm: vm, openActions: openActions)
         case .clipboard:
             return ClipboardScreen(
                 store: store, core: core, vm: vm, openActions: openActions,
@@ -131,14 +127,11 @@ struct RootPaletteView: View {
             })
     }
 
-    /// The bottom-left app menu content (About / Support / Settings).
+    /// The bottom-left app menu content (About / Settings).
     private var appMenuContent: PopoverMenuContent {
         PopoverMenuContent(items: [
             PopoverMenuItem(title: "About Tinycast", systemImage: "info.circle") {
                 core.settingsCoordinator.showAbout()
-            },
-            PopoverMenuItem(title: "Support Tinycast", systemImage: "heart") {
-                core.supportCoordinator.showSupport()
             },
             PopoverMenuItem(title: "Settings", systemImage: "gearshape", shortcut: "⌘,") {
                 core.settingsCoordinator.showSettings()
@@ -247,7 +240,6 @@ struct RootPaletteView: View {
                 vm.selection = 0
                 scroll = ScrollIntent(kind: .top)
                 if vm.mode == .fileSearch { fileSearch.search(vm.query, filter: vm.fileSearchFilter) }
-                if vm.mode == .menuSearch { menuSearch.filter(vm.query) }
                 // A command that took over the search text filters its own list.
                 if vm.mode == .extensionCommand, let handler = extensionScreen.searchTextHandler {
                     extensions.dispatch(handler: handler, arguments: [vm.query])
@@ -284,7 +276,6 @@ struct RootPaletteView: View {
                 } else {
                     fileSearch.cancel()
                 }
-                if vm.mode != .menuSearch { menuSearch.reset() }
                 // Leaving the screen any other way than Escape still ends the command's session.
                 if vm.mode != .extensionCommand, extensions.running != nil, !extensions.isAuthorizing {
                     Task { await extensions.stop() }
@@ -509,17 +500,11 @@ struct RootPaletteView: View {
         HStack(alignment: .center, spacing: 0) {
             // Matches the list rows and section headers' own indent below.
             headerGutter(width: metrics.spacing.md * 2)
-            // Every sub-screen leaves the same way, so the slot reads the same on all of them.
+            // Sub-screens leave through a chevron; the launcher gives the slot to the field.
             if vm.mode != .launcher {
                 HeaderBackButton(help: backHelp, action: goBack)
-            } else {
-                Image(systemName: vm.mode.systemImage)
-                    .font(metrics.typography.headerIcon)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.secondary)
-                    .frame(width: metrics.size.headerIconSlot)
+                headerGutter(width: metrics.spacing.md)
             }
-            headerGutter(width: metrics.spacing.md)
             // One structural position: a field inside a branch loses first responder when it flips.
             headerField
             if let accessory = headerAccessory {

@@ -300,6 +300,7 @@ struct ClipboardPreview: View {
                 ClipboardInfoSection(item: item, imageURL: store.imageURL(for: item))
             }
             .padding(.horizontal, 12)
+            .padding(.top, metrics.spacing.md)
         } else {
             Color.clear
         }

@@ -5,7 +5,6 @@ enum CommandID: String, CaseIterable, Sendable {
     case calculatorHistory = "command:calculator-history"
     case clipboardHistory = "command:clipboard-history"
     case searchFiles = "command:search-files"
-    case searchMenuItems = "command:search-menu-items"
     case openInBrowser = "command:open-in-browser"
     case runShellCommand = "command:run-shell-command"
     case createQuicklink = "command:create-quicklink"
@@ -18,7 +17,6 @@ enum CommandID: String, CaseIterable, Sendable {
     case checkForUpdates = "command:check-for-updates"
     case settings = "command:settings"
     case about = "command:about"
-    case support = "command:support"
     case quit = "command:quit"
 
     var name: String {
@@ -26,7 +24,6 @@ enum CommandID: String, CaseIterable, Sendable {
         case .calculatorHistory: return "Calculator History"
         case .clipboardHistory: return "Clipboard History"
         case .searchFiles: return "Search Files"
-        case .searchMenuItems: return "Search Menu Bar Items"
         case .openInBrowser: return "Open in Browser"
         case .runShellCommand: return "Run Shell Command"
         case .createQuicklink: return "Create Quicklink"
@@ -39,7 +36,6 @@ enum CommandID: String, CaseIterable, Sendable {
         case .checkForUpdates: return "Check for Updates"
         case .settings: return "Settings"
         case .about: return "About Tinycast"
-        case .support: return "Support Tinycast"
         case .quit: return "Quit Tinycast"
         }
     }
@@ -49,7 +45,6 @@ enum CommandID: String, CaseIterable, Sendable {
         case .calculatorHistory: return "plus.forwardslash.minus"
         case .clipboardHistory: return "doc.on.clipboard"
         case .searchFiles: return "doc.text.magnifyingglass"
-        case .searchMenuItems: return "menubar.rectangle"
         case .openInBrowser: return "globe"
         case .runShellCommand: return "terminal"
         case .createQuicklink: return "link.badge.plus"
@@ -62,7 +57,6 @@ enum CommandID: String, CaseIterable, Sendable {
         case .checkForUpdates: return "arrow.down.circle"
         case .settings: return "gearshape"
         case .about: return "info.circle"
-        case .support: return "heart"
         case .quit: return "power"
         }
     }

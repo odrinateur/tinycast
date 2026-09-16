@@ -27,15 +27,13 @@ open with an `## Invariants` section; read it before changing anything in that a
 [clipboard](features/clipboard.md) ·
 [calculator](features/calculator.md) ·
 [file search](features/file-search.md) ·
-[menu search](features/menu-search.md) ·
 [quicklinks](features/quicklinks.md) ·
 [hotkeys](features/hotkeys.md) ·
 [custom commands](features/custom-commands.md) ·
 [backup](features/backup.md) ·
 [Raycast import](features/raycast-import.md) ·
 [Raycast extensions](features/extensions.md) ·
-[updates](features/updates.md) ·
-[support](features/support.md)
+[updates](features/updates.md)
 
 ## Contributing
 

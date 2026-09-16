@@ -10,7 +10,6 @@ final class LauncherCoordinator {
     private let customCommandCoordinator: CustomCommandCoordinator
     private let quicklinkCoordinator: QuicklinkCoordinator
     private let fileSearchCoordinator: FileSearchCoordinator
-    private let menuSearchCoordinator: MenuSearchCoordinator
     private let extensionCoordinator: ExtensionCoordinator
     /// The backup commands only, which need the live stores to gather from and apply to.
     private unowned let core: AppCore
@@ -23,7 +22,6 @@ final class LauncherCoordinator {
         customCommandCoordinator: CustomCommandCoordinator,
         quicklinkCoordinator: QuicklinkCoordinator,
         fileSearchCoordinator: FileSearchCoordinator,
-        menuSearchCoordinator: MenuSearchCoordinator,
         extensionCoordinator: ExtensionCoordinator,
         core: AppCore
     ) {
@@ -34,7 +32,6 @@ final class LauncherCoordinator {
         self.customCommandCoordinator = customCommandCoordinator
         self.quicklinkCoordinator = quicklinkCoordinator
         self.fileSearchCoordinator = fileSearchCoordinator
-        self.menuSearchCoordinator = menuSearchCoordinator
         self.extensionCoordinator = extensionCoordinator
         self.core = core
     }
@@ -100,8 +97,6 @@ final class LauncherCoordinator {
             paletteCoordinator.togglePalette(mode: .clipboard)
         case .searchFiles:
             fileSearchCoordinator.show()
-        case .searchMenuItems:
-            menuSearchCoordinator.show()
         case .openInBrowser, .runShellCommand:
             break  // Query-driven: each runs where the typed text is, never through this funnel.
         case .searchQuicklinks:
@@ -133,9 +128,6 @@ final class LauncherCoordinator {
         case .about:
             dismissPalette()
             settingsCoordinator.showAbout()
-        case .support:
-            dismissPalette()
-            core.supportCoordinator.showSupport()
         case .quit:
             NSApp.terminate(nil)
         }
