@@ -71,69 +71,10 @@ open one**. See [testing.md](testing.md#definition-of-done).
 
 ## Releasing
 
-`.github/workflows/release.yml` builds and publishes a DMG from GitHub Actions, no local machine
-needed. Run it from the **Actions** tab (`Release` → **Run workflow**) and pick:
-
-- **channel** — `beta` or `stable`. Each builds a distinct app (`Tinycast Beta.app` / `Tinycast.app`)
-  with its own bundle id, alongside the local `Tinycast Dev.app`. Beta gets an auto-incrementing
-  `-beta.N` suffix (`N` = the Actions run number) so re-running never collides; stable ships the
-  version as-is.
-- **version** — base semver, e.g. `0.2.0`.
-
-It builds on a `macos-26` runner with Xcode 26 and publishes a GitHub Release tagged
-`v<full-version>` with a versioned DMG and zip asset, marked prerelease for beta. On success it also
-bumps the matching cask in the tap and announces the release on Discord.
-
-A stable run then fans out to a second job, `universal`, which rebuilds the same commit with
-`ARCHS="arm64 x86_64"` and attaches `Tinycast-Universal-<version>.dmg` / `.zip` to the release the
-first job created, then bumps `tinycast-universal`. macOS 26 is the last release that boots on Intel,
-and those Macs need both slices. Both jobs pin `ARCHS` explicitly and assert the slices on *every*
-shipping binary — the app and the bundled `ClipboardTextHelper`: trusting `ARCHS_STANDARD` is what
-shipped a thin arm64 build to Intel users once already, and it also keeps the Apple silicon download
-from silently gaining a slice it never needs. A thin helper inside a universal app is the quiet form
-of the same bug: the app boots on Intel and only clipboard OCR stops working.
-
-### Release notes
-
-`Scripts/release-notes.sh` composes the release body, and CI runs it just before `gh release create`.
-It is safe to run by hand against any tag — it only reads:
-
-```sh
-CHANNEL=beta TAG=v0.9.13-beta.61 ./Scripts/release-notes.sh /tmp/body.md /tmp/discord.md
-```
-
-The changelog itself comes from GitHub's own release-notes API, which lists every merged PR with its
-author and number — so contributors are credited without anyone maintaining a `CHANGELOG.md`, and
-without Conventional Commits. **Nothing is ever committed to this repo**: the tag is created
-server-side by `gh release create`, and no release, bot or version-bump commit exists.
-
-Two details the script exists for:
-
-- **The previous tag is picked per channel.** Beta and stable tags interleave on `main` — the same
-  commit can carry both — so "the previous release" is only ever right within one channel. A stable
-  release therefore spans every beta since the last stable.
-- **The body is split by `<!-- tinycast:install -->`.** Everything above it is the changelog;
-  everything below is the Homebrew and quarantine text, which only a download page needs. The update
-  window cuts at that marker — see [features/updates.md](features/updates.md). Full PR URLs are
-  shortened to `#304`, which still autolinks on the web and fits a 460pt window.
-
-The Discord announcement carries the same changelog, truncated to fit Discord's component limit, and
-pings `@everyone`.
-
-### Homebrew tap automation
-
-Each job's final step regenerates its cask (`tinycast`, `tinycast@beta` or `tinycast-universal`) in
-[`odrinateur/homebrew-tap`](https://github.com/odrinateur/homebrew-tap) via `Scripts/publish-tap.sh`.
-The generated URL uses `GitHubPrivateReleaseDownloadStrategy` — Homebrew strips `Authorization`
-headers on cask load and on redirect, so a `header:` token would never reach GitHub. It needs a
-`TAP_GITHUB_TOKEN` repo secret (contents:write on the tap). That token is for git-pushing the cask,
-not for `brew install`. Without it the step skips and the GitHub Release still publishes.
-
-Installing a private asset needs `HOMEBREW_GITHUB_API_TOKEN` or `gh auth login` on the Mac.
-
-`tinycast` and `tinycast-universal` both install `Tinycast.app` under `com.tinycast.app`, so they
-`conflicts_with` one another. Homebrew routes each Mac by `depends_on`: `tinycast` requires
-`arch: :arm64`; `tinycast-universal` takes the Intel Macs.
+`.github/workflows/release.yml` — **Actions → Release → Run workflow**, version only. One macOS 26
+job: ad-hoc arm64 build, DMG, GitHub Release, then `Scripts/publish-tap.sh` pushes `Casks/tinycast.rb`
+to [`odrinateur/homebrew-tap`](https://github.com/odrinateur/homebrew-tap). Needs `TAP_GITHUB_TOKEN`
+(contents:write on the tap). Installing needs `HOMEBREW_GITHUB_API_TOKEN` or `gh auth login`.
 
 ## Website
 
