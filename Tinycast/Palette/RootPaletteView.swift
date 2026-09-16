@@ -224,34 +224,85 @@ struct RootPaletteView: View {
     }
 
     /// Split from `body` for the same reason `keyHandlers` is: one chain cannot carry them all.
+    private func applyDefaultLauncherSelection() {
+        if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
+            vm.selection = launcher.defaultSelection
+        }
+    }
+
+    private func handleFocusToken() {
+        searchFocused = !screen.hidesSearchField
+        applyDefaultLauncherSelection()
+    }
+
+    private func handleQueryChange() {
+        if vm.collapseQueryLineBreaks() { return }
+        if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
+            vm.selection = launcher.defaultSelection
+        } else {
+            vm.selection = 0
+        }
+        scroll = ScrollIntent(kind: .top)
+        if vm.mode == .fileSearch { fileSearch.search(vm.query, filter: vm.fileSearchFilter) }
+        if vm.mode == .extensionCommand, let handler = extensionScreen.searchTextHandler {
+            extensions.dispatch(handler: handler, arguments: [vm.query])
+        }
+    }
+
+    private func handleModeChange() {
+        if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
+            vm.selection = launcher.defaultSelection
+        } else {
+            vm.selection = 0
+        }
+        vm.clipboardFilter = .all
+        vm.fileSearchFilter = .all
+        vm.fileSearchQuickLook = false
+        if menuOpen { closeMenus() }
+        scroll = ScrollIntent(kind: .top)
+        searchFocused = !screen.hidesSearchField
+        if vm.mode == .fileSearch {
+            fileSearch.search(vm.query, filter: vm.fileSearchFilter)
+        } else {
+            fileSearch.cancel()
+        }
+        if vm.mode != .extensionCommand, extensions.running != nil, !extensions.isAuthorizing {
+            Task { await extensions.stop() }
+        }
+        if vm.mode != .customCommandArguments {
+            core.customCommandCoordinator.cancelCustomCommandArguments()
+        }
+    }
+
+    private func handleResetToken() {
+        if menuOpen { closeMenus() }
+        scroll = ScrollIntent(kind: .top)
+        applyDefaultLauncherSelection()
+    }
+
+    private func handleAppear() {
+        searchFocused = !screen.hidesSearchField
+        applyDefaultLauncherSelection()
+    }
+
+    /// Split from `body` for the same reason `keyHandlers` is: one chain cannot carry them all.
     @ViewBuilder
     private func stateObservers(_ content: some View) -> some View {
+        lifecycleObservers(
+            domainObservers(content)
+        )
+    }
+
+    @ViewBuilder
+    private func domainObservers(_ content: some View) -> some View {
         content
             // Every show bumps focusToken so the search field refocuses.
-            .onChange(of: vm.focusToken) {
-                searchFocused = !screen.hidesSearchField
-                if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
-                    vm.selection = launcher.defaultSelection
-                }
-            }
+            .onChange(of: vm.focusToken) { handleFocusToken() }
             // A preserved screen re-summons as it was left, so a menu must end with the palette.
             .onChange(of: vm.isVisible) {
                 if !vm.isVisible, menuOpen { closeMenus() }
             }
-            .onChange(of: vm.query) {
-                if vm.collapseQueryLineBreaks() { return }
-                if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
-                    vm.selection = launcher.defaultSelection
-                } else {
-                    vm.selection = 0
-                }
-                scroll = ScrollIntent(kind: .top)
-                if vm.mode == .fileSearch { fileSearch.search(vm.query, filter: vm.fileSearchFilter) }
-                // A command that took over the search text filters its own list.
-                if vm.mode == .extensionCommand, let handler = extensionScreen.searchTextHandler {
-                    extensions.dispatch(handler: handler, arguments: [vm.query])
-                }
-            }
+            .onChange(of: vm.query) { handleQueryChange() }
             // Anything typed while the command was still starting predates its handler.
             .onChange(of: extensionScreen.searchTextHandler) { previous, handler in
                 guard previous == nil, let handler, !vm.query.isEmpty else { return }
@@ -269,47 +320,20 @@ struct RootPaletteView: View {
                 scroll = ScrollIntent(kind: .top)
                 fileSearch.search(vm.query, filter: vm.fileSearchFilter)
             }
-            .onChange(of: vm.mode) {
-                if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
-                    vm.selection = launcher.defaultSelection
-                } else {
-                    vm.selection = 0
-                }
-                vm.clipboardFilter = .all
-                vm.fileSearchFilter = .all
-                vm.fileSearchQuickLook = false
-                if menuOpen { closeMenus() }
-                scroll = ScrollIntent(kind: .top)
-                searchFocused = !screen.hidesSearchField
-                // Entering with no query is the blank screen's own request for recents.
-                if vm.mode == .fileSearch {
-                    fileSearch.search(vm.query, filter: vm.fileSearchFilter)
-                } else {
-                    fileSearch.cancel()
-                }
-                // Leaving the screen any other way than Escape still ends the command's session.
-                if vm.mode != .extensionCommand, extensions.running != nil, !extensions.isAuthorizing {
-                    Task { await extensions.stop() }
-                }
-                // A half-filled argument form: leaving the screen abandons the pending run.
-                if vm.mode != .customCommandArguments {
-                    core.customCommandCoordinator.cancelCustomCommandArguments()
-                }
-            }
+            .onChange(of: vm.mode) { handleModeChange() }
             // `prepare` may change nothing, so this intent still snaps the scroll to the origin.
-            .onChange(of: vm.resetToken) {
-                if menuOpen { closeMenus() }
-                scroll = ScrollIntent(kind: .top)
-                if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
-                    vm.selection = launcher.defaultSelection
-                }
-            }
+            .onChange(of: vm.resetToken) { handleResetToken() }
             // ⌘. arrives as a token rather than a key press. See `PaletteState.pinChordToken`.
             .onChange(of: vm.pinChordToken) { performShortcut(.pin) }
             // ⌘1…⌘0 arrives as a slot index from AppKit keyCode matching.
             .onChange(of: vm.favoriteSlotToken) {
                 if let index = vm.favoriteSlotIndex { performShortcut(.favoriteSlot(index)) }
             }
+    }
+
+    @ViewBuilder
+    private func lifecycleObservers(_ content: some View) -> some View {
+        content
             // One optional makes "exactly one menu" structural; this only mirrors it for the panel.
             .onChange(of: openMenu) {
                 vm.menuOpen = menuOpen
@@ -322,12 +346,7 @@ struct RootPaletteView: View {
                 menuPanel.hide()
                 (hostWindow as? PalettePanel)?.onHeaderFieldBoundaryArrow = nil
             }
-            .onAppear {
-                searchFocused = !screen.hidesSearchField
-                if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
-                    vm.selection = launcher.defaultSelection
-                }
-            }
+            .onAppear { handleAppear() }
             .modifier(SearchFieldHiding(hidden: hidesSearchField, apply: applySearchFieldHiding))
             // Several paths flip `paletteIsCollapsed`, so resize the window to match.
             .onChange(of: core.paletteCoordinator.paletteIsCollapsed) {
@@ -335,7 +354,7 @@ struct RootPaletteView: View {
             }
     }
 
-    /// Split from `body`: one chain of this length is past what the type-checker will infer.
+
     @ViewBuilder
     private func keyHandlers(_ content: some View, selection sel: Int) -> some View {
         content
