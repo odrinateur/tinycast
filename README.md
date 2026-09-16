@@ -79,26 +79,26 @@ keep it actively maintained. GitHub Sponsors isn't available in my country, so p
 First, add the tap:
 
 ```sh
-brew trust --tap abue-ammar/tinycast   # required for third-party taps
-brew tap abue-ammar/tinycast
+# Homebrew fetches private GitHub release assets with this, or with `gh auth login`.
+export HOMEBREW_GITHUB_API_TOKEN=…
+brew tap odrinateur/tap
 ```
 
 Then run the one line that matches your Mac:
 
-| Your Mac                                           | Install                                  |
-| -------------------------------------------------- | ---------------------------------------- |
-| Apple silicon, macOS 26 or newer                   | `brew install --cask tinycast`           |
-| Intel, macOS 26                                    | `brew install --cask tinycast-universal` |
-| macOS 15 Sequoia <sub>(no longer maintained)</sub> | `brew install --cask tinycast-sequoia`   |
+| Your Mac                         | Install                                              |
+| -------------------------------- | ---------------------------------------------------- |
+| Apple silicon, macOS 26 or newer | `brew install --cask odrinateur/tap/tinycast`           |
+| Intel, macOS 26                  | `brew install --cask odrinateur/tap/tinycast-universal` |
 
 Not sure which you have? **Apple menu → About This Mac.** Homebrew checks too, and refuses the
 wrong one.
 
-Want early builds? `brew install --cask tinycast@beta` puts `Tinycast Beta.app` beside the stable
-app, with its own settings and permissions. Apple silicon, macOS 26+.
+Want early builds? `brew install --cask odrinateur/tap/tinycast@beta` puts `Tinycast Beta.app` beside
+the stable app, with its own settings and permissions. Apple silicon, macOS 26+.
 
 Homebrew clears the macOS quarantine flag on every install and update, so there is nothing else to
-run. Downloading a DMG from [Releases](https://github.com/abue-ammar/tinycast/releases) instead?
+run. Downloading a DMG from [Releases](https://github.com/odrinateur/tinycast/releases) instead?
 Tinycast is self-signed, so clear the flag once:
 `xattr -dr com.apple.quarantine "/Applications/Tinycast.app"`.
 

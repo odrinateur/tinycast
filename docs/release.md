@@ -123,16 +123,18 @@ pings `@everyone`.
 
 ### Homebrew tap automation
 
-Each job's final step rewrites the `version` + `sha256` of its cask (`tinycast`, `tinycast@beta` or
-`tinycast-universal`) in the [`homebrew-tinycast`](https://github.com/abue-ammar/homebrew-tinycast) tap
-and pushes. It needs a `HOMEBREW_TAP_TOKEN` repo secret — a fine-grained PAT with **Contents:
-read/write** on the tap repo. Without the secret the step logs a warning and skips; the release still
-publishes. The `sed` is anchored to `^  version` / `^  sha256`, so a cask's two-space indent on those
-lines is load-bearing.
+Each job's final step regenerates its cask (`tinycast`, `tinycast@beta` or `tinycast-universal`) in
+[`odrinateur/homebrew-tap`](https://github.com/odrinateur/homebrew-tap) via `Scripts/publish-tap.sh`.
+The generated URL uses `GitHubPrivateReleaseDownloadStrategy` — Homebrew strips `Authorization`
+headers on cask load and on redirect, so a `header:` token would never reach GitHub. It needs a
+`TAP_GITHUB_TOKEN` repo secret (contents:write on the tap). That token is for git-pushing the cask,
+not for `brew install`. Without it the step skips and the GitHub Release still publishes.
 
-The three macOS 26 / macOS 15 casks all install `Tinycast.app` under `com.tinycast.app`, so they
-`conflicts_with` one another and Homebrew routes each Mac by `depends_on`: `tinycast` requires
-`arch: :arm64`, `tinycast-universal` takes the Intel Macs, and `tinycast-sequoia` covers macOS 15.
+Installing a private asset needs `HOMEBREW_GITHUB_API_TOKEN` or `gh auth login` on the Mac.
+
+`tinycast` and `tinycast-universal` both install `Tinycast.app` under `com.tinycast.app`, so they
+`conflicts_with` one another. Homebrew routes each Mac by `depends_on`: `tinycast` requires
+`arch: :arm64`; `tinycast-universal` takes the Intel Macs.
 
 ## Website
 

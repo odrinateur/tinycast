@@ -66,8 +66,10 @@ Then set the two secrets on the repo (via `gh`, authed as the repo owner, or pas
 UI under **Settings → Secrets and variables → Actions**):
 
 ```sh
-gh secret set SIGNING_P12_BASE64   --repo abue-ammar/tinycast < /tmp/signing.p12.base64
-gh secret set SIGNING_P12_PASSWORD --repo abue-ammar/tinycast --body "$P12_PASSWORD"
+gh secret set SIGNING_P12_BASE64   --repo odrinateur/tinycast < /tmp/signing.p12.base64
+gh secret set SIGNING_P12_PASSWORD --repo odrinateur/tinycast --body "$P12_PASSWORD"
+# Contents:write on odrinateur/homebrew-tap — git-pushes the cask, not used by brew install.
+gh secret set TAP_GITHUB_TOKEN     --repo odrinateur/tinycast
 rm -f /tmp/signing.p12.base64   # holds your private key — delete it
 ```
 
