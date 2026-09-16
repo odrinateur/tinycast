@@ -858,19 +858,15 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
-		CBA05AA0E4FE94ADE97BC7E5 /* WindowManagement */,
-				30AC9F80FBCCB573EE458A7E /* WindowSwitcher */,
-				52BD814D567DFEFD303B1750 /* PaletteRowIndex.swift */,
-			);
-			path = Features;
-			sourceTree = "<group>";
-		};
-		9720C813012234B73FF3981B /* Settings */ = {
+		CBA05AA0E4FE94ADE97BC7E5 /* WindowManagement */ = {
 			isa = PBXGroup;
 			children = (
-				8AC2CD86BAA6567B66B2B4DB /* FileSearchSettingsView.swift */,
+				852E1E4DA3976F9918134FF6 /* Model */,
+				12DCD476E37E857C160C5EDA /* Service */,
+				1F4FD014F2A109A812646A83 /* Settings */,
+				9EA28DDA94A714ED519A18A9 /* UI */,
 			);
-			path = Settings;
+			path = WindowManagement;
 			sourceTree = "<group>";
 		};
 		852E1E4DA3976F9918134FF6 /* Model */ = {
