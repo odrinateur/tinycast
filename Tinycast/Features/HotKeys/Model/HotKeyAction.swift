@@ -9,6 +9,8 @@ enum HotKeyAction: Hashable, Sendable {
     case app(bundleID: String)
     case settingsPane(bundleID: String)
     case customCommand(id: UUID)
+    case windowCommand(id: WindowCommand.ID)
+    case windowLayout(id: UUID)
     case quicklink(id: UUID)
     /// Keyed by `AppEntry.id`, which is what survives a reinstall of the extension.
     case extensionCommand(entryID: String)
@@ -21,6 +23,8 @@ enum HotKeyAction: Hashable, Sendable {
         case .app(let bundleID): "hotkey.app." + bundleID
         case .settingsPane(let bundleID): "hotkey.pane." + bundleID
         case .customCommand(let id): "hotkey.customCommand." + id.uuidString.lowercased()
+        case .windowCommand(let id): "hotkey.windowCommand." + id.rawValue
+        case .windowLayout(let id): "hotkey.windowLayout." + id.uuidString.lowercased()
         case .quicklink(let id): "hotkey.quicklink." + id.uuidString.lowercased()
         case .extensionCommand(let entryID): "hotkey.extensionCommand." + entryID
         }

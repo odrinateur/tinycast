@@ -59,22 +59,48 @@ struct LauncherScreen: PaletteScreen {
         // After the calculator: `#FF5733` is never arithmetic, so the two can't both answer.
         let color = calc == nil ? ColorValue.parse(vm.query) : nil
         let fallbacks = core.fallbackCoordinator.entries(for: vm.query)
-        let entries = results.map(Row.entry) + fallbacks.map { Row.fallback($0.fallback, $0.entry) }
         let pinsFavorites = vm.query.trimmingCharacters(in: .whitespaces).isEmpty
-        self.results = results
-        self.calc = calc
-        self.fallbacks = fallbacks
-        self.color = color
-        self.showSections = pinsFavorites || AppEntry.Kind.named(by: vm.query) != nil
-        self.pinsFavorites = pinsFavorites
+        let showSections = pinsFavorites || AppEntry.Kind.named(by: vm.query) != nil
         let favoriteCount = pinsFavorites ? results.prefix(while: favorites.isFavorite).count : 0
-        self.favoriteCount = favoriteCount
         // Learned picks suggest but teach nothing: recording under "" stays off.
-        self.suggestions =
+        let suggestions =
             pinsFavorites
             ? Self.topSuggestions(
                 in: results.dropFirst(favoriteCount), ranking: core.launcherRanking)
             : []
+        let entries: [Row]
+        if showSections {
+            let favorites = results.prefix(favoriteCount)
+            let rest = results.dropFirst(favoriteCount)
+            let suggestedIDs = Set(suggestions.map(\.id))
+            var grouped: [AppEntry.Kind: [AppEntry]] = [:]
+            for app in rest where !suggestedIDs.contains(app.id) {
+                grouped[app.kind, default: []].append(app)
+            }
+            var sectioned: [Row] = favorites.map(Row.entry) + suggestions.map(Row.entry)
+            let kinds: [AppEntry.Kind] = [
+                .application, .systemSettings, .extensionCommand, .quicklink,
+                .windowLayout, .windowCommand,
+                .customCommand,
+                .command
+            ]
+            for kind in kinds {
+                if let group = grouped[kind], !group.isEmpty {
+                    sectioned.append(contentsOf: group.map(Row.entry))
+                }
+            }
+            entries = sectioned + fallbacks.map { Row.fallback($0.fallback, $0.entry) }
+        } else {
+            entries = results.map(Row.entry) + fallbacks.map { Row.fallback($0.fallback, $0.entry) }
+        }
+        self.results = results
+        self.calc = calc
+        self.fallbacks = fallbacks
+        self.color = color
+        self.showSections = showSections
+        self.pinsFavorites = pinsFavorites
+        self.favoriteCount = favoriteCount
+        self.suggestions = suggestions
         if let calc {
             self.rows = [.calc(calc)] + entries
         } else if let color {
@@ -196,7 +222,14 @@ struct LauncherScreen: PaletteScreen {
     }
 
     /// Whichever card leads, in the terms the list draws it in.
-    private var leadCard: LauncherList.LeadCard? {
+    var defaultSelection: Int {
+        if !suggestions.isEmpty {
+            return (leadCard == nil ? 0 : 1) + favoriteCount
+        }
+        return 0
+    }
+
+    var leadCard: LauncherList.LeadCard? {
         if let calc { return .calc(calc) }
         if let color { return .color(color) }
         return nil

@@ -230,6 +230,9 @@ struct RootPaletteView: View {
             // Every show bumps focusToken so the search field refocuses.
             .onChange(of: vm.focusToken) {
                 searchFocused = !screen.hidesSearchField
+                if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
+                    vm.selection = launcher.defaultSelection
+                }
             }
             // A preserved screen re-summons as it was left, so a menu must end with the palette.
             .onChange(of: vm.isVisible) {
@@ -237,7 +240,11 @@ struct RootPaletteView: View {
             }
             .onChange(of: vm.query) {
                 if vm.collapseQueryLineBreaks() { return }
-                vm.selection = 0
+                if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
+                    vm.selection = launcher.defaultSelection
+                } else {
+                    vm.selection = 0
+                }
                 scroll = ScrollIntent(kind: .top)
                 if vm.mode == .fileSearch { fileSearch.search(vm.query, filter: vm.fileSearchFilter) }
                 // A command that took over the search text filters its own list.
@@ -263,7 +270,11 @@ struct RootPaletteView: View {
                 fileSearch.search(vm.query, filter: vm.fileSearchFilter)
             }
             .onChange(of: vm.mode) {
-                vm.selection = 0
+                if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
+                    vm.selection = launcher.defaultSelection
+                } else {
+                    vm.selection = 0
+                }
                 vm.clipboardFilter = .all
                 vm.fileSearchFilter = .all
                 vm.fileSearchQuickLook = false
@@ -289,6 +300,9 @@ struct RootPaletteView: View {
             .onChange(of: vm.resetToken) {
                 if menuOpen { closeMenus() }
                 scroll = ScrollIntent(kind: .top)
+                if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
+                    vm.selection = launcher.defaultSelection
+                }
             }
             // ⌘. arrives as a token rather than a key press. See `PaletteState.pinChordToken`.
             .onChange(of: vm.pinChordToken) { performShortcut(.pin) }
@@ -308,7 +322,12 @@ struct RootPaletteView: View {
                 menuPanel.hide()
                 (hostWindow as? PalettePanel)?.onHeaderFieldBoundaryArrow = nil
             }
-            .onAppear { searchFocused = !screen.hidesSearchField }
+            .onAppear {
+                searchFocused = !screen.hidesSearchField
+                if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
+                    vm.selection = launcher.defaultSelection
+                }
+            }
             .modifier(SearchFieldHiding(hidden: hidesSearchField, apply: applySearchFieldHiding))
             // Several paths flip `paletteIsCollapsed`, so resize the window to match.
             .onChange(of: core.paletteCoordinator.paletteIsCollapsed) {
@@ -399,6 +418,8 @@ struct RootPaletteView: View {
                     core.extensionCoordinator.exitExtensionScreen()
                 case .goBack:
                     goBack()
+                case .goToRoot:
+                    core.palette.prepare(mode: .launcher)
                 case .hidePalette:
                     core.paletteCoordinator.hidePalette()
                     // This behavior promises a root search on reopen, whatever the delay says.

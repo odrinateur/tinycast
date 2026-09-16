@@ -9,6 +9,8 @@ final class LauncherCoordinator {
     private let settingsCoordinator: SettingsCoordinator
     private let customCommandCoordinator: CustomCommandCoordinator
     private let quicklinkCoordinator: QuicklinkCoordinator
+    private let windowCommandCoordinator: WindowCommandCoordinator
+    private let windowLayoutCoordinator: WindowLayoutCoordinator
     private let fileSearchCoordinator: FileSearchCoordinator
     private let extensionCoordinator: ExtensionCoordinator
     /// The backup commands only, which need the live stores to gather from and apply to.
@@ -21,6 +23,8 @@ final class LauncherCoordinator {
         settingsCoordinator: SettingsCoordinator,
         customCommandCoordinator: CustomCommandCoordinator,
         quicklinkCoordinator: QuicklinkCoordinator,
+        windowCommandCoordinator: WindowCommandCoordinator,
+        windowLayoutCoordinator: WindowLayoutCoordinator,
         fileSearchCoordinator: FileSearchCoordinator,
         extensionCoordinator: ExtensionCoordinator,
         core: AppCore
@@ -31,6 +35,8 @@ final class LauncherCoordinator {
         self.settingsCoordinator = settingsCoordinator
         self.customCommandCoordinator = customCommandCoordinator
         self.quicklinkCoordinator = quicklinkCoordinator
+        self.windowCommandCoordinator = windowCommandCoordinator
+        self.windowLayoutCoordinator = windowLayoutCoordinator
         self.fileSearchCoordinator = fileSearchCoordinator
         self.extensionCoordinator = extensionCoordinator
         self.core = core
@@ -64,6 +70,17 @@ final class LauncherCoordinator {
             customCommandCoordinator.runCustomCommand(id: id)
             return
         }
+        if app.kind == .windowCommand {
+            guard let command = WindowCommandCatalog.command(forEntryID: app.id) else { return }
+            windowCommandCoordinator.runWindowCommand(id: command.id)
+            return
+        }
+        if app.kind == .windowLayout {
+            // The coordinator hides the palette itself: a layout must not restore focus first.
+            guard let id = WindowLayout.id(fromEntryID: app.id) else { return }
+            windowLayoutCoordinator.runWindowLayout(id: id)
+            return
+        }
         // Before the palette hides: a view command takes the palette over rather than closing it.
         if app.kind == .extensionCommand {
             extensionCoordinator.runExtensionCommand(app, arguments: arguments)
@@ -82,7 +99,7 @@ final class LauncherCoordinator {
         case .systemSettings:
             guard let bundleID = app.bundleID else { return }
             AppLauncher.openSettingsPane(bundleID: bundleID)
-        case .command, .customCommand,
+        case .command, .customCommand, .windowCommand, .windowLayout,
             .quicklink, .extensionCommand:
             break  // handled above
         }
@@ -101,6 +118,12 @@ final class LauncherCoordinator {
             break  // Query-driven: each runs where the typed text is, never through this funnel.
         case .searchQuicklinks:
             paletteCoordinator.togglePalette(mode: .quicklinks)
+        case .createWindowLayout:
+            dismissPalette()
+            windowLayoutCoordinator.editWindowLayout(nil)
+        case .captureWindowLayout:
+            dismissPalette()
+            windowLayoutCoordinator.captureWindowLayout()
         case .createQuicklink:
             dismissPalette()
             quicklinkCoordinator.editQuicklink(nil)
