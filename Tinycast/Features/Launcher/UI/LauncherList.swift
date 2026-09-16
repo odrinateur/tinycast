@@ -4,6 +4,8 @@ struct LauncherList: View {
 
     @Environment(\.metrics) private var metrics
     let results: [AppEntry]
+    /// Rank-ordered learned picks, drawn as their own section; always a subset of `results`.
+    let suggestions: [AppEntry]
     /// The flat row id the screen has selected, not an entry id: a fallback can repeat a result.
     let selectedRowID: String?
     let favoriteCount: Int
@@ -92,14 +94,21 @@ struct LauncherList: View {
         var rows: [Row] = cardRows
         let favorites = results.prefix(favoriteCount)
         let rest = results.dropFirst(favoriteCount)
+        let suggestedIDs = Set(suggestions.map(\.id))
         var grouped: [AppEntry.Kind: [AppEntry]] = [:]
-        for app in rest { grouped[app.kind, default: []].append(app) }
+        for app in rest where !suggestedIDs.contains(app.id) {
+            grouped[app.kind, default: []].append(app)
+        }
         if !favorites.isEmpty {
             rows.append(.header("Favorites"))
             rows.append(
                 contentsOf: favorites.enumerated().map {
                     .app($1, slot: FavoriteSlots.digit(at: $0))
                 })
+        }
+        if !suggestions.isEmpty {
+            rows.append(.header("Suggestions"))
+            rows.append(contentsOf: suggestions.map { .app($0, slot: nil) })
         }
         // Publication order, so rows match the flat index.
         let kinds: [AppEntry.Kind] = [

@@ -67,12 +67,41 @@ final class LauncherRankingStore {
         }
 
         if records.count > Self.cap {
-            records.sort {
-                $0.count != $1.count ? $0.count > $1.count : $0.lastUsed > $1.lastUsed
-            }
-            records.removeLast(records.count - Self.cap)
+            records = Self.capped(records)
         }
         didMutate()
+    }
+
+    /// Folds imported rows in without touching what is already learned; a re-import adds nothing.
+    @discardableResult
+    func mergeImported(_ imported: [LauncherRankingRecord]) -> Int {
+        var fresh = records
+        for seed in imported {
+            let query = Self.normalize(seed.submittedQuery)
+            guard !seed.itemKey.isEmpty, !query.isEmpty, query.count <= Self.queryLimit,
+                seed.count > 0,
+                !fresh.contains(where: {
+                    $0.itemKey == seed.itemKey && $0.submittedQuery == query
+                })
+            else { continue }
+            fresh.append(
+                LauncherRankingRecord(
+                    itemKey: seed.itemKey, submittedQuery: query, count: seed.count,
+                    lastUsed: seed.lastUsed))
+        }
+        let inserted = fresh.count - records.count
+        guard inserted > 0 else { return 0 }
+        records = Self.capped(fresh)
+        didMutate()
+        return inserted
+    }
+
+    private static func capped(_ records: [LauncherRankingRecord]) -> [LauncherRankingRecord] {
+        guard records.count > cap else { return records }
+        let sorted = records.sorted {
+            $0.count != $1.count ? $0.count > $1.count : $0.lastUsed > $1.lastUsed
+        }
+        return Array(sorted.prefix(cap))
     }
 
     /// What the user has taught this query; the fold and the clock read happen once, not per row.
@@ -81,15 +110,33 @@ final class LauncherRankingStore {
         guard !query.isEmpty else { return [:] }
         var totals: [String: (count: Int, lastUsed: Date)] = [:]
         for record in records where record.submittedQuery.hasPrefix(query) {
-            let running = totals[record.itemKey]
-            totals[record.itemKey] = (
-                (running?.count ?? 0) + record.count,
-                max(running?.lastUsed ?? .distantPast, record.lastUsed)
-            )
+            Self.fold(&totals, record)
         }
+        return Self.weigh(totals, at: now())
+    }
+
+    /// Every query's weight per item; what the empty query suggests with, learning nothing itself.
+    func globalUsage() -> [String: Int] {
+        var totals: [String: (count: Int, lastUsed: Date)] = [:]
+        for record in records { Self.fold(&totals, record) }
+        return Self.weigh(totals, at: now())
+    }
+
+    private static func fold(
+        _ totals: inout [String: (count: Int, lastUsed: Date)], _ record: LauncherRankingRecord
+    ) {
+        let running = totals[record.itemKey]
+        totals[record.itemKey] = (
+            (running?.count ?? 0) + record.count,
+            max(running?.lastUsed ?? .distantPast, record.lastUsed)
+        )
+    }
+
+    private static func weigh(
+        _ totals: [String: (count: Int, lastUsed: Date)], at timestamp: Date
+    ) -> [String: Int] {
         guard !totals.isEmpty else { return [:] }
         let bucket = totals.values.reduce(0) { $0 + $1.count }
-        let timestamp = now()
         return totals.mapValues {
             Self.usage(
                 count: $0.count, lastUsed: $0.lastUsed, share: Double($0.count) / Double(bucket),
@@ -138,7 +185,7 @@ final class LauncherRankingStore {
     }
 
     /// Caps pasted input, so one visit cannot evict the bounded table with a novel key.
-    private static let queryLimit = 64
+    nonisolated static let queryLimit = 64
 
     private func didMutate() {
         revision &+= 1

@@ -24,6 +24,8 @@ struct LauncherScreen: PaletteScreen {
     private let showSections: Bool
     /// Only the empty query pins favorites — a category shows its sections without one of its own.
     private let pinsFavorites: Bool
+    /// Top learned picks on the empty query, rank-ordered; favorites already pin above them.
+    private let suggestions: [AppEntry]
     /// How many of `results` are pinned favorites; zero unless the section shows.
     private let favoriteCount: Int
     /// The `Use "…" with` section, below every result; empty unless something is typed.
@@ -65,7 +67,14 @@ struct LauncherScreen: PaletteScreen {
         self.color = color
         self.showSections = pinsFavorites || AppEntry.Kind.named(by: vm.query) != nil
         self.pinsFavorites = pinsFavorites
-        self.favoriteCount = pinsFavorites ? results.prefix(while: favorites.isFavorite).count : 0
+        let favoriteCount = pinsFavorites ? results.prefix(while: favorites.isFavorite).count : 0
+        self.favoriteCount = favoriteCount
+        // Learned picks suggest but teach nothing: recording under "" stays off.
+        self.suggestions =
+            pinsFavorites
+            ? Self.topSuggestions(
+                in: results.dropFirst(favoriteCount), ranking: core.launcherRanking)
+            : []
         if let calc {
             self.rows = [.calc(calc)] + entries
         } else if let color {
@@ -73,6 +82,23 @@ struct LauncherScreen: PaletteScreen {
         } else {
             self.rows = entries
         }
+    }
+
+    /// Five learned picks at most; ties keep the alphabet the rest of the list holds.
+    private static let suggestionCount = 5
+
+    /// Rank-ordered learned picks among the unpinned rest; empty until anything is learned.
+    private static func topSuggestions(
+        in rest: ArraySlice<AppEntry>, ranking: LauncherRankingStore
+    ) -> [AppEntry] {
+        let weights = ranking.globalUsage()
+        guard !weights.isEmpty else { return [] }
+        return
+            rest
+            .filter { weights[$0.preferenceKey] != nil }
+            .sorted { (weights[$0.preferenceKey] ?? 0) > (weights[$1.preferenceKey] ?? 0) }
+            .prefix(suggestionCount)
+            .map { $0 }
     }
 
     /// The card is a row like any other, so the flat selection indexes `rows` with no offset.
@@ -365,6 +391,7 @@ struct LauncherScreen: PaletteScreen {
     private func content(selection: Int, scroll: ScrollIntent) -> some View {
         LauncherList(
             results: results,
+            suggestions: suggestions,
             selectedRowID: row(at: selection)?.id,
             favoriteCount: favoriteCount,
             showSections: showSections,

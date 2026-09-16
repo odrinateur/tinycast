@@ -110,6 +110,43 @@ struct RankingTest {
         check(
             "one pass returns every item learned for the query",
             Set(table.keys) == [whatsApp, wick])
+        check("the empty query recalls nothing per-query", store.usage(query: "").isEmpty)
+        check("the empty query recalls nothing per-query", store.usage(query: "").isEmpty)
+
+        store.resetAll()
+        store.record(itemKey: whatsApp, query: "wha")
+        store.record(itemKey: whatsApp, query: "whatsapp")
+        store.record(itemKey: wick, query: "wick")
+        let global = store.globalUsage()
+        check(
+            "the global fold recalls every learned item at once",
+            Set(global.keys) == [whatsApp, wick])
+        check(
+            "the global fold counts every submitted query",
+            global[whatsApp] ?? 0 > global[wick] ?? 0)
+
+        store.resetAll()
+        let merged = store.mergeImported([
+            LauncherRankingRecord(
+                itemKey: whatsApp, submittedQuery: "wha", count: 4, lastUsed: clock),
+            LauncherRankingRecord(
+                itemKey: whatsApp, submittedQuery: "wha", count: 9, lastUsed: clock),
+            LauncherRankingRecord(itemKey: "", submittedQuery: "wha", count: 1, lastUsed: clock),
+            LauncherRankingRecord(
+                itemKey: wick, submittedQuery: "  ", count: 1, lastUsed: clock)
+        ])
+        check("merge folds in one row per query", merged == 1 && store.records.count == 1)
+        check(
+            "merge keeps the first row rather than inflating it",
+            store.records.first?.count == 4)
+        check("merged rows recall like learned ones", boost(store, whatsApp, "wha") > 0)
+        check("merged rows feed the global fold", store.globalUsage()[whatsApp] != nil)
+        check(
+            "a re-import merges nothing twice",
+            store.mergeImported([
+                LauncherRankingRecord(
+                    itemKey: whatsApp, submittedQuery: "wha", count: 4, lastUsed: clock)
+            ]) == 0)
 
         // The opening list stays alphabetical, so nothing is learned or recalled under "".
         store.resetAll()

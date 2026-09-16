@@ -16,6 +16,8 @@ enum BackupActions {
         /// Set when the library wouldn't open; the rest of the import still applied.
         var quicklinksError: String?
         var missingImages: Int
+        /// Learned rows folded into the ranking; Suggestions reads them from the next open.
+        var rankingSeeded: Int
     }
 
     // MARK: - Tinycast native (own file panels; dialogs come from `AppCore`)
@@ -156,12 +158,19 @@ enum BackupActions {
         let imported =
             result.clipboard.isEmpty
             ? 0 : core.clipboardStore.importEntries(result.clipboard)
+        // After the quicklinks land, so their frecency has library rows to meet.
+        let resolved = RaycastImport.rankingRecords(
+            for: result.quicklinkSeeds, in: core.quicklinks.quicklinks)
+        let seeded =
+            result.rankingSeeds.isEmpty && resolved.isEmpty
+            ? 0 : core.launcherRanking.mergeImported(result.rankingSeeds + resolved)
         return RaycastOutcome(
             summary: summary,
             clipboardImported: imported,
             quicklinksImported: quicklinksImported,
             quicklinksError: quicklinksError,
-            missingImages: result.missingImages)
+            missingImages: result.missingImages,
+            rankingSeeded: seeded)
     }
 
     /// Every Raycast channel (stable, beta, alpha, internal) shares this bundle-id prefix.
@@ -238,6 +247,10 @@ enum BackupActions {
         if outcome.quicklinksImported > 0 {
             let noun = outcome.quicklinksImported == 1 ? "quicklink" : "quicklinks"
             parts.append("Imported \(outcome.quicklinksImported) \(noun).")
+        }
+        if outcome.rankingSeeded > 0 {
+            let noun = outcome.rankingSeeded == 1 ? "learned pick" : "learned picks"
+            parts.append("Seeded Suggestions with \(outcome.rankingSeeded) \(noun).")
         }
         if let quicklinksError = outcome.quicklinksError {
             parts.append("Couldn’t import quicklinks: \(quicklinksError)")

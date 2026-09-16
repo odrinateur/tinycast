@@ -5,6 +5,7 @@ struct RaycastImportOptions: OptionSet, Sendable {
     let rawValue: Int
     static let shortcuts = RaycastImportOptions(rawValue: 1 << 0)
     static let favorites = RaycastImportOptions(rawValue: 1 << 1)
+    static let suggestions = RaycastImportOptions(rawValue: 1 << 2)
     static let launchAtLogin = RaycastImportOptions(rawValue: 1 << 3)
     static let menuBarVisibility = RaycastImportOptions(rawValue: 1 << 4)
     static let clipboardHistory = RaycastImportOptions(rawValue: 1 << 5)
@@ -13,9 +14,17 @@ struct RaycastImportOptions: OptionSet, Sendable {
     static let aliases = RaycastImportOptions(rawValue: 1 << 9)
     static let quicklinks = RaycastImportOptions(rawValue: 1 << 10)
     static let all: RaycastImportOptions = [
-        .shortcuts, .favorites, .launchAtLogin, .menuBarVisibility, .clipboardHistory,
+        .shortcuts, .favorites, .suggestions, .launchAtLogin, .menuBarVisibility, .clipboardHistory,
         .popToRoot, .compactMode, .aliases, .quicklinks
     ]
+}
+
+/// A quicklink frecency row keyed by link; the import mints fresh UUIDs, so links reconcile.
+struct QuicklinkSeed: Sendable {
+    var link: String
+    var query: String
+    var count: Int
+    var lastUsed: Date
 }
 
 /// What a `.rayconfig` yields, before it reaches the app. See docs/features/raycast-import.md.
@@ -24,6 +33,10 @@ enum RaycastImport {
         var backup: SettingsBackup
         var clipboard: [ClipboardItem]
         var quicklinks: [Quicklink]
+        /// Raycast frecency as learned rows; merged, never replacing what Tinycast learned.
+        var rankingSeeds: [LauncherRankingRecord]
+        /// Quicklink frecency keyed by link; reconciled against the library at apply time.
+        var quicklinkSeeds: [QuicklinkSeed]
         /// Image clips whose file no longer exists, reported so the UI can note them.
         var missingImages: Int
 
@@ -81,7 +94,28 @@ enum RaycastImport {
                 backup: trimmed,
                 clipboard: keepClipboard ? clipboard : [],
                 quicklinks: options.contains(.quicklinks) ? quicklinks : [],
+                rankingSeeds: options.contains(.suggestions) ? rankingSeeds : [],
+                quicklinkSeeds: options.contains(.suggestions) ? quicklinkSeeds : [],
                 missingImages: keepClipboard ? missingImages : 0)
         }
+    }
+
+    /// Quicklink seeds onto library rows, matched by rewritten link: the UUIDs never survive.
+    static func rankingRecords(
+        for seeds: [QuicklinkSeed], in library: [Quicklink]
+    ) -> [LauncherRankingRecord] {
+        var entryIDs: [String: String] = [:]
+        for quicklink in library { entryIDs[quicklink.link] = quicklink.entryID }
+        var records: [LauncherRankingRecord] = []
+        for seed in seeds {
+            let link = RaycastQuicklinkImport.rewrittenLink(
+                seed.link.trimmingCharacters(in: .whitespacesAndNewlines))
+            guard let entryID = entryIDs[link] else { continue }
+            records.append(
+                LauncherRankingRecord(
+                    itemKey: entryID, submittedQuery: seed.query, count: seed.count,
+                    lastUsed: seed.lastUsed))
+        }
+        return records
     }
 }

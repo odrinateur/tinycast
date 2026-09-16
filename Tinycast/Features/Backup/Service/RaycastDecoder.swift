@@ -1,7 +1,8 @@
+import CommonCrypto
 import CryptoKit
 import Foundation
 
-/// Unwraps the `RAYCFG3` container down to its payload JSON. See docs/features/raycast-import.md.
+/// Unwraps a `.rayconfig` down to its payload JSON, in either container Raycast has shipped.
 enum RaycastDecoder {
     private struct Header: Decodable {
         struct Encryption: Decodable {
@@ -14,9 +15,62 @@ enum RaycastDecoder {
     }
 
     /// From the leading bytes alone, so a file is labelled before a passphrase is typed.
-    static func isExport(_ raw: Data) -> Bool { raw.starts(with: magic) }
+    static func isExport(_ raw: Data) -> Bool {
+        raw.starts(with: magic) || looksSealed(raw)
+    }
+
+    /// The sealed file carries no signature, so block alignment past a header is the only signal.
+    private static func looksSealed(_ raw: Data) -> Bool {
+        raw.count >= sealedMinimumLength && raw.count % blockLength == 0
+    }
 
     static func decrypt(_ raw: Data, passphrase: String) throws -> Data {
+        if raw.starts(with: magic) { return try decryptContainer(raw, passphrase: passphrase) }
+        guard looksSealed(raw) else { throw RaycastImportError.notRaycastFile }
+        return try decryptSealed(raw, passphrase: passphrase)
+    }
+
+    /// Key from SHA256(passphrase), IV from SHA256(key + passphrase); CryptoKit has no CBC.
+    private static func decryptSealed(_ raw: Data, passphrase: String) throws -> Data {
+        let password = Data(passphrase.utf8)
+        let first = Data(SHA256.hash(data: password))
+        let second = Data(SHA256.hash(data: first + password))
+        guard let plaintext = cbcDecrypt(raw, key: first, iv: second.prefix(16)),
+            plaintext.count > randomHeaderLength
+        else { throw RaycastImportError.incorrectPassphrase }
+        do {
+            return try Zlib.gunzip(
+                plaintext.dropFirst(randomHeaderLength), maxOutput: maximumPayloadLength)
+        } catch ZlibError.tooLarge {
+            throw RaycastImportError.tooLarge
+        } catch {
+            throw RaycastImportError.incorrectPassphrase
+        }
+    }
+
+    private static func cbcDecrypt(_ raw: Data, key: Data, iv: Data) -> Data? {
+        var out = Data(count: raw.count + blockLength)
+        var moved = 0
+        let inCount = raw.count
+        let outCount = out.count
+        let status = out.withUnsafeMutableBytes { outPtr in
+            raw.withUnsafeBytes { inPtr in
+                key.withUnsafeBytes { keyPtr in
+                    iv.withUnsafeBytes { ivPtr in
+                        CCCrypt(
+                            CCOperation(kCCDecrypt), CCAlgorithm(kCCAlgorithmAES),
+                            CCOptions(kCCOptionPKCS7Padding),
+                            keyPtr.baseAddress, key.count, ivPtr.baseAddress,
+                            inPtr.baseAddress, inCount, outPtr.baseAddress, outCount, &moved)
+                    }
+                }
+            }
+        }
+        guard status == kCCSuccess else { return nil }
+        return out.prefix(moved)
+    }
+
+    private static func decryptContainer(_ raw: Data, passphrase: String) throws -> Data {
         guard isExport(raw) else { throw RaycastImportError.notRaycastFile }
         // `raw` can be a slice, so every offset below is measured from its own start.
         let base = raw.startIndex
@@ -65,6 +119,9 @@ enum RaycastDecoder {
     private static let magic = Data("RAYCFG3\n".utf8)
     private static let containerSchemaVersion = 3
     private static let fixedHeaderLength = 12
+    private static let blockLength = 16
+    private static let randomHeaderLength = 16
+    private static let sealedMinimumLength = randomHeaderLength + 2 * blockLength
     private static let maximumHeaderLength = 1024 * 1024
     // AES already authenticated this stream; the cap is only a memory bound.
     private static let maximumPayloadLength = 512 * 1024 * 1024

@@ -397,11 +397,12 @@ reset — and recall aggregates every stored query the typed one is a prefix of 
 `w` and `wh`, at a sixteenth of the rows. The 1,000-record cap therefore holds ~1,000 distinct habits
 rather than ~60.
 
-**The opening list stays alphabetical.** Frecency was tried there and reverted: with the learned
+**The opening list stays alphabetical, except for one labelled group.** Frecency was tried as a
+resort in place and reverted: with the learned
 apps floating to the top and the alphabet resuming below them, the section is sorted by two
 principles with nothing marking the seam, which reads as a scrambled list and moves under the user's
 muscle memory as they use it. Ranking a section needs a labelled group of its own, not a resort in
-place. So nothing is recorded or recalled under `""`, and direct hotkeys and ⌘-digit favorite
+place — that group is Suggestions, above the alphabet. So nothing is recorded under `""`, and direct hotkeys and ⌘-digit favorite
 launches still teach nothing either.
 
 Learned data stays on device in `launcher-ranking.json`; a result that has learned ranking offers a
@@ -410,6 +411,14 @@ per-item reset in its Actions menu, and users can clear all learned ranking in G
 Rankings are memoized one query deep and keyed by the ranking store's revision, so a launch or reset
 invalidates the cached order. `rank` resolves the whole learned table for a query up front via
 `usage(query:)` — one fold and one clock read per pass, not per candidate.
+
+A typed query lists its whole ranked order flat under a **Results** header. The empty query instead
+pins favorites, then lists up to five learned picks under a **Suggestions** header — the global fold
+of every submitted query (`LauncherRankingStore.globalUsage`), rank-ordered with ties keeping the
+alphabet — before the alphabetical sections resume. The split is draw-only: `LauncherScreen.rows`
+stays the flat order, so selection and activation never know the headers exist, and suggested rows
+leave their kind groups so no entry draws twice. Launching from the empty query teaches nothing;
+`record` still refuses `""`.
 
 The frecency curve is bounded but never flat:
 
@@ -459,21 +468,14 @@ and three places read it: `FeatureCommandsSection` draws the pane's rows from it
 category gate for it in both `isVisible` and `allowsHotKey`. Stamping the entry rather than sniffing its
 id is what keeps "which pane owns this" out of the entry-ID namespace.
 
-Four panes own commands today — File Search, Navigation,
+Three panes own commands today — File Search,
 Clipboard and Quicklinks. What is left in Settings › Commands is
 the set no feature switch governs: Calculator History, the three backup commands, Check
-for Updates, Settings, About, Support and Quit.
+for Updates, Settings, About and Quit.
 
 A pane's list is also its display order, so `CommandID`'s declaration order is grouped by owner.
 Nothing keys on that order — `CommandCatalog.all` sorts by name and every preference keys on the raw
 value — so a command may be moved between owners without migrating anything.
-
-## Navigation commands
-
-`CommandID.searchMenuItems` opens the front app's menu bar as a palette screen. A plain command
-entry — no new `AppEntry.Kind` and no `VisibilityStore` category — owned by Settings › Navigation
-through `SettingsTab.ownedCommands`, so `navigationEnabled` is its switch. Its invariants and
-internals live in [menu-search.md](menu-search.md).
 
 > **Invariant:** `Tests/fuzz-test.swift` compiles the real `Tinycast/Features/Launcher/Model/SearchRelevance.swift`, so
 > that file must stay Foundation-only and pure. There is no copy of the scorer to keep in sync.

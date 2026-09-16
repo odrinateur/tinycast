@@ -1,7 +1,8 @@
+import CommonCrypto
 import CryptoKit
 import Foundation
 
-// The RAYCFG3 container: recognition, framing and the AES-256-GCM decrypt.
+// Both `.rayconfig` containers: the RAYCFG3 framing and the sealed whole-file one.
 @main
 @MainActor
 enum RaycastTests {
@@ -40,6 +41,7 @@ enum RaycastTests {
     static func main() {
         recognition()
         decryption()
+        sealedFile()
         gunzipSlices()
         gunzipCap()
 
@@ -106,8 +108,14 @@ enum RaycastTests {
             "the container signature is recognised before its body is read")
         expect(!RaycastDecoder.isExport(Data()), "empty data is not an export")
         expect(
-            !RaycastDecoder.isExport(Data(repeating: 0xa5, count: 512)),
-            "an unsigned blob is not an export")
+            RaycastDecoder.isExport(Data(repeating: 0xa5, count: 512)),
+            "a block-aligned blob is a sealed-file candidate")
+        expect(
+            !RaycastDecoder.isExport(Data(repeating: 0xa5, count: 511)),
+            "a misaligned blob is not an export")
+        expect(
+            !RaycastDecoder.isExport(Data(repeating: 0xa5, count: 32)),
+            "a blob shorter than header plus a block is not an export")
         expect(
             !RaycastDecoder.isExport(Data("RAYCFG3".utf8)),
             "the signature includes its trailing newline")
@@ -174,8 +182,59 @@ enum RaycastTests {
         expect(lengthsRead.isEmpty, "an out-of-range header length is rejected: \(lengthsRead)")
     }
 
-    // MARK: - Zlib
+    // MARK: - Sealed file
 
+    /// Mirrors the decoder's KDF so the fixture round-trips; the header bytes are fixed.
+    static func sealedFixture() -> Data? {
+        let password = Data(passphrase.utf8)
+        let first = Data(SHA256.hash(data: password))
+        let iv = Data(SHA256.hash(data: first + password).prefix(16))
+        let plain = Data(repeating: 0x11, count: 16) + gzippedJSON
+        var out = Data(count: plain.count + 16)
+        var moved = 0
+        let inCount = plain.count
+        let outCount = out.count
+        let status = out.withUnsafeMutableBytes { outPtr in
+            plain.withUnsafeBytes { inPtr in
+                first.withUnsafeBytes { keyPtr in
+                    iv.withUnsafeBytes { ivPtr in
+                        CCCrypt(
+                            CCOperation(kCCEncrypt), CCAlgorithm(kCCAlgorithmAES),
+                            CCOptions(kCCOptionPKCS7Padding),
+                            keyPtr.baseAddress, first.count, ivPtr.baseAddress,
+                            inPtr.baseAddress, inCount, outPtr.baseAddress, outCount, &moved)
+                    }
+                }
+            }
+        }
+        guard status == kCCSuccess else { return nil }
+        return out.prefix(moved)
+    }
+
+    static func sealedFile() {
+        guard let file = sealedFixture() else {
+            failures += 1
+            print("FAIL: sealed fixture encryption")
+            return
+        }
+        expect(
+            RaycastDecoder.isExport(file),
+            "a sealed file is recognised without its passphrase")
+        expect(
+            (try? RaycastDecoder.decrypt(file, passphrase: passphrase)) == plainJSON,
+            "a sealed file decrypts past its random header to the gzip payload")
+        expectThrows("sealed file, wrong passphrase", .incorrectPassphrase) {
+            try RaycastDecoder.decrypt(file, passphrase: "wrong-passphrase")
+        }
+        expectThrows("sealed file, truncated", .notRaycastFile) {
+            try RaycastDecoder.decrypt(file.prefix(32), passphrase: passphrase)
+        }
+        expectThrows("sealed file, misaligned", .notRaycastFile) {
+            try RaycastDecoder.decrypt(file.dropLast(), passphrase: passphrase)
+        }
+    }
+
+    // MARK: - Zlib
     static func gunzipSlices() {
         // `decompress` indexes a zero-based copy, so a slice must not be re-indexed.
         var prefixed = Data(repeating: 0xa5, count: 32)
