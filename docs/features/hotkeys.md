@@ -58,8 +58,9 @@ but the guarantee that every decode runs through the initializer that masks devi
 export → import within one build is guaranteed to round-trip.
 
 Every built-in command is bindable: `CommandID.hotKeyAction` answers `.command(self)` by default, and
-names the three exceptions. Open in Browser and Run Shell Command are query-driven — their input is the
-typed text a chord has none of — and Quit is withheld so no chord can terminate the app outright. The
+names the four exceptions. Open in Browser and Run Shell Command are query-driven — their input is the
+typed text a chord has none of — and Restart and Quit are withheld so no chord can terminate or relaunch
+the app outright. The
 list is a deny-list rather than an allow-list, so a new command still arrives bindable without an edit
 there. A binding therefore persists under `hotkey.<command raw value>`, as in
 `hotkey.command:clipboard-history`, which is also what puts a recorder on the command's row and a

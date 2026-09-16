@@ -8,7 +8,7 @@ description: Recording global shortcuts, double-tap modifiers, and the Hyper key
 ## What can have a shortcut
 
 - The palette itself (**App Launcher**, in Settings → General)
-- Every built-in command, except Open in Browser, Run Shell Command and Quit Tinycast. See
+- Every built-in command, except Open in Browser, Run Shell Command, Restart Tinycast and Quit Tinycast. See
   [Commands](/docs/launcher/commands).
 - Every app, and every System Settings pane
 - Every quicklink, custom command, custom Quick Action and extension command

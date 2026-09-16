@@ -471,7 +471,7 @@ id is what keeps "which pane owns this" out of the entry-ID namespace.
 Three panes own commands today — File Search,
 Clipboard and Quicklinks. What is left in Settings › Commands is
 the set no feature switch governs: Calculator History, the three backup commands, Check
-for Updates, Settings, About and Quit.
+for Updates, Settings, About, Restart and Quit.
 
 A pane's list is also its display order, so `CommandID`'s declaration order is grouped by owner.
 Nothing keys on that order — `CommandCatalog.all` sorts by name and every preference keys on the raw

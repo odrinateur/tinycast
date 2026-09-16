@@ -28,6 +28,7 @@ struct MenuBarMenu: View {
         Button("Settings...") { AppCore.shared.settingsCoordinator.showSettings() }
             .keyboardShortcut(",")
         Divider()
+        Button("Restart \(appName)") { AppCore.shared.restart() }
         // No ⌘Q: the app menu binds it to Close Settings, and two contradictory ⌘Qs is a lie.
         Button("Quit \(appName)") { NSApp.terminate(nil) }
     }

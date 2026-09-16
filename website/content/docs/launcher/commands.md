@@ -24,7 +24,7 @@ feature's own pane, and only appear while the feature is on. The rest live in **
 | [Window Management](/docs/features/window-layouts) | Create Window Layout · Create Layout from Current Windows                                                                                                                                          |
 | [Quicklinks](/docs/launcher/quicklinks)            | Create Quicklink · Search Quicklinks · Import Quicklinks · Export Quicklinks                                                                                                                       |
 | [Snippets](/docs/features/snippets)                | Search Snippets · Create Snippet                                                                                                                                                                   |
-| Commands                                           | Calculator History · [Open Camera](/docs/features/camera) · Export Backup · Import Backup · Import from Raycast · Check for Updates · Settings · About Tinycast · Support Tinycast · Quit Tinycast |
+| Commands                                           | Calculator History · [Open Camera](/docs/features/camera) · Export Backup · Import Backup · Import from Raycast · Check for Updates · Settings · About Tinycast · Support Tinycast · Restart Tinycast · Quit Tinycast |
 
 Two more appear only for what you type: **Open in Browser** and **Run Shell Command**. See
 [Fallbacks](/docs/launcher/fallbacks).
@@ -32,7 +32,8 @@ Two more appear only for what you type: **Open in Browser** and **Run Shell Comm
 Each command's row has a launcher checkbox, a shortcut recorder and an alias field.
 
 **Every built-in command can take a global shortcut**, except Open in Browser and Run Shell Command,
-which need text to work on, and Quit Tinycast, so no stray key press can quit the app.
+which need text to work on, and Restart Tinycast and Quit Tinycast, so no stray key press can restart or
+quit the app.
 
 A command that opens a screen works like a toggle: press its shortcut again to close it.
 
