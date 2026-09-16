@@ -71,8 +71,11 @@ open one**. See [testing.md](testing.md#definition-of-done).
 
 ## Releasing
 
-`.github/workflows/release.yml` — **Actions → Release → Run workflow**, version only. One macOS 26
-job: ad-hoc arm64 build, DMG, GitHub Release, then `Scripts/publish-tap.sh` pushes `Casks/tinycast.rb`
+Releases trigger automatically on push/merge to the default branch (`strip/personal`). The workflow
+automatically computes the next patch version from the latest GitHub Release (e.g. `0.2.0` -> `0.2.1`).
+
+Manual releases can also be triggered at **Actions → Release → Run workflow**, with an optional version override.
+One macOS 26 job: ad-hoc arm64 build, DMG, GitHub Release, then `Scripts/publish-tap.sh` pushes `Casks/tinycast.rb`
 to [`odrinateur/homebrew-tap`](https://github.com/odrinateur/homebrew-tap). Needs `TAP_GITHUB_TOKEN`
 (contents:write on the tap). Installing needs `HOMEBREW_GITHUB_API_TOKEN` or `gh auth login`.
 

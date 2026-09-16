@@ -1,14 +1,20 @@
 name: Release
 
-run-name: "Tinycast ${{ inputs.version }} #${{ github.run_number }}"
-
 on:
+  push:
+    branches:
+      - strip/personal
+      - main
+    paths-ignore:
+      - 'website/**'
+      - '.github/workflows/website.yml'
+      - 'README.md'
   workflow_dispatch:
     inputs:
       version:
-        description: "Version, e.g. 0.2.0"
+        description: "Version override, e.g. 0.2.1 (optional: leave blank to auto-increment)"
         type: string
-        required: true
+        required: false
 
 permissions:
   contents: write
@@ -16,10 +22,28 @@ permissions:
 jobs:
   release:
     runs-on: macos-26
-    env:
-      VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Compute version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            LATEST_TAG=$(gh release view --json tagName -q .tagName 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo "v0.2.0")
+            CLEAN_VER="${LATEST_TAG#v}"
+            IFS='.' read -r major minor patch <<< "$CLEAN_VER"
+            patch=$((patch + 1))
+            VERSION="${major}.${minor}.${patch}"
+          fi
+          echo "Releasing version: $VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
       - name: Select Xcode 26
         run: |
@@ -67,6 +91,6 @@ jobs:
         env:
           TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
           CASK: tinycast
-          DMG: dist/Tinycast-${{ inputs.version }}.dmg
+          DMG: dist/Tinycast-${VERSION}.dmg
           APP_REPO: ${{ github.repository }}
         run: ./Scripts/publish-tap.sh
