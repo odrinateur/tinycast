@@ -6,6 +6,8 @@ struct AppEntry: Identifiable, Hashable, Sendable {
         case systemSettings
         case command
         case customCommand
+        case windowCommand
+        case windowLayout
         case quicklink
         case extensionCommand
 
@@ -30,6 +32,16 @@ struct AppEntry: Identifiable, Hashable, Sendable {
                 return KindDescriptor(
                     label: "Custom Command", sectionTitle: "Custom Commands",
                     openVerb: "Run Custom Command", canHideFromSearch: false,
+                    canRevealInFinder: false, isSymbolIcon: true)
+            case .windowCommand:
+                return KindDescriptor(
+                    label: "Window Command", sectionTitle: "Window Management",
+                    openVerb: "Move Window", canHideFromSearch: true,
+                    canRevealInFinder: false, isSymbolIcon: true)
+            case .windowLayout:
+                return KindDescriptor(
+                    label: "Window Layout", sectionTitle: "Window Layouts",
+                    openVerb: "Arrange Windows", canHideFromSearch: true,
                     canRevealInFinder: false, isSymbolIcon: true)
             case .quicklink:
                 return KindDescriptor(
@@ -126,6 +138,10 @@ struct AppEntry: Identifiable, Hashable, Sendable {
             return bundleID.map { .settingsPane(bundleID: $0) }
         case .customCommand:
             return CustomCommand.id(fromEntryID: id).map { .customCommand(id: $0) }
+        case .windowCommand:
+            return WindowCommandCatalog.command(forEntryID: id).map { .windowCommand(id: $0.id) }
+        case .windowLayout:
+            return WindowLayout.id(fromEntryID: id).map { .windowLayout(id: $0) }
         case .quicklink:
             return Quicklink.id(fromEntryID: id).map { .quicklink(id: $0) }
         case .extensionCommand:
@@ -152,6 +168,9 @@ struct AppEntry: Identifiable, Hashable, Sendable {
         case .quicklink: return Quicklink.sfSymbol
         case .customCommand: return CustomCommand.sfSymbol
         case .command: return CommandCatalog.command(for: self)?.sfSymbol ?? "questionmark"
+        case .windowCommand:
+            return WindowCommandCatalog.command(forEntryID: id)?.sfSymbol ?? "questionmark"
+        case .windowLayout: return WindowLayout.sfSymbol
         case .application, .systemSettings, .extensionCommand: return "questionmark"
         }
     }
@@ -167,6 +186,14 @@ struct AppEntry: Identifiable, Hashable, Sendable {
 }
 
 extension AppEntry {
+    /// The one row a layout draws, wherever it is offered from.
+    init(_ layout: WindowLayout) {
+        self.init(
+            id: layout.entryID, name: layout.name,
+            url: URL(string: "tinycast://window-layout/" + layout.id.uuidString)!,
+            bundleID: nil, kind: .windowLayout, symbolName: layout.iconSymbol)
+    }
+
     /// The one row a quicklink draws, wherever it is offered from.
     init(_ quicklink: Quicklink) {
         self.init(
@@ -218,8 +245,19 @@ final class AppIndex {
     /// Bumped whenever `apps` changes, so both memos above name the entry set they were built from.
     private var entriesRevision = 0
 
+    private static let allWindowCommandEntries: [AppEntry] = WindowCommandCatalog.all
+        .map { command in
+            AppEntry(
+                id: command.entryID, name: command.name,
+                url: URL(string: "tinycast://window-command/" + command.id.rawValue)!,
+                bundleID: nil, kind: .windowCommand)
+        }
+        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
     private var discoveredEntries: [AppEntry] = []
     private var customCommandEntries: [AppEntry] = []
+    private var windowCommandEntries: [AppEntry] = []
+    private var windowLayoutEntries: [AppEntry] = []
     private var quicklinkEntries: [AppEntry] = []
     private var extensionEntries: [AppEntry] = []
     /// The catalog's commands a disabled feature hides; the Commands slice is recomputed from it.
@@ -274,6 +312,22 @@ final class AppIndex {
         .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         guard entries != customCommandEntries else { return }
         customCommandEntries = entries
+        publishEntries()
+    }
+
+    /// Shows or hides the window-command slice; the catalog itself is static.
+    func setWindowCommandsVisible(_ visible: Bool) {
+        let entries = visible ? Self.allWindowCommandEntries : []
+        guard entries != windowCommandEntries else { return }
+        windowCommandEntries = entries
+        publishEntries()
+    }
+
+    /// Replaces the layout slice; a toggle can't split its entries from their section.
+    func setWindowLayouts(_ layouts: [WindowLayout]) {
+        let entries = layouts.sorted(by: WindowLayout.precedes).map(AppEntry.init)
+        guard entries != windowLayoutEntries else { return }
+        windowLayoutEntries = entries
         publishEntries()
     }
 
@@ -402,6 +456,7 @@ final class AppIndex {
             discoveredEntries
             +             Self.named(
                 extensionEntries + quicklinkEntries
+                    + windowLayoutEntries + windowCommandEntries
                     + customCommandEntries
                     + commandEntries)
         guard updated != apps else { return }

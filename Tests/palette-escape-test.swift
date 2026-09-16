@@ -72,15 +72,15 @@ struct PaletteEscapeTests {
             .clearQuery,
             "an unsent file search query clears before file search itself is left")
 
-        // Provenance, not the mode, decides whether there is anywhere to go back to.
+        // Escape in clipboard history always returns to root launcher.
         expect(
             resolve(mode: .clipboard, canGoBack: true),
-            .goBack,
-            "a clipboard screen opened from the root search returns to it")
+            .goToRoot,
+            "a clipboard screen opened from the root search returns to root")
         expect(
             resolve(mode: .clipboard),
-            .hidePalette,
-            "the same screen summoned by its own hotkey is a root, so it hides")
+            .goToRoot,
+            "the same screen summoned by its own hotkey returns to root")
         expect(
             resolve(mode: .fileSearch, canGoBack: true),
             .goBack,

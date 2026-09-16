@@ -10,12 +10,15 @@ final class AppCore {
     let appIndex: AppIndex
     let customCommands = CustomCommandStore()
     let quicklinks = QuicklinkStore()
+    let windowLayouts = WindowLayoutStore()
     let clipboardStore = ClipboardStore()
     @ObservationIgnored private var clipboardTextIndexer: ClipboardTextIndexer?
     let clipboardManager: ClipboardManager
     let textInjector: TextInjector
     let hotKeys = HotKeyManager()
     let hyperKeyTap = HyperKeyTap()
+    let windowMover = WindowMover()
+    let spaceSwitcher = SpaceSwitcher()
     let inputSourceSwitcher = InputSourceSwitcher()
     let settings: AppSettings
     @ObservationIgnored private var appearanceObservation: NSKeyValueObservation?
@@ -36,6 +39,8 @@ final class AppCore {
 
     /// Set when a quicklink editor should open with Settings; the pane consumes it.
     var pendingQuicklinkEdit: QuicklinkEditRequest?
+    /// Set when a layout editor should open with Settings; the pane consumes it.
+    var pendingWindowLayoutEdit: WindowLayoutEditRequest?
 
     @ObservationIgnored private(set) lazy var quicklinkCoordinator = QuicklinkCoordinator(
         store: quicklinks, settings: settings,
@@ -56,6 +61,14 @@ final class AppCore {
     @ObservationIgnored private(set) lazy var extensionCoordinator = ExtensionCoordinator(
         extensions: extensions, palette: palette, paletteCoordinator: paletteCoordinator,
         settingsCoordinator: settingsCoordinator, settings: settings, core: self)
+    @ObservationIgnored private(set) lazy var windowCommandCoordinator = WindowCommandCoordinator(
+        settings: settings, paletteCoordinator: paletteCoordinator, windowMover: windowMover,
+        spaceSwitcher: spaceSwitcher)
+    @ObservationIgnored private(set) lazy var windowLayoutCoordinator = WindowLayoutCoordinator(
+        store: windowLayouts, settings: settings, appIndex: appIndex, hotKeys: hotKeys,
+        favorites: favorites, visibility: visibility, ranking: launcherRanking, aliases: aliases,
+        paletteCoordinator: paletteCoordinator, settingsCoordinator: settingsCoordinator,
+        core: self)
     @ObservationIgnored private(set) lazy var customCommandCoordinator = CustomCommandCoordinator(
         store: customCommands, argumentSession: customCommandArguments, settings: settings,
         appIndex: appIndex,
@@ -68,6 +81,8 @@ final class AppCore {
         settingsCoordinator: settingsCoordinator,
         customCommandCoordinator: customCommandCoordinator,
         quicklinkCoordinator: quicklinkCoordinator,
+        windowCommandCoordinator: windowCommandCoordinator,
+        windowLayoutCoordinator: windowLayoutCoordinator,
         fileSearchCoordinator: fileSearchCoordinator,
         extensionCoordinator: extensionCoordinator,
         core: self)
@@ -123,6 +138,11 @@ final class AppCore {
                 self?.customCommandCoordinator.applyCustomCommandsPresence()
             }
             customCommandCoordinator.applyCustomCommandsPresence()
+            applyWindowCommandsPresence()
+            windowLayouts.onChange = { [weak self] _ in
+                self?.windowLayoutCoordinator.applyWindowLayoutsPresence()
+            }
+            windowLayoutCoordinator.applyWindowLayoutsPresence()
             quicklinks.onChange = { [weak self] _ in
                 self?.quicklinkCoordinator.applyQuicklinksPresence()
             }
@@ -144,6 +164,12 @@ final class AppCore {
             hotKeys.onRunCommand = { [weak self] id in self?.launcherCoordinator.runCommand(id) }
             hotKeys.onRunCustomCommand = { [weak self] id in
                 self?.customCommandCoordinator.runCustomCommand(id: id)
+            }
+            hotKeys.onRunWindowCommand = { [weak self] id in
+                self?.windowCommandCoordinator.runWindowCommand(id: id)
+            }
+            hotKeys.onRunWindowLayout = { [weak self] id in
+                self?.windowLayoutCoordinator.runWindowLayout(id: id)
             }
             hotKeys.onOpenQuicklink = { [weak self] id in
                 self?.quicklinkCoordinator.openQuicklink(id: id)
@@ -167,7 +193,8 @@ final class AppCore {
             }
             hotKeys.start(
                 customCommandIDs: Set(customCommands.commands.map(\.id)),
-                quicklinkIDs: Set(quicklinks.quicklinks.map(\.id)))
+                quicklinkIDs: Set(quicklinks.quicklinks.map(\.id)),
+                windowLayoutIDs: Set(windowLayouts.layouts.map(\.id)))
             // Keeps running while Carbon pauses: the recorder needs its rewritten flags.
             hyperKeyTap.start(settings: settings)
 
@@ -221,9 +248,11 @@ final class AppCore {
             return customCommands.command(id: id)?.name
         case .quicklink(let id):
             return quicklinks.quicklink(id: id)?.name
+        case .windowLayout(let id):
+            return windowLayouts.layout(id: id)?.name
         case .extensionCommand(let entryID):
             return appIndex.apps.first { $0.kind == .extensionCommand && $0.id == entryID }?.name
-        case .togglePalette, .command:
+        case .togglePalette, .command, .windowCommand:
             return nil
         }
     }
@@ -258,6 +287,7 @@ final class AppCore {
         clipboardTextIndexer?.stop()
         // Caps Lock first: its remap is the one teardown that outlives the process.
         hyperKeyTap.prepareForTermination()
+        windowLayoutCoordinator.prepareForTermination()
         inputSourceSwitcher.endSession()
         textInjector.prepareForTermination()
     }
@@ -265,6 +295,16 @@ final class AppCore {
     // MARK: - Feature switches
 
     private func observeFeatureSwitches() {
+        track(
+            {
+                _ = $0.windowManagementEnabled
+                _ = $0.windowManagementShowInLauncher
+            }, reproject: { $0.applyWindowCommandsPresence() })
+        track(
+            {
+                _ = $0.windowManagementEnabled
+                _ = $0.windowLayoutsShowInLauncher
+            }, reproject: { $0.windowLayoutCoordinator.applyWindowLayoutsPresence() })
         track(
             {
                 _ = $0.customCommandsEnabled
@@ -324,6 +364,11 @@ final class AppCore {
     private func applyHyperChord() {
         guard settings.hyperKey != .none else { return }
         hotKeys.retargetHyperBindings(includesShift: settings.hyperKeyIncludesShift)
+    }
+
+    private func applyWindowCommandsPresence() {
+        let visible = settings.windowManagementEnabled && settings.windowManagementShowInLauncher
+        appIndex.setWindowCommandsVisible(visible)
     }
 
     // MARK: - Interruption

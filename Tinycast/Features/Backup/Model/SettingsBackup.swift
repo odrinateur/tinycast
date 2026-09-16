@@ -7,6 +7,7 @@ struct SettingsBackup: Codable {
     var hotkeys: HotkeyBackup?
     var customCommands: [CustomCommand]?
     var quicklinks: [Quicklink]?
+    var windowLayouts: [WindowLayout]?
     var favoriteApps: [String]?
     var hiddenLauncherItems: [String]?
     var hiddenLauncherKinds: [String]?
@@ -47,6 +48,7 @@ struct SettingsBackup: Codable {
         var windowManagementEnabled: Bool?
         var windowManagementShowInLauncher: Bool?
         var windowGap: Int?
+        var windowCycle: String?
         var windowLayoutsShowInLauncher: Bool?
         // Carried, unlike `snippetsEnabled`: opening a link grants no permission class of its own.
         var quicklinksEnabled: Bool?
@@ -77,7 +79,9 @@ struct SettingsBackup: Codable {
         var apps: [String: HotKeyBinding]?
         var panes: [String: HotKeyBinding]?
         var customCommands: [String: HotKeyBinding]?
+        var windowCommands: [String: HotKeyBinding]?
         var quicklinks: [String: HotKeyBinding]?
+        var windowLayouts: [String: HotKeyBinding]?
     }
 
     /// A tally of what an import touched, for user-facing confirmation.
@@ -89,6 +93,7 @@ struct SettingsBackup: Codable {
         var aliases = 0
         var customCommands = 0
         var quicklinks = 0
+        var windowLayouts = 0
     }
 }
 
@@ -130,6 +135,7 @@ extension SettingsBackup {
             windowManagementEnabled: s.windowManagementEnabled,
             windowManagementShowInLauncher: s.windowManagementShowInLauncher,
             windowGap: s.windowGap,
+            windowCycle: s.windowCycle.rawValue,
             windowLayoutsShowInLauncher: s.windowLayoutsShowInLauncher,
             quicklinksEnabled: s.quicklinksEnabled,
             quicklinksShowInLauncher: s.quicklinksShowInLauncher,
@@ -166,14 +172,23 @@ extension SettingsBackup {
             uniqueKeysWithValues: hk.boundCustomCommandIDs.compactMap { id in
                 hk.binding(for: .customCommand(id: id)).map { (id.uuidString.lowercased(), $0) }
             })
+        hotkeys.windowCommands = Dictionary(
+            uniqueKeysWithValues: WindowCommand.ID.allCases.compactMap { id in
+                hk.binding(for: .windowCommand(id: id)).map { (id.rawValue, $0) }
+            })
         hotkeys.quicklinks = Dictionary(
             uniqueKeysWithValues: hk.boundQuicklinkIDs.compactMap { id in
                 hk.binding(for: .quicklink(id: id)).map { (id.uuidString.lowercased(), $0) }
+            })
+        hotkeys.windowLayouts = Dictionary(
+            uniqueKeysWithValues: hk.boundWindowLayoutIDs.compactMap { id in
+                hk.binding(for: .windowLayout(id: id)).map { (id.uuidString.lowercased(), $0) }
             })
         backup.hotkeys = hotkeys
 
         backup.customCommands = core.customCommands.commands
         backup.quicklinks = core.quicklinks.quicklinks
+        backup.windowLayouts = core.windowLayouts.layouts
         backup.favoriteApps = core.favorites.keys
         backup.hiddenLauncherItems = Array(core.visibility.hiddenItemKeys)
         backup.hiddenLauncherKinds = Array(core.visibility.disabledKinds)
@@ -191,6 +206,11 @@ extension SettingsBackup {
         // Before the hotkeys, so a restored binding has its quicklink to attach to.
         if let quicklinks {
             summary.quicklinks = core.quicklinkCoordinator.replaceQuicklinks(quicklinks)
+        }
+        // Before the hotkeys too, for the same reason: a binding needs its layout to attach to.
+        if let windowLayouts {
+            summary.windowLayouts =
+                core.windowLayoutCoordinator.replaceWindowLayouts(windowLayouts)
         }
         if let hotkeys { summary.hotkeys = applyHotkeys(hotkeys, to: core) }
         if let favoriteApps {
@@ -332,6 +352,10 @@ extension SettingsBackup {
             settings.windowGap = gap
             count += 1
         }
+        if let raw = s.windowCycle, let cycle = WindowCycle(rawValue: raw) {
+            settings.windowCycle = cycle
+            count += 1
+        }
         if let flag = s.windowLayoutsShowInLauncher {
             settings.windowLayoutsShowInLauncher = flag
             count += 1
@@ -424,6 +448,15 @@ extension SettingsBackup {
                 continue
             }
             apply(b, .customCommand(id: id))
+        }
+        for (rawID, b) in hotkeys.windowCommands ?? [:] {
+            guard let id = WindowCommand.ID(rawValue: rawID) else { continue }
+            apply(b, .windowCommand(id: id))
+        }
+        for (rawID, b) in hotkeys.windowLayouts ?? [:] {
+            guard let id = UUID(uuidString: rawID), core.windowLayouts.layout(id: id) != nil
+            else { continue }
+            apply(b, .windowLayout(id: id))
         }
         for (rawID, b) in hotkeys.quicklinks ?? [:] {
             guard let id = UUID(uuidString: rawID), core.quicklinks.quicklink(id: id) != nil else {

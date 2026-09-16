@@ -54,6 +54,8 @@ extension SettingsTab {
             [.createQuicklink, .searchQuicklinks, .importQuicklinks, .exportQuicklinks]
         case .fileSearch: [.searchFiles]
         case .clipboard: [.clipboardHistory]
+        case .windowManagement:
+            [.createWindowLayout, .captureWindowLayout]
         default: []
         }
     }
