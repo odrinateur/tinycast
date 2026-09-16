@@ -91,6 +91,6 @@ jobs:
         env:
           TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
           CASK: tinycast
-          DMG: dist/Tinycast-${VERSION}.dmg
+          DMG: dist/Tinycast-${{ env.VERSION }}.dmg
           APP_REPO: ${{ github.repository }}
         run: ./Scripts/publish-tap.sh

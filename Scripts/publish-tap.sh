@@ -71,9 +71,9 @@ if [ "${1:-}" = "--render" ]; then
   exit 0
 fi
 
-DMG="${DMG:-${DMG_FILE:-}}"
-[ -n "$DMG" ] || { echo "DMG is required" >&2; exit 1; }
 VERSION="${VERSION:?VERSION is required}"
+DMG="${DMG:-${DMG_FILE:-dist/Tinycast-${VERSION}.dmg}}"
+[ -f "$DMG" ] || { echo "DMG file not found: $DMG" >&2; exit 1; }
 SHA256="$(shasum -a 256 "$DMG" | awk '{print $1}')"
 
 if [ -z "${TAP_GITHUB_TOKEN:-}" ]; then
