@@ -581,6 +581,9 @@ const fsPromises = {
   constants: fs.constants,
 };
 fs.promises = fsPromises;
+fs.realpath.native = fs.realpath;
+fs.realpathSync.native = fs.realpathSync;
+fsPromises.realpath.native = fsPromises.realpath;
 
 // ─── child_process ──────────────────────────────────────────────────
 
@@ -1531,6 +1534,63 @@ const streamModule = unsupportedModule(
 
 const webStreamModule = { ReadableStream, WritableStream, TransformStream };
 
+class DiagnosticChannel {
+  constructor(name) {
+    this.name = name;
+  }
+  hasSubscribers = false;
+  subscribe() {}
+  unsubscribe() {}
+  publish() {}
+  bind(fn) {
+    return fn;
+  }
+  runStores(_context, fn, ...args) {
+    return fn(...args);
+  }
+}
+
+class TracingChannel {
+  constructor(name) {
+    this.start = new DiagnosticChannel(`tracing:${name}:start`);
+    this.end = new DiagnosticChannel(`tracing:${name}:end`);
+    this.asyncStart = new DiagnosticChannel(`tracing:${name}:asyncStart`);
+    this.asyncEnd = new DiagnosticChannel(`tracing:${name}:asyncEnd`);
+    this.error = new DiagnosticChannel(`tracing:${name}:error`);
+  }
+  hasSubscribers = false;
+  subscribe() {}
+  unsubscribe() {}
+  traceSync(fn, _context, _thisArg, ...args) {
+    return fn.apply(_thisArg, args);
+  }
+  tracePromise(fn, _context, _thisArg, ...args) {
+    return fn.apply(_thisArg, args);
+  }
+  traceCallback(fn, _position, _context, _thisArg, ...args) {
+    return fn.apply(_thisArg, args);
+  }
+}
+
+const diagnosticChannels = new Map();
+function getDiagnosticChannel(name) {
+  let ch = diagnosticChannels.get(name);
+  if (!ch) {
+    ch = new DiagnosticChannel(name);
+    diagnosticChannels.set(name, ch);
+  }
+  return ch;
+}
+
+const diagnosticsChannelModule = {
+  Channel: DiagnosticChannel,
+  channel: getDiagnosticChannel,
+  hasSubscribers: () => false,
+  subscribe: () => {},
+  unsubscribe: () => {},
+  tracingChannel: (name) => new TracingChannel(name),
+};
+
 // ─── Registry ───────────────────────────────────────────────────────
 
 export const nodeModules = {
@@ -1554,6 +1614,7 @@ export const nodeModules = {
   timers: { setTimeout, clearTimeout, setInterval, clearInterval, setImmediate, clearImmediate },
   "timers/promises": { setTimeout: (ms, value) => new Promise((resolve) => setTimeout(() => resolve(value), ms)) },
   perf_hooks: { performance: globalThis.performance },
+  diagnostics_channel: diagnosticsChannelModule,
   http: httpLike("http"),
   https: httpLike("https"),
   net: unsupportedModule("net"),
@@ -1562,7 +1623,11 @@ export const nodeModules = {
   stream: streamModule,
   "stream/web": webStreamModule,
   "stream/promises": { pipeline: (...stages) => pipelinePromise(stages), finished: finishedPromise },
-  worker_threads: unsupportedModule("worker_threads", { isMainThread: true }),
+  worker_threads: unsupportedModule("worker_threads", {
+    isMainThread: true,
+    markAsUncloneable: (obj) => obj,
+    parentPort: null,
+  }),
   readline: unsupportedModule("readline"),
   tty: { isatty: () => false },
   vm: unsupportedModule("vm"),
@@ -1571,7 +1636,23 @@ export const nodeModules = {
   cluster: { isPrimary: true, isMaster: true },
   inspector: {},
   v8: {},
-  async_hooks: { AsyncLocalStorage: class { run(_store, fn) { return fn(); } getStore() { return undefined; } } },
+  async_hooks: {
+    AsyncLocalStorage: class { run(_store, fn) { return fn(); } getStore() { return undefined; } },
+    AsyncResource: class {
+      constructor(type) { this.type = type; }
+      emitBefore() {}
+      emitAfter() {}
+      emitDestroy() {}
+      asyncId() { return 1; }
+      triggerAsyncId() { return 1; }
+      runInAsyncScope(fn, thisArg, ...args) { return fn.apply(thisArg, args); }
+      bind(fn) { return fn; }
+      static bind(fn) { return fn; }
+    },
+    executionAsyncId: () => 1,
+    triggerAsyncId: () => 1,
+    createHook: () => ({ enable() {}, disable() {} }),
+  },
 };
 
 function requireStub(name) {
@@ -1582,7 +1663,7 @@ function requireStub(name) {
 // long tail (dgram, http2, domain, repl, …) from dependencies that only touch them on paths an
 // extension never reaches, so a require-time throw would fail extensions that actually work.
 const REMAINING_BUILTINS = [
-  "assert/strict", "console", "dgram", "diagnostics_channel", "dns/promises", "domain", "http2",
+  "assert/strict", "console", "dgram", "dns/promises", "domain", "http2",
   "inspector/promises", "path/posix", "path/win32", "readline/promises", "repl",
   "stream/consumers", "sys", "trace_events", "util/types", "wasi", "sea", "sqlite", "test",
   "test/reporters",
