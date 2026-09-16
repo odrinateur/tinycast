@@ -15,10 +15,9 @@ It builds a Release `Tinycast.app` signed with `Tinycast Self-Signed` and packs 
 
 ## Signing & Gatekeeper
 
-Both local builds and CI releases sign with the same stable `Tinycast Self-Signed` identity, not an
-Apple Developer ID — so macOS quarantines a directly-downloaded DMG. The Homebrew cask strips that
-automatically; direct downloaders run `xattr -dr com.apple.quarantine "…/Tinycast.app"` once. Full
-details in [signing.md](signing.md).
+Local builds can use `Tinycast Self-Signed`. CI signs ad-hoc (`-`), same as the other private tap
+apps — no certificate secret. The Homebrew cask strips quarantine; a direct DMG download still needs
+`xattr -dr com.apple.quarantine "…/Tinycast.app"` once. Full details in [signing.md](signing.md).
 
 ## How the in-app updater consumes a release
 
