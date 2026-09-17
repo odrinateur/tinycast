@@ -351,11 +351,10 @@ struct RootPaletteView: View {
                 vm.menuOpen = menuOpen
                 vm.menuFilterEnabled = current == .actions
                 if current == .actions {
-                    // The filter field takes the keyboard; focus returns where it was with the menu.
+                    // The filter field takes the keyboard on appear; the stash returns focus with the menu.
                     argumentFocusStash = .some(argumentFocused)
                     argumentFocused = nil
                     searchFocused = false
-                    filterFocused = true
                 } else if previous == .actions {
                     filterFocused = false
                     if let restore = argumentFocusStash, let field = restore {
@@ -776,6 +775,8 @@ struct RootPaletteView: View {
                 .font(metrics.typography.menuRow)
                 .tint(Theme.Colors.textPrimary)
                 .focused($filterFocused)
+                // A focus ask in the opening transaction can race the insertion; this lands after it.
+                .onAppear { filterFocused = true }
                 .background(alignment: .leading) {
                     // An IME's marked text leaves the filter empty, so the prompt would overlap it.
                     if vm.menuFilter.isEmpty, !vm.isComposing {
