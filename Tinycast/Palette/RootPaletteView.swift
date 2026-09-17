@@ -20,6 +20,10 @@ struct RootPaletteView: View {
     @FocusState private var searchFocused: Bool
     /// Kept apart from the search field's own focus. See docs/features/palette.md.
     @FocusState private var argumentFocused: String?
+    /// The ⌘K filter field's focus; the menu takes the keyboard while it holds it.
+    @FocusState private var filterFocused: Bool
+    /// The argument field focused before ⌘K stole the keyboard; focus returns there with the menu.
+    @State private var argumentFocusStash: String?? = nil
     /// Which in-window menu is open; at most one, so the state cannot disagree with itself.
     @State private var openMenu: OpenMenu?
     /// Sampled once by `openActions`, so the running-only rows can't appear while the menu is up.
@@ -196,6 +200,7 @@ struct RootPaletteView: View {
                 .safeAreaInset(edge: .top, spacing: 0) { header }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     if !isCollapsed {
+                        if openMenu == .actions { actionsFilterField }
                         bottomBar(
                             pillLabel: screen.primaryActionTitle, showActionGroup: showActionGroup,
                             formPrimaryShortcut: isExtensionForm,
@@ -342,9 +347,24 @@ struct RootPaletteView: View {
     private func lifecycleObservers(_ content: some View) -> some View {
         content
             // One optional makes "exactly one menu" structural; this only mirrors it for the panel.
-            .onChange(of: openMenu) {
+            .onChange(of: openMenu) { previous, current in
                 vm.menuOpen = menuOpen
-                vm.menuFilterEnabled = openMenu == .actions
+                vm.menuFilterEnabled = current == .actions
+                if current == .actions {
+                    // The filter field takes the keyboard; focus returns where it was with the menu.
+                    argumentFocusStash = .some(argumentFocused)
+                    argumentFocused = nil
+                    searchFocused = false
+                    filterFocused = true
+                } else if previous == .actions {
+                    filterFocused = false
+                    if let restore = argumentFocusStash, let field = restore {
+                        argumentFocused = field
+                    } else {
+                        searchFocused = true
+                    }
+                    argumentFocusStash = nil
+                }
                 if !menuOpen { vm.menuFilter = "" }
                 guard menuOpen else { return }
                 syncMenuPanel(presenting: true)
@@ -354,6 +374,8 @@ struct RootPaletteView: View {
                 menuSelection = 0
                 syncMenuPanel(presenting: false)
             }
+            // The panel owns the caret, so the filter field's focus has to be pushed into it.
+            .onChange(of: filterFocused) { _, focused in vm.menuFilterFocused = focused }
             // The hosted tree is its own hierarchy, so the highlight has to be pushed into it.
             .onChange(of: menuSelection) { syncMenuPanel(presenting: false) }
             .onDisappear {
@@ -402,12 +424,13 @@ struct RootPaletteView: View {
             // Horizontal arrows step the grid; elsewhere they stay with the caret.
             .onKeyPress(.leftArrow) {
                 if vm.isControlListOpen { return .ignored }
-                if menuOpen { return .handled }
+                // The filter field keeps them for its own caret; any other menu freezes them.
+                if menuOpen, !filterFocused { return .handled }
                 return moveHorizontally(-1) ? .handled : .ignored
             }
             .onKeyPress(.rightArrow) {
                 if vm.isControlListOpen { return .ignored }
-                if menuOpen { return .handled }
+                if menuOpen, !filterFocused { return .handled }
                 return moveHorizontally(1) ? .handled : .ignored
             }
             // Plain ↵ runs an open menu's row or non-form selection; ⌘↵ submits forms.
@@ -498,7 +521,8 @@ struct RootPaletteView: View {
             // The screen answers row chords; a bare backspace is intercepted in `sendEvent`.
             .onKeyPress(phases: .down) { press in
                 let isDeleteKey = press.key == .delete || press.key == .deleteForward
-                if isDeleteKey, menuOpen { return .handled }
+                // The filter field deletes its own text; any other menu freezes the key.
+                if isDeleteKey, menuOpen, !filterFocused { return .handled }
                 guard
                     let shortcut = PaletteShortcut.resolve(
                         command: press.modifiers.contains(.command),
@@ -509,6 +533,10 @@ struct RootPaletteView: View {
                         matches: { ASCIIKeyboardLayout.matches(press.key, character: $0) })
                 else { return .ignored }
                 guard !shortcut.requiresExpanded || !isCollapsed else { return .ignored }
+                // ⌘⌫ with text clears the filter line; empty, it stays the row's own delete.
+                if shortcut == .commandDelete, filterFocused, !vm.menuFilter.isEmpty {
+                    return .ignored
+                }
                 let screen = screen
                 guard screen.perform(shortcut, at: selection(in: screen)) else { return .ignored }
                 if shortcut.closesMenu, menuOpen { closeMenus() }
@@ -729,6 +757,52 @@ struct RootPaletteView: View {
     }
 
     private var pillTint: Color { .primary }
+
+    /// The ⌘K filter: a real field under the list, so ⌘⌫ and every other editing chord just works.
+    private var actionsFilterField: some View {
+        @Bindable var vm = vm
+        return HStack(spacing: metrics.spacing.md) {
+            Image(systemName: "magnifyingglass")
+                .font(
+                    .system(
+                        size: metrics.scaled(Theme.Typography.menuSymbolSize),
+                        weight: Theme.Typography.menuSymbolWeight)
+                )
+                .symbolRenderingMode(.monochrome)
+                .foregroundStyle(Theme.Colors.textSecondary)
+                .frame(width: metrics.size.menuIcon, height: metrics.size.menuIcon)
+            TextField("", text: $vm.menuFilter)
+                .textFieldStyle(.plain)
+                .font(metrics.typography.menuRow)
+                .tint(Theme.Colors.textPrimary)
+                .focused($filterFocused)
+                .background(alignment: .leading) {
+                    // An IME's marked text leaves the filter empty, so the prompt would overlap it.
+                    if vm.menuFilter.isEmpty, !vm.isComposing {
+                        Text("Filter actions…")
+                            .font(metrics.typography.menuRow)
+                            .foregroundStyle(Theme.Colors.textTertiary)
+                            .lineLimit(1)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .accessibilityLabel(Text("Filter actions"))
+            // Esc clears the filter before it closes the menu, which is what this states.
+            if !vm.menuFilter.isEmpty {
+                KeyCapChip(text: "esc", style: .outline)
+            }
+        }
+        .padding(.horizontal, metrics.spacing.md)
+        .frame(height: metrics.size.bottomBarHeight)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // Same scrim as the panel behind it, so rows hide beneath with no visible band.
+        .background(Theme.Colors.panelScrim(transparency: settings.paletteTransparency))
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Theme.Colors.separator)
+                .frame(height: Theme.Size.hairline)
+        }
+    }
 
     private func bottomBar(
         pillLabel: String, showActionGroup: Bool, formPrimaryShortcut: Bool, showActions: Bool

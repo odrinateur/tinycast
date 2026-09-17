@@ -150,21 +150,13 @@ struct PopoverMenu: View {
             .padding(.bottom, metrics.spacing.xs / 2)
     }
 
-    /// The typed filter reads back in the header, so keystrokes have visible feedback.
-    private var displayHeader: String? {
-        let filter = palette.menuFilter
-        guard !filter.isEmpty else { return header }
-        if let header, !header.isEmpty { return "\(header) — \(filter)" }
-        return filter
-    }
-
     /// The title and rows move as one surface, while row IDs still drive keyboard reveal.
     private var rows: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    if let displayHeader {
-                        headerLabel(displayHeader)
+                    if let header {
+                        headerLabel(header)
                         Color.clear.frame(height: metrics.size.menuRowSpacing)
                     }
                     // Index-as-id is stable: a menu's rows never reorder while it is open.
@@ -244,7 +236,7 @@ struct PopoverMenu: View {
     }
 
     private var headerExtent: CGFloat {
-        guard displayHeader != nil else { return 0 }
+        guard header != nil else { return 0 }
         return metrics.size.menuSectionHeader + metrics.spacing.xs * 1.5
             + metrics.size.menuRowSpacing
     }
