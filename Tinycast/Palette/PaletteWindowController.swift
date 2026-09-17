@@ -295,7 +295,10 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
         }
         // Backspace takes Escape's back step but never closes: a root screen falls to the launcher.
         panel.onBareBackspace = { [weak self] in
-            guard let core = self?.core, core.palette.query.isEmpty else { return false }
+            guard let core = self?.core else { return false }
+            // The ⌘K filter field deletes its own text; the back step waits for the menu to close.
+            if core.palette.menuFilterFocused { return false }
+            guard core.palette.query.isEmpty else { return false }
             // A form field owns the key: the text it deletes is the field's, not a query's.
             if core.palette.isEditingField { return false }
             // The argument form steps back through the answers first, one key per field.
