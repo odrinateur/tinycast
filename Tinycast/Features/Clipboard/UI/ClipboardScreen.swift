@@ -200,10 +200,24 @@ enum ClipboardActionsMenu {
                     core.clipboardCoordinator.revealClip(item)
                 })
         }
+        if item.kind == .image {
+            items.append(
+                PopoverMenuItem(title: "Open", systemImage: "arrow.up.forward.app") {
+                    core.clipboardCoordinator.openClip(item)
+                })
+            items.append(
+                PopoverMenuItem(title: "Open With…", systemImage: "arrow.up.forward.app.fill") {
+                    core.clipboardCoordinator.openClipWithPicker(item)
+                })
+        }
         if item.kind == .file {
             items.append(
                 PopoverMenuItem(title: "Open", systemImage: "arrow.up.forward.app") {
                     core.clipboardCoordinator.openClip(item)
+                })
+            items.append(
+                PopoverMenuItem(title: "Open With…", systemImage: "arrow.up.forward.app.fill") {
+                    core.clipboardCoordinator.openClipWithPicker(item)
                 })
             items.append(
                 PopoverMenuItem(title: "Copy Path", systemImage: "doc.on.clipboard") {

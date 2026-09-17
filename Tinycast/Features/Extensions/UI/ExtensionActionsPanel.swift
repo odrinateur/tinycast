@@ -59,8 +59,16 @@ struct ExtensionActionsPanel: View {
 
     private var panel: Metrics { Metrics(interface: metrics) }
 
+    /// The typed filter reads back in the header, so keystrokes have visible feedback.
+    private var displayHeader: String? {
+        let filter = palette.menuFilter
+        guard !filter.isEmpty else { return header }
+        if let header { return "\(header) — \(filter)" }
+        return filter
+    }
+
     var body: some View {
-        let hasHeader = header != nil
+        let hasHeader = displayHeader != nil
         let contentHeight = panel.contentHeight(items: items, hasHeader: hasHeader)
         let maximumHeight = panel.maximumHeight(hasHeader: hasHeader)
         let shape = UnevenRoundedRectangle(
@@ -72,8 +80,8 @@ struct ExtensionActionsPanel: View {
         return ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    if let header {
-                        Text(header)
+                    if let displayHeader {
+                        Text(displayHeader)
                             .font(metrics.typography.sectionHeader)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)

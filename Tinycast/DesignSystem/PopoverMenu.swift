@@ -68,6 +68,27 @@ struct PopoverMenuContent {
     let items: [PopoverMenuItem]
 }
 
+extension PopoverMenuContent {
+    /// Narrows rows to those naming `query`; an empty query keeps every row.
+    func filtered(by query: String) -> PopoverMenuContent {
+        let q = query.trimmingCharacters(in: .whitespaces)
+        guard !q.isEmpty else { return self }
+        var items = items.filter { $0.title.localizedCaseInsensitiveContains(q) }
+        guard !items.isEmpty else {
+            return PopoverMenuContent(
+                header: header,
+                items: [
+                    PopoverMenuItem(
+                        title: "No matching actions", icon: .symbol("magnifyingglass"),
+                        isEnabled: false, action: {})
+                ])
+        }
+        // A leading separator would draw above the first visible row.
+        items[0].startsSection = false
+        return PopoverMenuContent(header: header, items: items)
+    }
+}
+
 /// The palette's own menu, hosted by `MenuPanelController` in a window of its own.
 struct PopoverMenu: View {
     enum Attachment {
@@ -129,13 +150,21 @@ struct PopoverMenu: View {
             .padding(.bottom, metrics.spacing.xs / 2)
     }
 
+    /// The typed filter reads back in the header, so keystrokes have visible feedback.
+    private var displayHeader: String? {
+        let filter = palette.menuFilter
+        guard !filter.isEmpty else { return header }
+        if let header, !header.isEmpty { return "\(header) — \(filter)" }
+        return filter
+    }
+
     /// The title and rows move as one surface, while row IDs still drive keyboard reveal.
     private var rows: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    if let header {
-                        headerLabel(header)
+                    if let displayHeader {
+                        headerLabel(displayHeader)
                         Color.clear.frame(height: metrics.size.menuRowSpacing)
                     }
                     // Index-as-id is stable: a menu's rows never reorder while it is open.
@@ -215,7 +244,7 @@ struct PopoverMenu: View {
     }
 
     private var headerExtent: CGFloat {
-        guard header != nil else { return 0 }
+        guard displayHeader != nil else { return 0 }
         return metrics.size.menuSectionHeader + metrics.spacing.xs * 1.5
             + metrics.size.menuRowSpacing
     }

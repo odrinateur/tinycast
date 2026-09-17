@@ -335,6 +335,11 @@ returns false, the coordinator raises a HUD, and the row survives — history is
 happened, and the recorded path is still the answer to "where was it?". The preview says so in
 place, and the Path row keeps showing where the file used to be.
 
+**An image or file opens from its ⌘K menu, with the app of your choosing.** Both kinds carry
+**Open** (the default handler) and **Open With…**, which asks for the app through a plain
+`NSOpenPanel` rooted at `/Applications` rather than a submenu — the palette's menu stays one
+level deep. The same missing-input HUD covers a blob or file gone by the time it opens.
+
 `FilePreviewThumbnailer` is the row tile and the preview still. `QLThumbnailGenerator` is the only
 thing that renders a *content* thumbnail for any type — a video's poster frame, a PDF's first page
 — and with `representationTypes: .all` it falls back to the type icon itself, so every file paints

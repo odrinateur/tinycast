@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 
 /// Owns clipboard-history actions: paste, copy, reveal, pin — and the selection that follows.
 @MainActor
@@ -96,9 +97,9 @@ final class ClipboardCoordinator {
         }
     }
 
-    /// A write only fails on a vanished file, and a palette that just closes explains nothing.
+    /// A vanished file or image blob explains itself with a HUD, not a silent close.
     private func reportUnavailable(_ item: ClipboardItem) {
-        guard item.kind == .file else { return }
+        guard item.kind == .file || item.kind == .image else { return }
         core.showMessage("That file has moved or been deleted.", tone: .danger)
     }
 
@@ -157,6 +158,23 @@ final class ClipboardCoordinator {
         guard let url = clipURL(for: item) else { return }
         paletteCoordinator.hidePalette(restoreFocus: false)
         AppLauncher.open(url)
+    }
+
+    /// An app chooser for an image or referenced file; cancelling picks nothing and opens nothing.
+    func openClipWithPicker(_ item: ClipboardItem) {
+        guard let url = clipURL(for: item) else { return }
+        paletteCoordinator.hidePalette(restoreFocus: false)
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.applicationBundle]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.prompt = "Open"
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let appURL = panel.url else { return }
+        NSWorkspace.shared.open(
+            [url], withApplicationAt: appURL, configuration: NSWorkspace.OpenConfiguration(),
+            completionHandler: nil)
     }
 
     /// Unmarked, so the path enters history like any other copy the reader meant to make.
