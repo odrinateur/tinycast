@@ -144,8 +144,15 @@ struct RootPaletteView: View {
         switch openMenu {
         case .actions:
             let screen = screen
-            return screen.menuContent(
-                at: selection(in: screen), menuSelection: $menuSelection,
+            let sel = selection(in: screen)
+            // An extension draws its own panel, so it narrows its own rows from the same filter.
+            if let extensionScreen = screen as? ExtensionCommandScreen {
+                return extensionScreen.menuContent(
+                    at: sel, menuSelection: $menuSelection, onActivate: activateMenuItem)
+            }
+            guard let content = screen.actions(at: sel) else { return nil }
+            return PaletteMenuContent(
+                popover: content.filtered(by: vm.menuFilter), selection: $menuSelection,
                 onActivate: activateMenuItem)
         case .app:
             return PaletteMenuContent(
@@ -337,8 +344,15 @@ struct RootPaletteView: View {
             // One optional makes "exactly one menu" structural; this only mirrors it for the panel.
             .onChange(of: openMenu) {
                 vm.menuOpen = menuOpen
+                vm.menuFilterEnabled = openMenu == .actions
+                if !menuOpen { vm.menuFilter = "" }
                 guard menuOpen else { return }
                 syncMenuPanel(presenting: true)
+            }
+            // A narrowed menu restarts on its first row, like a narrowed list does.
+            .onChange(of: vm.menuFilter) {
+                menuSelection = 0
+                syncMenuPanel(presenting: false)
             }
             // The hosted tree is its own hierarchy, so the highlight has to be pushed into it.
             .onChange(of: menuSelection) { syncMenuPanel(presenting: false) }
@@ -422,6 +436,11 @@ struct RootPaletteView: View {
                 if menuPanel.isClosing { return .handled }
                 // An open list closes itself first, exactly as the ⌘K menu does.
                 if vm.isControlListOpen { return .ignored }
+                // A filtered ⌘K menu clears its filter before it closes, like a narrowing query.
+                if openMenu == .actions, !vm.menuFilter.isEmpty {
+                    vm.menuFilter = ""
+                    return .handled
+                }
                 switch PaletteEscapeAction.resolve(
                     menuOpen: menuOpen, argumentFocused: argumentFocused != nil, query: vm.query,
                     mode: vm.mode, canGoBack: vm.canGoBack,
@@ -833,6 +852,7 @@ struct RootPaletteView: View {
 
     /// Every open path lands here, so the highlight is always stated rather than left behind.
     private func open(_ menu: OpenMenu, highlighting row: Int) {
+        if menu == .actions { vm.menuFilter = "" }
         menuSelection = row
         vm.noteMenuPresentation()
         openMenu = menu
@@ -841,6 +861,7 @@ struct RootPaletteView: View {
     private func closeMenus() {
         menuPanel.hide()
         openMenu = nil
+        vm.menuFilter = ""
         argumentOptionsField = nil
     }
 

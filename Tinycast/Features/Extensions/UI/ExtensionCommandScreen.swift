@@ -94,8 +94,13 @@ struct ExtensionCommandScreen: PaletteScreen {
     func menuContent(
         at selection: Int, menuSelection: Binding<Int>, onActivate: @escaping (Int) -> Void
     ) -> PaletteMenuContent? {
-        let actions = ExtensionScreen.actions(in: screen.actionPanel(forItemAt: selection))
-        guard !actions.isEmpty else { return nil }
+        let all = ExtensionScreen.actions(in: screen.actionPanel(forItemAt: selection))
+        guard !all.isEmpty else { return nil }
+        // The palette's ⌘K filter narrows extension actions the way it narrows built-in ones.
+        let q = vm.menuFilter.trimmingCharacters(in: .whitespaces)
+        let actions =
+            q.isEmpty ? all : all.filter { $0.title.localizedCaseInsensitiveContains(q) }
+        // Empty stays open on its header, so backspacing out of a dead filter recovers.
         let screen = screen
         let assetsPath = assetsPath
         let extensions = extensions

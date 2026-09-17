@@ -66,6 +66,10 @@ final class PaletteState {
     @ObservationIgnored var searchFieldFrame: CGRect = .zero
     /// True while a footer menu is open. See docs/features/palette.md#menu-open-input-freeze.
     @ObservationIgnored var menuOpen = false { didSet { onMenuOpenChanged?(menuOpen) } }
+    /// True while the open menu takes typed text as its own filter; the search field stays frozen.
+    @ObservationIgnored var menuFilterEnabled = false
+    /// The open actions menu's filter, typed while it is up; cleared with the menu.
+    var menuFilter = ""
     /// Fired when `menuOpen` flips, so the panel can hide the caret without a focus swap.
     @ObservationIgnored var onMenuOpenChanged: ((Bool) -> Void)?
     /// A fresh presentation resets a long popover to the row it opens with.
@@ -141,6 +145,8 @@ final class PaletteState {
         forceExpanded = false
         dropHoverHighlight()
         menuOpen = false
+        menuFilterEnabled = false
+        menuFilter = ""
         focusToken = UUID()
     }
 

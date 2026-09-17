@@ -168,6 +168,29 @@ final class PalettePanel: NSPanel {
             sendEvent(arrow)
             return
         }
+        // An actions menu takes typed text as its own filter; every other menu freezes input.
+        if event.type == .keyDown,
+            paletteState?.menuOpen == true,
+            paletteState?.menuFilterEnabled == true,
+            event.modifierFlags.isDisjoint(with: [.command, .control, .option]),
+            !Self.menuNavKeys.contains(Int(event.keyCode))
+        {
+            let keyCode = Int(event.keyCode)
+            let chars = event.characters
+            MainActor.assumeIsolated {
+                guard let state = self.paletteState else { return }
+                if keyCode == kVK_Delete || keyCode == kVK_ForwardDelete {
+                    if !state.menuFilter.isEmpty { state.menuFilter.removeLast() }
+                } else if let chars, chars.count == 1,
+                    let scalar = chars.unicodeScalars.first,
+                    !CharacterSet.controlCharacters.contains(scalar),
+                    state.menuFilter.count < 64
+                {
+                    state.menuFilter.append(chars)
+                }
+            }
+            return
+        }
         // A footer menu owns the keyboard. See docs/features/palette.md#menu-open-input-freeze.
         if event.type == .keyDown,
             paletteState?.menuOpen == true,

@@ -446,6 +446,11 @@ frozen instead:
 - The caret is hidden by clearing SwiftUI's **own** live field editor's `insertionPointColor`. SwiftUI
   force-casts its field editor to a private subclass, so vending a custom one crashes — only the
   existing one can be tuned.
+- **The ⌘K Actions menu is the one exception: typed text narrows its rows.** `PalettePanel.sendEvent`
+  folds printable keystrokes (and backspace) into `PaletteState.menuFilter` instead of swallowing
+  them, and `menuContent` filters the open rows through `PopoverMenuContent.filtered(by:)` — an
+  extension narrows its own rows from the same filter. The query behind the menu never moves, the
+  filter reads back in the menu's header, and a first Esc clears it before a second closes the menu.
 
 ## ↵ never commits the search field
 
