@@ -23,9 +23,6 @@ final class PalettePanel: NSPanel {
     weak var paletteState: PaletteState? {
         didSet {
             paletteState?.onMenuOpenChanged = { [weak self] open in self?.setSearchCaretHidden(open) }
-            paletteState?.onMenuFilterFocusChanged = { [weak self] _ in
-                self?.refreshFilterCaret()
-            }
         }
     }
 
@@ -126,14 +123,6 @@ final class PalettePanel: NSPanel {
         editor.updateInsertionPointStateAndRestartTimer(!hidden)
     }
 
-    /// The filter field shares the window's one field editor, so its caret follows its own focus.
-    private func refreshFilterCaret() {
-        guard let editor = fieldEditor, let state = paletteState else { return }
-        let hidden = state.menuOpen && !state.menuFilterFocused
-        editor.insertionPointColor = hidden ? .clear : NSColor(Theme.Colors.textPrimary)
-        editor.updateInsertionPointStateAndRestartTimer(!hidden)
-    }
-
     /// Every event either mechanism sets a cursor on, so neither gets the last word.
     private static let cursorEvents: Set<NSEvent.EventType> = [
         .mouseMoved, .mouseEntered, .mouseExited, .cursorUpdate,
@@ -179,10 +168,32 @@ final class PalettePanel: NSPanel {
             sendEvent(arrow)
             return
         }
-        // A footer menu owns the keyboard — except the actions menu's own filter field, which edits.
+        // An actions menu takes typed text as its own filter; every other menu freezes input.
         if event.type == .keyDown,
             paletteState?.menuOpen == true,
-            !(paletteState?.menuFilterEnabled == true && paletteState?.menuFilterFocused == true),
+            paletteState?.menuFilterEnabled == true,
+            event.modifierFlags.isDisjoint(with: [.command, .control, .option]),
+            !Self.menuNavKeys.contains(Int(event.keyCode))
+        {
+            let keyCode = Int(event.keyCode)
+            let chars = event.characters
+            MainActor.assumeIsolated {
+                guard let state = self.paletteState else { return }
+                if keyCode == kVK_Delete || keyCode == kVK_ForwardDelete {
+                    if !state.menuFilter.isEmpty { state.menuFilter.removeLast() }
+                } else if let chars, chars.count == 1,
+                    let scalar = chars.unicodeScalars.first,
+                    !CharacterSet.controlCharacters.contains(scalar),
+                    state.menuFilter.count < 64
+                {
+                    state.menuFilter.append(chars)
+                }
+            }
+            return
+        }
+        // A footer menu owns the keyboard. See docs/features/palette.md#menu-open-input-freeze.
+        if event.type == .keyDown,
+            paletteState?.menuOpen == true,
             event.modifierFlags.isDisjoint(with: [.command, .control]),
             !Self.menuNavKeys.contains(Int(event.keyCode))
         {

@@ -70,12 +70,6 @@ final class PaletteState {
     @ObservationIgnored var menuFilterEnabled = false
     /// The open actions menu's filter, typed while it is up; cleared with the menu.
     var menuFilter = ""
-    /// True while the actions menu's own filter field holds the keyboard.
-    @ObservationIgnored var menuFilterFocused = false {
-        didSet { onMenuFilterFocusChanged?(menuFilterFocused) }
-    }
-    /// Fired when `menuFilterFocused` flips, so the panel can show the filter field's caret.
-    @ObservationIgnored var onMenuFilterFocusChanged: ((Bool) -> Void)?
     /// Fired when `menuOpen` flips, so the panel can hide the caret without a focus swap.
     @ObservationIgnored var onMenuOpenChanged: ((Bool) -> Void)?
     /// A fresh presentation resets a long popover to the row it opens with.
@@ -152,7 +146,6 @@ final class PaletteState {
         dropHoverHighlight()
         menuOpen = false
         menuFilterEnabled = false
-        menuFilterFocused = false
         menuFilter = ""
         focusToken = UUID()
     }
