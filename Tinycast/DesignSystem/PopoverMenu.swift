@@ -131,11 +131,14 @@ struct PopoverMenu: View {
         let shape = SurfaceShape(
             attachment: attachment, radius: metrics.radius.menuPanel,
             attachedRadius: metrics.size.menuButton / 2)
-        rows
-            .padding(metrics.spacing.sm)
-            .frame(width: width ?? metrics.size.menuWidth)
-            .background(Theme.Colors.popSurface, in: shape)
-            .overlay(shape.stroke(Theme.Colors.border, lineWidth: 0.5))
+        VStack(spacing: 0) {
+            rows
+            if palette.menuFilterEnabled { filterBar }
+        }
+        .padding(metrics.spacing.sm)
+        .frame(width: width ?? metrics.size.menuWidth)
+        .background(Theme.Colors.popSurface, in: shape)
+        .overlay(shape.stroke(Theme.Colors.border, lineWidth: 0.5))
     }
 
     private func headerLabel(_ text: String) -> some View {
@@ -148,6 +151,41 @@ struct PopoverMenu: View {
             .padding(.horizontal, metrics.spacing.lg)
             .padding(.top, metrics.spacing.xs)
             .padding(.bottom, metrics.spacing.xs / 2)
+    }
+
+    /// Readout only: this window cannot become key, so typing is captured on the palette.
+    private var filterBar: some View {
+        HStack(spacing: metrics.spacing.md) {
+            Image(systemName: "magnifyingglass")
+                .font(
+                    .system(
+                        size: metrics.scaled(Theme.Typography.menuSymbolSize),
+                        weight: Theme.Typography.menuSymbolWeight)
+                )
+                .symbolRenderingMode(.monochrome)
+                .foregroundStyle(Theme.Colors.textSecondary)
+                .frame(width: metrics.size.menuIcon, height: metrics.size.menuIcon)
+            Text(palette.menuFilter.isEmpty ? "Filter actions…" : palette.menuFilter)
+                .font(metrics.typography.menuRow)
+                .foregroundStyle(
+                    palette.menuFilter.isEmpty ? Theme.Colors.textTertiary : Theme.Colors.textPrimary
+                )
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            if !palette.menuFilter.isEmpty {
+                KeyCapChip(text: "esc", style: .outline)
+            }
+        }
+        .padding(.horizontal, metrics.spacing.md)
+        .frame(height: metrics.size.menuRowHeight)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Theme.Colors.separator)
+                .frame(height: Theme.Size.hairline)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Filter actions")
+        .accessibilityValue(palette.menuFilter)
     }
 
     /// The title and rows move as one surface, while row IDs still drive keyboard reveal.

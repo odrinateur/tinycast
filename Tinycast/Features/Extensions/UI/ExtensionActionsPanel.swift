@@ -69,55 +69,93 @@ struct ExtensionActionsPanel: View {
             bottomTrailingRadius: metrics.size.menuButton / 2,
             topTrailingRadius: metrics.radius.menuPanel,
             style: .continuous)
-        return ScrollViewReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    if let header {
-                        Text(header)
-                            .font(metrics.typography.sectionHeader)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                            .frame(height: metrics.size.menuSectionHeader, alignment: .leading)
-                            .padding(.horizontal, metrics.spacing.lg)
-                            .padding(.top, metrics.spacing.xs)
-                            .padding(.bottom, metrics.spacing.xs / 2)
-                        Color.clear.frame(height: panel.rowSpacing)
-                    }
-                    // Index-as-id is stable: a panel's rows never reorder while it is open.
-                    ForEach(items.indices, id: \.self) { index in
-                        VStack(alignment: .leading, spacing: 0) {
-                            rowBoundary(before: index)
-                            ExtensionActionRow(
-                                item: items[index],
-                                selected: index == selection,
-                                onActivate: { onActivate(index) }
-                            )
-                            .onContinuousHover { if case .active = $0 { hover(index) } }
+        return VStack(spacing: 0) {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        if let header {
+                            Text(header)
+                                .font(metrics.typography.sectionHeader)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                                .frame(height: metrics.size.menuSectionHeader, alignment: .leading)
+                                .padding(.horizontal, metrics.spacing.lg)
+                                .padding(.top, metrics.spacing.xs)
+                                .padding(.bottom, metrics.spacing.xs / 2)
+                            Color.clear.frame(height: panel.rowSpacing)
                         }
-                        .id(index)
+                        // Index-as-id is stable: a panel's rows never reorder while it is open.
+                        ForEach(items.indices, id: \.self) { index in
+                            VStack(alignment: .leading, spacing: 0) {
+                                rowBoundary(before: index)
+                                ExtensionActionRow(
+                                    item: items[index],
+                                    selected: index == selection,
+                                    onActivate: { onActivate(index) }
+                                )
+                                .onContinuousHover { if case .active = $0 { hover(index) } }
+                            }
+                            .id(index)
+                        }
                     }
                 }
+                .frame(height: min(contentHeight, maximumHeight))
+                .scrollBounceBehavior(
+                    contentHeight > maximumHeight ? .always : .basedOnSize
+                )
+                // `never`, not `hidden`: hidden still lets AppKit claim the scroller's gutter.
+                .scrollIndicators(.never)
+                .overflowFade(band: panel.fadeBand, includingTop: true)
+                .onChange(of: selection) {
+                    let movedByPointer = hoverSelection == selection
+                    hoverSelection = nil
+                    guard !movedByPointer else { return }
+                    // No anchor: reveal the row, never re-centre the list around it.
+                    proxy.scrollTo(selection)
+                }
             }
-            .frame(height: min(contentHeight, maximumHeight))
-            .scrollBounceBehavior(
-                contentHeight > maximumHeight ? .always : .basedOnSize
-            )
-            // `never`, not `hidden`: hidden still lets AppKit claim the scroller's gutter.
-            .scrollIndicators(.never)
-            .overflowFade(band: panel.fadeBand, includingTop: true)
-            .onChange(of: selection) {
-                let movedByPointer = hoverSelection == selection
-                hoverSelection = nil
-                guard !movedByPointer else { return }
-                // No anchor: reveal the row, never re-centre the list around it.
-                proxy.scrollTo(selection)
-            }
+            filterBar
         }
         .padding(metrics.spacing.sm)
         .frame(width: panel.width)
         .background(Theme.Colors.popSurface, in: shape)
         .overlay(shape.strokeBorder(Theme.Colors.border, lineWidth: 0.5))
+    }
+
+    /// Readout only: this window cannot become key, so typing is captured on the palette.
+    private var filterBar: some View {
+        HStack(spacing: metrics.spacing.md) {
+            Image(systemName: "magnifyingglass")
+                .font(
+                    .system(
+                        size: metrics.scaled(Theme.Typography.menuSymbolSize),
+                        weight: Theme.Typography.menuSymbolWeight)
+                )
+                .symbolRenderingMode(.monochrome)
+                .foregroundStyle(Theme.Colors.textSecondary)
+                .frame(width: metrics.size.menuIcon, height: metrics.size.menuIcon)
+            Text(palette.menuFilter.isEmpty ? "Filter actions…" : palette.menuFilter)
+                .font(metrics.typography.menuRow)
+                .foregroundStyle(
+                    palette.menuFilter.isEmpty ? Theme.Colors.textTertiary : Theme.Colors.textPrimary
+                )
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            if !palette.menuFilter.isEmpty {
+                KeyCapChip(text: "esc", style: .outline)
+            }
+        }
+        .padding(.horizontal, metrics.spacing.md)
+        .frame(height: panel.rowHeight)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(Theme.Colors.separator)
+                .frame(height: Theme.Size.hairline)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Filter actions")
+        .accessibilityValue(palette.menuFilter)
     }
 
     @ViewBuilder
