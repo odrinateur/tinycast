@@ -10,6 +10,7 @@ final class HotKeyManager {
     var onRunCustomCommand: ((UUID) -> Void)?
     var onRunWindowCommand: ((WindowCommand.ID) -> Void)?
     var onRunWindowLayout: ((UUID) -> Void)?
+    var onRunCustomWindowSize: ((UUID) -> Void)?
     var onOpenQuicklink: ((UUID) -> Void)?
     var onRunExtensionCommand: ((String) -> Void)?
     /// Names what only the stores know; the fixed catalogs resolve here. Set in `AppCore.start()`.
@@ -49,14 +50,19 @@ final class HotKeyManager {
     private let boundCustomCommandKey = "boundCustomCommandIDs"
     private let boundQuicklinkKey = "boundQuicklinkIDs"
     private let boundWindowLayoutKey = "boundWindowLayoutIDs"
+    private let boundCustomWindowSizeKey = "boundCustomWindowSizeIDs"
     private let boundExtensionCommandKey = "boundExtensionCommandEntryIDs"
 
     func start(
-        customCommandIDs: Set<UUID>, quicklinkIDs: Set<UUID>, windowLayoutIDs: Set<UUID>
+        customCommandIDs: Set<UUID>, quicklinkIDs: Set<UUID>, windowLayoutIDs: Set<UUID>,
+        customWindowSizeIDs: Set<UUID>
     ) {
         prune(key: boundCustomCommandKey, live: customCommandIDs) { .customCommand(id: $0) }
         prune(key: boundQuicklinkKey, live: quicklinkIDs) { .quicklink(id: $0) }
         prune(key: boundWindowLayoutKey, live: windowLayoutIDs) { .windowLayout(id: $0) }
+        prune(key: boundCustomWindowSizeKey, live: customWindowSizeIDs) {
+            .customWindowSize(id: $0)
+        }
         // After the prunes, so a dropped record can't survive in memory this session.
         for action in candidateActions { bindings[action] = storedBinding(for: action) }
 
@@ -94,6 +100,8 @@ final class HotKeyManager {
 
     /// Window-layout UUIDs with a binding; authored records, so they need an index of their own.
     var boundWindowLayoutIDs: [UUID] { boundIDs(key: boundWindowLayoutKey) }
+
+    var boundCustomWindowSizeIDs: [UUID] { boundIDs(key: boundCustomWindowSizeKey) }
 
     func binding(for action: HotKeyAction) -> HotKeyBinding? { bindings[action] }
 
@@ -138,6 +146,8 @@ final class HotKeyManager {
             index(id, bound: binding != nil, key: boundQuicklinkKey)
         case .windowLayout(let id):
             index(id, bound: binding != nil, key: boundWindowLayoutKey)
+        case .customWindowSize(let id):
+            index(id, bound: binding != nil, key: boundCustomWindowSizeKey)
         case .extensionCommand(let entryID):
             var set = Set(boundExtensionCommandEntryIDs)
             if binding == nil { set.remove(entryID) } else { set.insert(entryID) }
@@ -183,6 +193,7 @@ final class HotKeyManager {
         actions += boundCustomCommandIDs.map { .customCommand(id: $0) }
         actions += boundQuicklinkIDs.map { .quicklink(id: $0) }
         actions += boundWindowLayoutIDs.map { .windowLayout(id: $0) }
+        actions += boundCustomWindowSizeIDs.map { .customWindowSize(id: $0) }
         actions += boundExtensionCommandEntryIDs.map { .extensionCommand(entryID: $0) }
         actions += WindowCommand.ID.allCases.map { .windowCommand(id: $0) }
         candidateActionsCache = actions
@@ -203,6 +214,8 @@ final class HotKeyManager {
             return WindowCommandCatalog.command(id: id)?.name ?? "Window Command"
         case .windowLayout:
             return displayName?(action) ?? "Window Layout"
+        case .customWindowSize:
+            return displayName?(action) ?? "Custom Size"
         case .quicklink:
             return displayName?(action) ?? "Quicklink"
         case .extensionCommand:
@@ -239,6 +252,7 @@ final class HotKeyManager {
         case .customCommand(let id): onRunCustomCommand?(id)
         case .windowCommand(let id): onRunWindowCommand?(id)
         case .windowLayout(let id): onRunWindowLayout?(id)
+        case .customWindowSize(let id): onRunCustomWindowSize?(id)
         case .quicklink(let id): onOpenQuicklink?(id)
         case .extensionCommand(let entryID): onRunExtensionCommand?(entryID)
         }

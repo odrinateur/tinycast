@@ -139,7 +139,10 @@ struct AppEntry: Identifiable, Hashable, Sendable {
         case .customCommand:
             return CustomCommand.id(fromEntryID: id).map { .customCommand(id: $0) }
         case .windowCommand:
-            return WindowCommandCatalog.command(forEntryID: id).map { .windowCommand(id: $0.id) }
+            if let command = WindowCommandCatalog.command(forEntryID: id) {
+                return .windowCommand(id: command.id)
+            }
+            return CustomWindowSize.id(fromEntryID: id).map { .customWindowSize(id: $0) }
         case .windowLayout:
             return WindowLayout.id(fromEntryID: id).map { .windowLayout(id: $0) }
         case .quicklink:
@@ -169,7 +172,8 @@ struct AppEntry: Identifiable, Hashable, Sendable {
         case .customCommand: return CustomCommand.sfSymbol
         case .command: return CommandCatalog.command(for: self)?.sfSymbol ?? "questionmark"
         case .windowCommand:
-            return WindowCommandCatalog.command(forEntryID: id)?.sfSymbol ?? "questionmark"
+            return WindowCommandCatalog.command(forEntryID: id)?.sfSymbol
+                ?? CustomWindowSize.sfSymbol
         case .windowLayout: return WindowLayout.sfSymbol
         case .application, .systemSettings, .extensionCommand: return "questionmark"
         }
@@ -192,6 +196,14 @@ extension AppEntry {
             id: layout.entryID, name: layout.name,
             url: URL(string: "tinycast://window-layout/" + layout.id.uuidString)!,
             bundleID: nil, kind: .windowLayout, symbolName: layout.iconSymbol)
+    }
+
+    /// A custom size shares the window commands' kind and section.
+    init(_ size: CustomWindowSize) {
+        self.init(
+            id: size.entryID, name: size.name,
+            url: URL(string: "tinycast://window-size/" + size.id.uuidString)!,
+            bundleID: nil, kind: .windowCommand)
     }
 
     /// The one row a quicklink draws, wherever it is offered from.
@@ -257,6 +269,7 @@ final class AppIndex {
     private var discoveredEntries: [AppEntry] = []
     private var customCommandEntries: [AppEntry] = []
     private var windowCommandEntries: [AppEntry] = []
+    private var customWindowSizeEntries: [AppEntry] = []
     private var windowLayoutEntries: [AppEntry] = []
     private var quicklinkEntries: [AppEntry] = []
     private var extensionEntries: [AppEntry] = []
@@ -320,6 +333,14 @@ final class AppIndex {
         let entries = visible ? Self.allWindowCommandEntries : []
         guard entries != windowCommandEntries else { return }
         windowCommandEntries = entries
+        publishEntries()
+    }
+
+    /// Replaces the custom-size slice, which shares its section with the window commands.
+    func setCustomWindowSizes(_ sizes: [CustomWindowSize]) {
+        let entries = sizes.sorted(by: CustomWindowSize.precedes).map(AppEntry.init)
+        guard entries != customWindowSizeEntries else { return }
+        customWindowSizeEntries = entries
         publishEntries()
     }
 
@@ -457,7 +478,7 @@ final class AppIndex {
             +             Self.named(
                 extensionEntries + quicklinkEntries
                     + windowLayoutEntries + windowCommandEntries
-                    + customCommandEntries
+                    + customWindowSizeEntries + customCommandEntries
                     + commandEntries)
         guard updated != apps else { return }
         apps = updated
