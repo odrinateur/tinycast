@@ -1,17 +1,27 @@
 import SwiftUI
 
-/// The inline argument fields beside the search field, one per `{argument}` the link declares.
-struct QuicklinkArgumentsRow: View {
+/// One inline field. `id` keys its focus and value, so two fields may share a title.
+struct InlineArgument: Equatable {
+    let id: String
+    let title: String
+    /// Non-empty makes the field chosen from the palette's menu rather than typed.
+    var options: [String] = []
+    /// Never marked as owed: leaving it empty is an answer.
+    var isOptional = false
+}
+
+/// The inline argument fields beside the search field, one per argument the row declares.
+struct InlineArgumentFields: View {
     @Environment(\.metrics) private var metrics
-    let arguments: [SnippetTemplateEngine.MissingArgument]
-    /// The quicklink's glyph, anchoring the strip to the row; nil where that row is already listed.
+    let arguments: [InlineArgument]
+    /// The row's glyph, anchoring the strip to it; nil where that row is already listed.
     let symbol: String?
-    /// Binding factory keyed by argument name — the values live in `PaletteState.commandArguments`.
+    /// Binding factory keyed by argument id — the values live in `PaletteState.commandArguments`.
     let value: (String) -> Binding<String>
     @FocusState.Binding var focused: String?
-    /// A field declaring `options=` is chosen, not typed, so it hands the palette its menu instead.
+    /// A field with options is chosen, not typed, so it hands the palette its menu instead.
     let openOptions: (String) -> Void
-    /// ↵ from inside a field opens the quicklink, like ↵ on the row itself.
+    /// ↵ from inside a field acts like ↵ on the row itself.
     let onSubmit: () -> Void
     /// Fields the caret has left behind. Nothing is owed until one was visited and not answered.
     @State private var visited: Set<String> = []
@@ -23,28 +33,27 @@ struct QuicklinkArgumentsRow: View {
                     .resizable()
                     .frame(width: Self.height(metrics), height: Self.height(metrics))
             }
-            ForEach(arguments, id: \.name) { argument in
+            ForEach(arguments, id: \.id) { argument in
+                let isOwed = !argument.isOptional && visited.contains(argument.id)
                 if argument.options.isEmpty {
                     ArgumentField(
-                        argument: argument, text: value(argument.name),
-                        isFocused: focused == argument.name,
-                        isOwed: visited.contains(argument.name), onSubmit: onSubmit
+                        argument: argument, text: value(argument.id),
+                        isFocused: focused == argument.id, isOwed: isOwed, onSubmit: onSubmit
                     )
-                    .focused($focused, equals: argument.name)
+                    .focused($focused, equals: argument.id)
                 } else {
                     ArgumentChoiceField(
-                        argument: argument, text: value(argument.name),
-                        isFocused: focused == argument.name,
-                        isOwed: visited.contains(argument.name),
-                        onOpen: { openOptions(argument.name) }
+                        argument: argument, text: value(argument.id),
+                        isFocused: focused == argument.id, isOwed: isOwed,
+                        onOpen: { openOptions(argument.id) }
                     )
-                    .focused($focused, equals: argument.name)
+                    .focused($focused, equals: argument.id)
                 }
             }
         }
         // Only a field the caret has been in and left may say it is still owed a value.
         .onChange(of: focused) { previous, _ in
-            if let previous, arguments.contains(where: { $0.name == previous }) {
+            if let previous, arguments.contains(where: { $0.id == previous }) {
                 visited.insert(previous)
             }
         }
@@ -54,26 +63,23 @@ struct QuicklinkArgumentsRow: View {
 
     /// The header shrinks the search field to exactly the room left over.
     static func totalWidth(
-        for arguments: [SnippetTemplateEngine.MissingArgument], hasIcon: Bool,
-        metrics: InterfaceMetrics
+        for arguments: [InlineArgument], hasIcon: Bool, metrics: InterfaceMetrics
     ) -> CGFloat {
         let fields = arguments.reduce(0) { $0 + fieldWidth(for: $1, metrics: metrics) }
         let gaps = CGFloat(arguments.count + (hasIcon ? 0 : -1)) * metrics.spacing.xs
         return fields + gaps + (hasIcon ? height(metrics) : 0)
     }
 
-    static func fieldWidth(
-        for argument: SnippetTemplateEngine.MissingArgument, metrics: InterfaceMetrics
-    ) -> CGFloat {
-        let name = CGFloat(argument.name.count) * metrics.scaled(7)
-        return min(max(name + metrics.scaled(34), metrics.scaled(72)), metrics.scaled(160))
+    static func fieldWidth(for argument: InlineArgument, metrics: InterfaceMetrics) -> CGFloat {
+        let title = CGFloat(argument.title.count) * metrics.scaled(7)
+        return min(max(title + metrics.scaled(34), metrics.scaled(72)), metrics.scaled(160))
     }
 }
 
 /// Shared chrome, so a typed field and a chosen one read as the same control.
 private struct ArgumentFieldChrome: ViewModifier {
     @Environment(\.metrics) private var metrics
-    let argument: SnippetTemplateEngine.MissingArgument
+    let argument: InlineArgument
     let isFocused: Bool
     /// Visited, left, and still empty — the only state that earns a warning edge.
     let isOwed: Bool
@@ -81,9 +87,9 @@ private struct ArgumentFieldChrome: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .frame(width: QuicklinkArgumentsRow.fieldWidth(for: argument, metrics: metrics))
+            .frame(width: InlineArgumentFields.fieldWidth(for: argument, metrics: metrics))
             .padding(.horizontal, metrics.spacing.sm)
-            .frame(height: QuicklinkArgumentsRow.height(metrics))
+            .frame(height: InlineArgumentFields.height(metrics))
             .background(
                 RoundedRectangle(cornerRadius: metrics.radius.row, style: .continuous).fill(fill)
             )
@@ -92,7 +98,12 @@ private struct ArgumentFieldChrome: ViewModifier {
                     .strokeBorder(stroke, lineWidth: 1)
             )
             .onHover { hovered = $0 }
-            .help(isOwed ? "\(argument.name) — required" : argument.name)
+            .help(help)
+    }
+
+    private var help: String {
+        if isOwed { return "\(argument.title) — required" }
+        return argument.isOptional ? "\(argument.title) — optional" : argument.title
     }
 
     private var fill: Color {
@@ -112,7 +123,7 @@ private struct ArgumentFieldChrome: ViewModifier {
 private struct ArgumentField: View {
 
     @Environment(\.metrics) private var metrics
-    let argument: SnippetTemplateEngine.MissingArgument
+    let argument: InlineArgument
     @Binding var text: String
     let isFocused: Bool
     let isOwed: Bool
@@ -122,7 +133,7 @@ private struct ArgumentField: View {
     var body: some View {
         TextField(
             "", text: $text,
-            prompt: Text(argument.name).foregroundStyle(Theme.Colors.textTertiary)
+            prompt: Text(argument.title).foregroundStyle(Theme.Colors.textTertiary)
         )
         .textFieldStyle(.plain)
         .font(metrics.typography.rowTrailing)
@@ -136,10 +147,10 @@ private struct ArgumentField: View {
     }
 }
 
-/// An `options=` argument: the value is picked from the palette's own menu, never typed.
+/// A field with options: the value is picked from the palette's own menu, never typed.
 private struct ArgumentChoiceField: View {
     @Environment(\.metrics) private var metrics
-    let argument: SnippetTemplateEngine.MissingArgument
+    let argument: InlineArgument
     @Binding var text: String
     let isFocused: Bool
     let isOwed: Bool
@@ -148,7 +159,7 @@ private struct ArgumentChoiceField: View {
 
     var body: some View {
         HStack(spacing: metrics.spacing.xxs) {
-            Text(text.isEmpty ? argument.name : text)
+            Text(text.isEmpty ? argument.title : text)
                 .font(metrics.typography.rowTrailing)
                 .foregroundStyle(
                     text.isEmpty ? Theme.Colors.textTertiary : Theme.Colors.textPrimary
@@ -169,12 +180,12 @@ private struct ArgumentChoiceField: View {
         // The chrome draws the focused edge, so AppKit's blue ring would be a second one.
         .focusEffectDisabled()
         .onTapGesture(perform: onOpen)
-        .onKeyPress(.return) {
+        .onKeyPress(keys: [.return, KeyEquivalent("\u{3}")]) { _ in
             onOpen()
             return .handled
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(argument.name))
+        .accessibilityLabel(Text(argument.title))
         .accessibilityValue(Text(text.isEmpty ? "No value" : text))
         .accessibilityHint(Text("Opens a list of choices"))
         .accessibilityAddTraits(.isButton)

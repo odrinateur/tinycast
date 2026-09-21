@@ -272,7 +272,9 @@ run ext-icon-test          Tinycast/Platform/Appearance.swift \
                            Tinycast/Features/Extensions/Service/ExtensionRuntime.swift \
                            Tinycast/Features/Extensions/Service/ExtensionIconCache.swift \
                            Tinycast/Features/Extensions/UI/ExtensionAnimatedImage.swift \
-                           Tinycast/Features/Extensions/UI/ExtensionImage.swift
+                           Tinycast/Features/Extensions/UI/ExtensionImage.swift \
+                           Tinycast/Features/Clipboard/Model/ColorValue.swift \
+                           Tinycast/Features/Clipboard/Model/ColorSpaces.swift
 run window-command-test    Tinycast/Features/WindowManagement/Model/WindowCommand.swift \
                            Tinycast/Features/WindowManagement/Model/WindowCycle.swift \
                            Tinycast/Features/WindowManagement/Model/WindowPlacementEngine.swift \
@@ -293,8 +295,7 @@ run window-layout-test     Tinycast/Features/WindowManagement/Model/WindowComman
 run custom-command-test    Tinycast/Platform/PseudoTerminal.swift \
                            Tinycast/Features/CustomCommands/Model/CustomCommand.swift \
                            Tinycast/Features/CustomCommands/Model/RaycastScriptImport.swift \
-                           Tinycast/Features/CustomCommands/Service/ShellCommandRunner.swift \
-                           Tinycast/Features/CustomCommands/Service/CustomCommandArgumentSession.swift
+                           Tinycast/Features/CustomCommands/Service/ShellCommandRunner.swift
 run quicklink-test         Tinycast/Features/Quicklinks/Model/Quicklink.swift \
                            Tinycast/Features/Quicklinks/Model/QuicklinkDestination.swift \
                            Tinycast/Features/Quicklinks/Model/QuicklinkStore.swift \
@@ -384,7 +385,9 @@ run slow ext-test          -parse-as-library \
                            $E/UI/ExtensionImage.swift \
                            $E/UI/ExtensionScreen.swift \
                            $L/SearchRelevance.swift \
-                           Tinycast/Platform/Compression/Zlib.swift
+                           Tinycast/Platform/Compression/Zlib.swift \
+                           Tinycast/Features/Clipboard/Model/ColorValue.swift \
+                           Tinycast/Features/Clipboard/Model/ColorSpaces.swift
 run settings-history-test  Tinycast/Features/Settings/SettingsTab.swift \
                            Tinycast/Features/Settings/SettingsHistory.swift \
                            Tinycast/Features/Settings/SettingsAnchor.swift \

@@ -196,33 +196,39 @@ struct CustomCommandEditorSheet: View {
                 Spacer()
                 Button("Add") { arguments.append(ArgumentDraft(name: "", isOptional: false)) }
                     .controlSize(.small)
+                    .disabled(arguments.count >= CustomCommandArgument.limit)
             }
-            ForEach($arguments) { $argument in
-                HStack(spacing: Theme.Spacing.sm) {
-                    Text("$\(position(of: argument.id))")
-                        .font(.callout.monospaced())
-                        .foregroundStyle(.secondary)
-                        .frame(width: Self.positionWidth, alignment: .leading)
-                    TextField("Argument name", text: $argument.name)
-                        .textFieldStyle(.roundedBorder)
-                    Toggle("Optional", isOn: $argument.isOptional)
-                        .toggleStyle(.checkbox)
-                    Button {
-                        arguments.removeAll { $0.id == argument.id }
-                    } label: {
-                        Image(systemName: "minus.circle")
-                    }
-                    .buttonStyle(.borderless)
-                    .help("Remove this argument")
-                }
+            VStack(spacing: Theme.Spacing.sm) {
+                ForEach($arguments) { $argument in argumentRow($argument) }
             }
             Text(
                 arguments.isEmpty
-                    ? "Add one to be asked for a value before the command runs."
-                    : "Asked for in order, then passed to the command as $1, $2 …"
+                    ? "Add up to three, filled in beside the search field before the command runs."
+                    : "Passed to the command in order as $1, $2 …"
             )
             .font(.caption)
             .foregroundStyle(.secondary)
+        }
+    }
+
+    private func argumentRow(_ argument: Binding<ArgumentDraft>) -> some View {
+        let id = argument.wrappedValue.id
+        return HStack(spacing: Theme.Spacing.sm) {
+            Text("$\(position(of: id))")
+                .font(.callout.monospaced())
+                .foregroundStyle(.secondary)
+                .frame(width: Self.positionWidth, alignment: .leading)
+            TextField("Argument name", text: argument.name)
+                .settingsEditorTextField()
+            Toggle("Optional", isOn: argument.isOptional)
+                .toggleStyle(.checkbox)
+            Button {
+                arguments.removeAll { $0.id == id }
+            } label: {
+                Image(systemName: "minus.circle")
+            }
+            .buttonStyle(.borderless)
+            .help("Remove this argument")
         }
     }
 

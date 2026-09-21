@@ -209,7 +209,7 @@ An extension's own surfaces live in `ExtensionColors` (`Features/Extensions/UI/`
 
 Source: `Palette/PalettePanel.swift`, `Palette/RootPaletteView.swift`.
 
-- **`PalettePanel`** is a borderless `NSPanel`: `isOpaque = false`, `backgroundColor = .clear`, `.floating` level, `hasShadow`, `animationBehavior = .none`. The two more transparent Dark detents turn off the native shadow and its black outline, adding a one-point white gradient border with a brighter upper edge. It hosts SwiftUI via `NSHostingView`. `PaletteWindowController` centers it slightly above screen center (`+8%`) and dismisses it on `windowDidResignKey`.
+- **`PalettePanel`** is a borderless `NSPanel`: `isOpaque = false`, `backgroundColor = .clear`, `.palette` level (one above `.modalPanel`, so other apps' open panels never cover it), `hasShadow`, `animationBehavior = .none`. The two more transparent Dark detents turn off the native shadow and its black outline, adding a one-point white gradient border with a brighter upper edge. It hosts SwiftUI via `NSHostingView`. `PaletteWindowController` centers it slightly above screen center (`+8%`) and dismisses it on `windowDidResignKey`.
 - **The results layer fills the whole panel.** Header and footer repeat the panel scrim, a hairline marks each, and the list hides behind them with no dissolve.
 - **Header** (`headerHeight 48`): a back-chevron on sub-screens, then the plain `TextField` (no border/background). Sub-screens (Clipboard, Calculator History) show the back chevron; the launcher drops the slot so the field starts flush with the rows.
 - **Compact keyboard entry:** pressing `↓` in the collapsed launcher expands the results and selects the first row without replacing or defocusing the shared search field.
@@ -360,7 +360,7 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
   afterwards, so confirming is never held up by an animation. The pill fades without the
   scale — a growing capsule reads bouncy.
 - **Non-activating**, like the palette: the dialog takes key focus for its own keys without pulling app
-  focus off whatever the user was in. It sits at `.modalPanel`, above the palette's `.floating`, and is
+  focus off whatever the user was in. It sits at `.dialog`, above the palette's `.palette`, and is
   centred on the **cursor's** display with the same slight optical lift the palette uses.
 - **`MessageHUDController`'s pill** is the transient
   confirmation: a Custom Command confirming a run, an import landing. One capsule shape, sized to

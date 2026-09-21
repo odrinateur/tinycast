@@ -74,8 +74,7 @@ app: the stores (`AppIndex`, `ClipboardStore`, `QuicklinkStore`, `CustomCommandS
 `CurrencyRateStore`), the managers, monitors and clocks
 (`ClipboardManager`, the opt-in `ClipboardTextIndexer`,
 `HotKeyManager`, `HyperKeyTap`, `RunningAppsMonitor`), the shared state
-(`AppSettings`, `PaletteState`, `FileSearchSession`,
-`CustomCommandArgumentSession`), the feature coordinators, and the
+(`AppSettings`, `PaletteState`, `FileSearchSession`), the feature coordinators, and the
 window controllers.
 
 `AppDelegate.applicationDidFinishLaunching` calls `AppCore.shared.start()` and nothing else. That is the

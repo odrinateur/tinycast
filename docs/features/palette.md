@@ -97,7 +97,6 @@ answers through `perform(_:at:)`, so a new chord never adds a cast to the shell.
 | `.calculatorHistory` | `CalculatorHistoryScreen` | `CalculatorHistoryList` |
 | `.fileSearch` | `FileSearchScreen` | `FileSearchList` (see [file-search.md](file-search.md)) |
 | `.quicklinks` | `QuicklinkListScreen` | `QuicklinkList` + preview (see [quicklinks.md](quicklinks.md#search-quicklinks)) |
-| `.customCommandArguments` | `CustomCommandArgumentsScreen` | `CustomCommandArgumentsView` (see [custom-commands.md](custom-commands.md#arguments)) |
 | `.extensionCommand` | `ExtensionCommandScreen` | `ExtensionCommandView` (see [extensions.md](extensions.md)) |
 
 **Tab rings the two surfaces a reader opens directly — launcher → clipboard → launcher**
@@ -168,21 +167,13 @@ takes one press to unwind, and the back chevron's tooltip stops promising a step
 The launcher is the ring's root, so the hop that closes the ring resets the stack instead of stacking
 a third screen; ringing round forever therefore never grows the stack past two.
 
-`.customCommandArguments` — `PaletteMode.isArgumentForm` — is the one mode where the search field is
-not a search field: it _is_ the current argument's input, so its placeholder names that argument and ↵
-submits rather than activating a row. It has no rows, which is why `isArgumentForm` is what keeps the
-↵ pill drawn. Its state lives on `AppCore.customCommandArguments`, and leaving the mode cancels the pending run. A bare backspace steps back an
-argument before it falls through to the usual back step; Escape erases the half-typed answer
-first, and a second press hides the palette, ending the pending work with it. **Quicklinks used to be
-the other half of this pair and no longer are** — they collect their values in the header instead, so
-one surface asks for a row's arguments rather than two.
-
 ### Inline row arguments
 
 A selected row can declare arguments, and they are typed **in the header, beside the search field** —
-not on a screen of their own. Two features answer this way, each owning its own strip: an extension
-command through `ExtensionArgumentsAccessory`, a quicklink through `QuicklinkArgumentsAccessory`. The
-palette knows neither: `PaletteScreen.headerAccessory(at:focus:)` hands back a `PaletteHeaderAccessory`
+not on a screen of their own. Three features answer this way, each owning its own strip: an extension
+command through `ExtensionArgumentsAccessory`, a quicklink through `QuicklinkArgumentsAccessory`, a
+custom command through `CustomCommandArgumentsAccessory`. The last two draw the same fields,
+`DesignSystem/InlineArgumentFields`; an extension draws its own. The palette knows none of them: `PaletteScreen.headerAccessory(at:focus:)` hands back a `PaletteHeaderAccessory`
 — a width, the field names in Tab order, the first field still owed a value, a menu for a field that is
 chosen rather than typed, and an opaque view. That costs the header its one simple rule, so it holds
 these invariants:
@@ -197,7 +188,7 @@ these invariants:
   listed) keeps the prompt and sizes the field to it, so an empty field reads "Search quicklinks…"
   with the chip after it and no glyph repeating the row below. One measurement serves both: the
   field's own text, which is the prompt when nothing is typed and "" under `.afterQuery`.
-- Argument focus is its own `@FocusState`, `argumentFocused`, keyed by argument name. Every way out
+- Argument focus is its own `@FocusState`, `argumentFocused`, keyed by field id. Every way out
   of its ring — moving the selection, Escape, Tab past the last field, or an arrow at its edge — goes through
   `returnFocusToSearchField()`, because the row that owned those fields is about to stop being
   selected and a field that unmounts while focused leaves the panel with no first responder at all.
@@ -214,10 +205,13 @@ these invariants:
   than a view of its own.
 
 The typed values live on `PaletteState.commandArguments`, keyed by
-`PaletteState.argumentKey(entryID, name)`, and are cleared with the rest of the screen.
+`PaletteState.argumentKey(entryID, field)` — the argument's name, or a custom command's positional
+`$1`–`$3` — and are cleared with the rest of the screen.
 `PaletteState.pendingArgumentEntryID` is how a *shortcut* reaches them: a quicklink opened with values
 still missing shows its own screen and names the row, and the header focuses that row's first empty
-field instead of the search field. It is set **after** `showPalette`, since `prepare` clears it.
+field instead of the search field. A custom command has no screen of its own, so it also sets
+`argumentEntryID`, which lists that row alone in root search while the query is its name. Both are set
+**after** `showPalette`, since `prepare` clears them.
 
 The flat `selection` index is the single source of truth for highlight / activation and **must always
 match the visible row order**, including the card at index 0 when present — the calculator's (see
@@ -268,7 +262,7 @@ programmatic resize would be recorded as one.
 ### The drop guides
 
 While a drag is in flight, `PaletteDropGuideController` puts a click-through borderless panel over the
-display the panel is on, one level under `.floating` so it never covers the panel being dragged. It
+display the panel is on, at `.paletteDropGuide`, one level under `.palette`, so it never covers the panel being dragged. It
 draws three dotted lines through the default placement — both panel edges full height, the top edge full
 width — which turn `Theme.Colors.dropGuideArmed` once the anchor is within `Theme.Size.paletteSnapDistance`
 of home. Releasing while armed snaps the panel there.

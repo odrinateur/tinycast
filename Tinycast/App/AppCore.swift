@@ -36,7 +36,6 @@ final class AppCore {
     let palette = PaletteState()
     let fileSearch = FileSearchSession()
     let activationPolicy = ActivationPolicy()
-    let customCommandArguments = CustomCommandArgumentSession()
     let extensions: ExtensionManager
 
     /// Set when a quicklink editor should open with Settings; the pane consumes it.
@@ -77,8 +76,7 @@ final class AppCore {
         paletteCoordinator: paletteCoordinator, settingsCoordinator: settingsCoordinator,
         core: self)
     @ObservationIgnored private(set) lazy var customCommandCoordinator = CustomCommandCoordinator(
-        store: customCommands, argumentSession: customCommandArguments, settings: settings,
-        appIndex: appIndex,
+        store: customCommands, settings: settings, appIndex: appIndex,
         paletteCoordinator: paletteCoordinator, settingsCoordinator: settingsCoordinator,
         hotKeys: hotKeys, favorites: favorites, visibility: visibility,
         ranking: launcherRanking, aliases: aliases, activationPolicy: activationPolicy, core: self)
@@ -406,7 +404,6 @@ final class AppCore {
             isExpandingSnippet: textInjector.isDelivering,
             isRunningExtension: extensions.running != nil,
             isRecordingHotKey: hotKeys.recordingAction != nil,
-            isPromptingForArguments: customCommandArguments.isActive,
             isShowingDialog: isShowingDialog,
             isPaletteVisible: paletteCoordinator.isVisible)
     }

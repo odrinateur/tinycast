@@ -22,6 +22,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        // The Dock icon only stands for the open windows, so its Quit closes them, not the agent.
+        let activation = AppCore.shared.activationPolicy
+        if isQuitFromDock, activation.hasOpenWindows {
+            activation.closeAll()
+            return .terminateCancel
+        }
         sender.reply(toApplicationShouldTerminate: true)
         return .terminateNow
     }
@@ -34,5 +40,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// The palette and Settings each close on their own; the agent outlives both.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    /// ⌘Q and the menu-bar item call `terminate` directly; only an Apple Event names a sender.
+    private var isQuitFromDock: Bool {
+        guard let event = NSAppleEventManager.shared().currentAppleEvent,
+            event.eventClass == kCoreEventClass, event.eventID == kAEQuitApplication,
+            let pid = event.attributeDescriptor(forKeyword: keySenderPIDAttr)?.int32Value
+        else { return false }
+        return NSRunningApplication(processIdentifier: pid)?.bundleIdentifier == "com.apple.dock"
     }
 }

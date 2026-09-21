@@ -83,6 +83,17 @@ final class PaletteCoordinator {
         if palette.mode == .launcher { Task { await appIndex.refresh() } }
     }
 
+    /// Root search onto `entry` alone, as Raycast opens a command whose shortcut lacks values.
+    func showArguments(of entry: AppEntry, values: [String: String]) {
+        showPalette(mode: .launcher, seeding: entry.name)
+        // After the show: `prepare` runs inside it and would clear everything set beforehand.
+        palette.argumentEntryID = entry.id
+        for (field, value) in values {
+            palette.commandArguments[PaletteState.argumentKey(entry.id, field)] = value
+        }
+        palette.pendingArgumentEntryID = entry.id
+    }
+
     func hidePalette(restoreFocus: Bool = true) {
         fileSearch.cancel()
         windowController.hide(restoreFocus: restoreFocus)

@@ -13,7 +13,6 @@ struct RootPaletteView: View {
     @Environment(FileSearchSession.self) private var fileSearch
     /// Observed so the join card's countdown redraws on the minute boundary.
     @Environment(QuicklinkStore.self) private var quicklinks
-    @Environment(CustomCommandArgumentSession.self) private var customCommandArguments
     @Environment(ExtensionManager.self) private var extensions
     @Environment(AppSettings.self) private var settings
     @Environment(\.metrics) private var metrics
@@ -46,9 +45,6 @@ struct RootPaletteView: View {
                 currencyRates: currencyRates, core: core, vm: vm, running: selectionIsRunning,
                 openActions: openActions, openArgumentOptions: openArgumentOptions,
                 scrollToFollow: { scroll = ScrollIntent(kind: .follow) })
-        case .customCommandArguments:
-            return CustomCommandArgumentsScreen(
-                session: customCommandArguments, core: core, vm: vm)
         case .quicklinks:
             return QuicklinkListScreen(
                 store: quicklinks, core: core, vm: vm, openActions: openActions,
@@ -178,9 +174,9 @@ struct RootPaletteView: View {
         let screen = screen
         let count = screen.rows.count
         let sel = selection(count: count)
-        // The argument forms and an extension's Form have no rows to count, but ↵ still acts.
+        // An extension's Form has no rows to count, but ↵ still acts.
         let showActionGroup =
-            (count > 0 || vm.mode.isArgumentForm || screen.actsWithoutRows)
+            (count > 0 || screen.actsWithoutRows)
             && screen.hasPrimaryAction(at: sel)
 
         // One header position, so focus survives the swap. See docs/features/palette.md.
@@ -288,9 +284,6 @@ struct RootPaletteView: View {
         }
         if vm.mode != .extensionCommand, extensions.running != nil, !extensions.isAuthorizing {
             Task { await extensions.stop() }
-        }
-        if vm.mode != .customCommandArguments {
-            core.customCommandCoordinator.cancelCustomCommandArguments()
         }
     }
 
@@ -426,7 +419,7 @@ struct RootPaletteView: View {
                 return moveHorizontally(1) ? .handled : .ignored
             }
             // Plain ↵ runs an open menu's row or non-form selection; ⌘↵ submits forms.
-            .onKeyPress(keys: [.return], phases: .down) { press in
+            .onKeyPress(keys: [.return, KeyEquivalent("\u{3}")], phases: .down) { press in
                 let command = press.modifiers.contains(.command)
                 let option = press.modifiers.contains(.option)
                 if menuOpen, !command, !option {
@@ -690,13 +683,9 @@ struct RootPaletteView: View {
             max(metrics.size.panelWidth - accessory.width - chrome, metrics.scaled(60)))
     }
 
-    /// In the argument form the field is that argument's input, so it names the argument.
     private var searchPrompt: String {
         // Squeezed to the caret, the field has no room for a prompt; beside one it keeps it.
         if headerAccessory?.placement == .afterQuery { return "" }
-        if vm.mode == .customCommandArguments {
-            return customCommandArguments.prompt ?? vm.mode.placeholder
-        }
         // Inside a running command the search bar belongs to the extension.
         if vm.mode == .extensionCommand, let placeholder = extensionScreen.searchPlaceholder {
             return placeholder

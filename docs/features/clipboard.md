@@ -72,7 +72,7 @@ itself no longer drains the pasteboard into history either.
 
 Existing clips survive being switched off, since a history is captured rather than authored and
 nothing else can put it back. **Clear history stays live with the feature off** —
-`ClipboardCoordinator.clearHistory()` reopens the file, empties it and closes it again — so a reader
+`ClipboardCoordinator.clearHistory()` reopens the file, clears the unpinned rows and closes it again — so a reader
 who turns the feature off can still erase what it kept.
 
 ## Store
@@ -226,9 +226,10 @@ surfaces read one parser: the clipboard history, and the launcher, where pasting
 with a card the way the calculator does.
 
 `ColorValue` (`Model/`, Foundation-only) is that parser. It takes the CSS spellings people copy —
-the four hex lengths, plus `rgb()`/`hsl()` and their alpha forms in both the comma and CSS4
-space-and-slash syntax — and stores **sRGB components**, so every notation derives from one source
-rather than a second parser that can drift from it.
+the four hex lengths, plus `rgb()`/`hsl()`/`oklch()` and their alpha forms in both the comma and
+CSS4 space-and-slash syntax — and stores **sRGB components**, so every notation derives from one
+source rather than a second parser that can drift from it. An extension's tints and grid swatches
+read the same parser, which is how a colour picker's `oklch()` swatch draws as its colour.
 
 **A colour is rejected rather than approximated**, because a wrong swatch filed under Colors Only
 is worse than none. An HSL channel must carry its `%`, or `hsl(120, 100, 50)` clamps to white.
@@ -246,11 +247,12 @@ and then removed: they
 restate the same four answers, and a row you scroll past to reach the one you wanted costs more
 than it gives. `oklch()` stays as the one perceptual space people write, and `hsl()` keeps one
 decimal because whole degrees cost up to 5/255 on the way back. `clipboard-test` sweeps every
-offered notation and re-parses it.
+offered notation and re-parses it, bar `oklch()`: it states fewer digits than the channel the
+sweep compares to.
 
-`ColorSpaces.swift` holds Oklab and its polar form — matrices and cube roots, no tables. Oklab is
-private to it: `oklch()` is the one thing it exists for. A neutral is stated with no hue at all,
-since `atan2` over two rounding errors still names a direction.
+`ColorSpaces.swift` holds Oklab and its polar form, both ways — matrices and cube roots, no tables.
+Oklab is private to it: `oklch()` is the one thing it exists for. A neutral is stated with no hue at
+all, since `atan2` over two rounding errors still names a direction.
 
 The notations are a menu of their own under the launcher card, and **nowhere else** — a history
 entry's ⌘K stays the actions it always was, since converting a colour is not something you reach
@@ -296,7 +298,7 @@ Pins change four things:
   the same) rather than dropping back into the date bucket it came from, which would scroll the list
   out from under the selection. It uses the same atomic timestamp and rowid update as `promote`.
 - **Retention.** Pruning skips pinned rows (`AND pinned_at IS NULL`), so a pin outlives the retention
-  window. "Clear History" still deletes everything.
+  window — and "Clear History" skips them on the same condition, so only `remove` drops a pin.
 - **Selection.** Pinning lifts a row out of its date bucket, so `ClipboardCoordinator.togglePinnedClip` moves the
   palette selection to the row's new index in the _current_ results and bumps `palette.followToken`,
   which is what makes the list scroll the highlight back into view. A fresh clipboard screen — the

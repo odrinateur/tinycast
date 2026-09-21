@@ -560,12 +560,12 @@ struct ExtensionTests {
             String(describing: looseActions.first?.enclosingSubmenuTitle))
 
         // Mirrors ExtensionCommandScreen.primaryActionTitle/activate(at:), unreachable from here.
-        func primaryActionOutcome(_ actions: [ExtensionAction]) -> (title: String, opensPanel: Bool)
-        {
+        func primaryActionOutcome(_ actions: [ExtensionAction]) -> (title: String, opensPanel: Bool) {
             guard let primary = actions.first else { return ("Run", false) }
             return (
                 primary.enclosingSubmenuTitle ?? primary.title,
-                primary.enclosingSubmenuTitle != nil)
+                primary.enclosingSubmenuTitle != nil
+            )
         }
 
         let submenuOutcome = primaryActionOutcome(actions)
@@ -783,6 +783,10 @@ struct ExtensionTests {
             "a themed tint picks the dark side",
             icon(#"{"source":"circle-16","tintColor":{"light":"raycast-red","dark":"raycast-blue"}}"#)
                 .tint == .blue)
+        // A colour picker states its swatch in Oklch, which read as no tint at all before.
+        check(
+            "an oklch tint too",
+            icon(#"{"source":"circle-16","tintColor":"oklch(62.8% 0.2577 29.23)"}"#).tint != nil)
 
         let bare = icon(#""checkmark-circle-16""#)
         check("a bare icon still resolves", bare.source == .symbol("checkmark.circle"))
