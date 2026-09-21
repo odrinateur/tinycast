@@ -29,6 +29,7 @@ struct SettingsBackup: Codable {
         var popToRootSeconds: Int?
         var escapeKeyBehavior: String?
         var appearance: String?
+        var calcNumberStyle: String?
         var interfaceSize: String?
         var paletteTransparency: Int?
         var compactMode: Bool?
@@ -118,6 +119,7 @@ extension SettingsBackup {
             popToRootSeconds: s.popToRootTimeout.rawValue,
             escapeKeyBehavior: s.escapeKeyBehavior.rawValue,
             appearance: s.appearance.rawValue,
+            calcNumberStyle: s.calcNumberStyle.rawValue,
             interfaceSize: s.interfaceSize.rawValue,
             paletteTransparency: s.paletteTransparency,
             compactMode: s.compactMode,
@@ -285,6 +287,10 @@ extension SettingsBackup {
         }
         if let raw = s.appearance, let appearance = AppAppearance(rawValue: raw) {
             settings.appearance = appearance
+            count += 1
+        }
+        if let raw = s.calcNumberStyle, let style = CalcNumberStyle(rawValue: raw) {
+            settings.calcNumberStyle = style
             count += 1
         }
         if let value = s.paletteTransparency, (-100...100).contains(value) {

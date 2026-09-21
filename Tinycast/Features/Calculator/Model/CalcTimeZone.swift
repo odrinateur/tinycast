@@ -5,7 +5,13 @@ enum CalcTimeZone {
     static func evaluate(_ raw: String, now: Date, calendar: Calendar) -> CalcResult? {
         guard raw.count <= 128, raw.contains(where: \.isWhitespace) else { return nil }
         let inputWords = raw.split(whereSeparator: \.isWhitespace)
-        guard inputWords.count >= 2, inputWords.contains(where: { connectors.contains($0.lowercased()) })
+        if let query = currentTimeQuery(inputWords.map { $0.lowercased() }) {
+            return evaluate(query, now: now, calendar: calendar)
+        }
+        guard inputWords.count >= 2,
+            inputWords.contains(where: { connectors.contains($0.lowercased()) })
+                || parseClock(inputWords[0].lowercased()) != nil
+                || parseClock(inputWords.prefix(2).joined().lowercased()) != nil
         else {
             return nil
         }
@@ -22,26 +28,38 @@ enum CalcTimeZone {
         let words = zoneQuery.split(whereSeparator: \.isWhitespace).map(String.init)
         guard words.count >= 2 else { return nil }
 
-        // Every grammar needs a connector, so an app search never touches the zone table.
-        guard let connector = words.lastIndex(where: { $0 == "in" || $0 == "to" || $0 == "at" })
-        else { return nil }
-        let targetWords = Array(words[(connector + 1)...])
-        guard !targetWords.isEmpty else { return nil }
-
-        // `time in 4 hours` names a duration where a zone would go, so the home zone answers.
         let target: TimeZone
+        let leading: [String]
         var ahead: (count: Int, component: Calendar.Component)?
-        if let zone = zone(named: targetWords) {
-            target = zone
-        } else if let duration = parseDuration(targetWords.joined(separator: " ")) {
-            target = calendar.timeZone
-            ahead = duration
+        if let connector = words.lastIndex(where: { $0 == "in" || $0 == "to" || $0 == "at" }) {
+            let targetWords = Array(words[(connector + 1)...])
+            guard !targetWords.isEmpty else { return nil }
+            // `time in 4 hours` names a duration where a zone would go, so the home zone answers.
+            if let zone = zone(named: targetWords) {
+                target = zone
+            } else if let duration = parseDuration(targetWords.joined(separator: " ")) {
+                target = calendar.timeZone
+                ahead = duration
+            } else {
+                return nil
+            }
+            leading = Array(words[0..<connector])
         } else {
-            return nil
+            var sourceWords = words
+            if sourceWords[1] == "am" || sourceWords[1] == "pm" {
+                let meridiem = sourceWords.remove(at: 1)
+                sourceWords[0] += meridiem
+            }
+            guard parseClock(sourceWords[0]) != nil,
+                zone(named: Array(sourceWords.dropFirst())) != nil
+            else { return nil }
+            leading = sourceWords
+            target = calendar.timeZone
         }
 
-        let leading = Array(words[0..<connector])
-        guard var source = sourceMoment(leading, now: now, calendar: calendar) else { return nil }
+        guard var source = sourceMoment(
+            leading, allowZoneConnector: ahead == nil, now: now, calendar: calendar)
+        else { return nil }
         if let ahead {
             guard let shifted = calendar.date(byAdding: ahead.component, value: ahead.count, to: source.date)
             else { return nil }
@@ -62,6 +80,29 @@ enum CalcTimeZone {
             sourceBadge: label(for: source.zone),
             targetBadge: label(for: target),
             payload: .value(display: time + dayNote, copyText: time))
+    }
+
+    private static func currentTimeQuery(_ words: [String]) -> String? {
+        if words.first == "time" || words.first == "timezone" {
+            var place = Array(words.dropFirst())
+            if words.first == "timezone", place.first == "in" { place.removeFirst() }
+            if zone(named: place) != nil { return "time in \(place.joined(separator: " "))" }
+        }
+
+        let destination = words.firstIndex(of: "to") ?? words.endIndex
+        var place = Array(words[..<destination])
+        if place.suffix(2) == ["time", "zone"] {
+            place.removeLast(2)
+        } else if place.last == "time" || place.last == "timezone" {
+            place.removeLast()
+        } else {
+            return nil
+        }
+        guard zone(named: place) != nil else { return nil }
+        guard destination < words.endIndex else { return "time in \(place.joined(separator: " "))" }
+        let target = Array(words[(destination + 1)...])
+        guard zone(named: target) != nil else { return nil }
+        return "time \(place.joined(separator: " ")) to \(target.joined(separator: " "))"
     }
 
     /// Splits a trailing `+ 2h` / `- 30 min` off the zone phrase it shifts.
@@ -158,7 +199,7 @@ enum CalcTimeZone {
     }
 
     private static func sourceMoment(
-        _ words: [String], now: Date, calendar: Calendar
+        _ words: [String], allowZoneConnector: Bool, now: Date, calendar: Calendar
     ) -> SourceMoment? {
         var words = words.filter { !["what", "whats", "the", "is", "it", "current"].contains($0) }
 
@@ -172,15 +213,22 @@ enum CalcTimeZone {
             words = Array(words[0..<connector])
         }
 
-        guard let head = words.first else { return nil }
+        guard var head = words.first else { return nil }
+        var rest = Array(words.dropFirst())
+        if rest.first == "am" || rest.first == "pm" {
+            guard !head.hasSuffix("am"), !head.hasSuffix("pm") else { return nil }
+            head += rest.removeFirst()
+        }
         guard head == "time" || head == "now" || head == "clock" || parseClock(head) != nil else {
             return nil
         }
 
-        let rest = Array(words.dropFirst())
-        let zone = rest.isEmpty ? calendar.timeZone : (self.zone(named: rest) ?? calendar.timeZone)
+        if allowZoneConnector, rest.first == "in" || rest.first == "at" {
+            rest.removeFirst()
+            guard !rest.isEmpty else { return nil }
+        }
+        guard let zone = rest.isEmpty ? calendar.timeZone : self.zone(named: rest) else { return nil }
         if head == "time" || head == "now" || head == "clock" {
-            guard rest.isEmpty || self.zone(named: rest) != nil else { return nil }
             guard let ahead else { return SourceMoment(date: now, zone: zone) }
             guard let shifted = calendar.date(byAdding: ahead.component, value: ahead.count, to: now)
             else { return nil }

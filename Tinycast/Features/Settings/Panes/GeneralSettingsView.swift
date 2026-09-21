@@ -149,6 +149,22 @@ struct GeneralSettingsView: View {
             }
 
             Section {
+                Picker(selection: $settings.calcNumberStyle) {
+                    ForEach(CalcNumberStyle.allCases) { style in
+                        let sample = core.regionNumberFormat.format(for: style).localized("1,234,567.89")
+                        Text("\(style.title) (\(sample))").tag(style)
+                    }
+                } label: {
+                    SettingsRowTitle(.generalCalculator, "Number format")
+                    Text(
+                        "Separators for typed numbers and answers. With a decimal comma, ; splits arguments."
+                    )
+                }
+            } header: {
+                SettingsSectionHeader(.generalCalculator)
+            }
+
+            Section {
                 Toggle(isOn: $settings.launchAtLogin) {
                     SettingsRowTitle(.generalGeneral, "Launch at login")
                     Text("Start Tinycast automatically when you log in.")

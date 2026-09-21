@@ -152,6 +152,9 @@ enum SettingsSearchCatalog {
             .generalAppearance, "Drag to reposition",
             keywords: ["move", "position", "window"]),
         .init(
+            .generalCalculator, "Number format",
+            keywords: ["decimal", "comma", "separator", "locale", "region", "thousands"]),
+        .init(
             .generalGeneral, "Launch at login",
             keywords: ["startup", "login item", "start", "boot"]),
         .init(

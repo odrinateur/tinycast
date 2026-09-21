@@ -29,6 +29,7 @@ final class AppCore {
     let fallbacks = FallbackStore()
     let calcHistory = CalculatorHistoryStore()
     let currencyRates = CurrencyRateStore()
+    let regionNumberFormat = RegionNumberFormatMonitor()
     let updateChecker = UpdateCheckStore()
     let runningApps = RunningAppsMonitor()
     let palette = PaletteState()
