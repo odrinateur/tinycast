@@ -176,6 +176,7 @@
 		51C51CD483B35ABAA476D1C8 /* ScriptRomanization.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8358E65DAC02F974829288B /* ScriptRomanization.swift */; };
 		51E8877F53ABA0E51B2493FA /* CommandOutputPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42A6D9BE2BB5BA09A4A6FEAB /* CommandOutputPresenter.swift */; };
 		52C4F57BB26F420CCD22C1D7 /* PaletteWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 209D951FDD587A040F1F76F3 /* PaletteWindowController.swift */; };
+		52D4B7F8B8223B8BF44C4E99 /* WindowLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A6CA1C9AE38B1A036988BC0 /* WindowLevel.swift */; };
 		5332040ADB923832DCA06E5C /* CalculatorCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 518429EDBFBEA0B866CCAA81 /* CalculatorCoordinator.swift */; };
 		533C229E97F9047A2DEC1A2B /* ExtensionDateExpression.swift in Sources */ = {isa = PBXBuildFile; fileRef = D29DCDCD85CC097E5E68A319 /* ExtensionDateExpression.swift */; };
 		5400114EF68AE70236DF0B94 /* QuicklinkArgumentsAccessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28B398912F4FB38912BD779C /* QuicklinkArgumentsAccessory.swift */; };
@@ -550,6 +551,7 @@
 		28D1A69B721AA863AFFE176F /* FileSearchScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchScope.swift; sourceTree = "<group>"; };
 		2902B904C7BD2FC23856EDB9 /* MenuBarItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarItem.swift; sourceTree = "<group>"; };
 		29A8B82DCB1B7D131BF0908A /* PaletteDropGuideController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteDropGuideController.swift; sourceTree = "<group>"; };
+		2A6CA1C9AE38B1A036988BC0 /* WindowLevel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowLevel.swift; sourceTree = "<group>"; };
 		2AB596CB339D5C3AEBE550A3 /* ExtensionFormField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionFormField.swift; sourceTree = "<group>"; };
 		2B0D967615846F9C4EC3E44F /* ExtensionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionDetailView.swift; sourceTree = "<group>"; };
 		2B0F5891A80B604FBE21897B /* CalcCurrency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalcCurrency.swift; sourceTree = "<group>"; };
@@ -902,8 +904,8 @@
 		852E1E4DA3976F9918134FF6 /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				064C3281B4FABBBD5979F24A /* CustomWindowSize.swift */,
-				0D509E0E71CBCBB72EF0BDFE /* CustomWindowSizeStore.swift */,
+				18A864436CAD5C5F62946603 /* CustomWindowSize.swift */,
+				FE31A7F41EDA33E7E574F62D /* CustomWindowSizeStore.swift */,
 				B9B724FD9A867189A6118DF7 /* SpaceGesture.swift */,
 				5A1E7B96668721F12170CD72 /* WindowActionMemory.swift */,
 				E7CB45E85566001834934DF1 /* WindowCommand.swift */,
@@ -929,7 +931,7 @@
 				757234C5623740BAF7ABE358 /* WindowInventory.swift */,
 				6951305850D11CA90D16A162 /* WindowLayoutRunner.swift */,
 				7F2ACA386B0BDC8E32E8107A /* WindowMover.swift */,
-				EBEE0D4CF84E9A9676002070 /* WindowTarget.swift */,
+				65D4EEE2968877B45565C85F /* WindowTarget.swift */,
 			);
 			path = Service;
 			sourceTree = "<group>";
@@ -937,8 +939,8 @@
 		1F4FD014F2A109A812646A83 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
-				3D8710ADA0D68150B12D6F7A /* CustomWindowSizeEditorSheet.swift */,
-				C75868B7FBA96939089EDBA6 /* CustomWindowSizesSection.swift */,
+				D89EB57B6137EF44379AB5DF /* CustomWindowSizeEditorSheet.swift */,
+				F81A385A824D02C1466F8BF8 /* CustomWindowSizesSection.swift */,
 				978DA4527C5B96C98BD33899 /* WindowLayoutArgumentField.swift */,
 				9EB4EA7F440DD25F425110E8 /* WindowLayoutDisplayTabs.swift */,
 				886F26680FF86767F25901C9 /* WindowLayoutEditorSheet.swift */,
@@ -955,7 +957,7 @@
 		9EA28DDA94A714ED519A18A9 /* UI */ = {
 			isa = PBXGroup;
 			children = (
-				AE2C029C93F7A7F6F41CA574 /* CustomWindowSizeCoordinator.swift */,
+				0E73A01A5FEA2B4CA68AE6A6 /* CustomWindowSizeCoordinator.swift */,
 				BE33C0D70D728B12E9A8D4A6 /* WindowCommandCoordinator.swift */,
 				8BE58163F028AC3AD537AAC3 /* WindowLayoutCoordinator.swift */,
 			);
@@ -1000,6 +1002,7 @@
 				4CB0BD36800F3B1AC765F514 /* RegionCurrency.swift */,
 				A7C7C096F258D1EC8B42F818 /* ScreenTarget.swift */,
 				F9044F107ADD5896746DBC35 /* Signposts.swift */,
+				2A6CA1C9AE38B1A036988BC0 /* WindowLevel.swift */,
 			);
 			path = Platform;
 			sourceTree = "<group>";
@@ -1734,14 +1737,14 @@
 				DD8CDDBAC59480E1A7559278 /* ExtensionManager.swift */,
 				2858A6BD41085BF9C1679259 /* ExtensionMenuBarHost.swift */,
 				E7D5244DA7C7D17A80F33442 /* ExtensionMenuBarManager.swift */,
-				F88C1B7A8E2C46404792C826 /* ExtensionNameResolver.swift */,
+				C40D65C644389618DF5F5E26 /* ExtensionNameResolver.swift */,
 				9F9A0A3867D1B8E1D3284471 /* ExtensionNodeShims.swift */,
 				CFE7A7AC9AEE81BAB9DA87FB /* ExtensionOAuthKeychain.swift */,
 				DE7DEB147E5D718E00D67755 /* ExtensionOAuthSession.swift */,
 				C54C4540AD6F188A2455473F /* ExtensionRuntime.swift */,
 				46CECB81C669337C8E6CF7FF /* ExtensionStorage.swift */,
 				410684C9DEB3754962C20C9C /* ExtensionStoreClient.swift */,
-				1D087872616CA6AB68E2053B /* ExtensionWebSocketBridge.swift */,
+				5787319A2BC8BA63CCE29F72 /* ExtensionWebSocketBridge.swift */,
 				387BE675F580496656E72559 /* SymbolCatalog.swift */,
 			);
 			path = Service;
@@ -2030,6 +2033,7 @@
 				916CFA20A66AC96B2610A0D5 /* WindowLayoutRunner.swift in Sources */,
 				24774D18B408004B9016A007 /* WindowLayoutStore.swift in Sources */,
 				B568B2DB072831116AA95767 /* WindowLayoutsSection.swift in Sources */,
+				52D4B7F8B8223B8BF44C4E99 /* WindowLevel.swift in Sources */,
 				EE6A9E899566ACCB8258D901 /* WindowManagementSettingsView.swift in Sources */,
 				018324CD7AB1996821F4070D /* WindowMover.swift in Sources */,
 				664D82881F3B90E6B1D504EB /* WindowPlacementEngine.swift in Sources */,
