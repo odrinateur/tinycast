@@ -26,6 +26,7 @@ struct ExtensionTests {
         var huds: [String] = []
         var oauthTokens: [String: String] = [:]
         private let fetcher = ExtensionFetcher()
+        private let sockets = ExtensionWebSocketBridge()
 
         func perform(api: String, method: String, arguments: [RenderValue]) async throws -> String {
             calls.append("\(api).\(method)")
@@ -35,6 +36,13 @@ struct ExtensionTests {
             }
             if api == "fetch" {
                 return ExtensionRuntime.jsonString(from: try await fetcher.request(arguments.first))
+            }
+            if api == "websocket" {
+                return ExtensionRuntime.jsonString(
+                    from: try await sockets.perform(method: method, arguments: arguments))
+            }
+            if api == "dns" {
+                return ExtensionRuntime.jsonString(from: await ExtensionNameResolver.resolve(arguments.first))
             }
             switch "\(api).\(method)" {
             case "feedback.showToast":
@@ -70,6 +78,10 @@ struct ExtensionTests {
             default:
                 return ""
             }
+        }
+
+        func sessionEnded() {
+            sockets.closeAll()
         }
     }
 
@@ -255,7 +267,12 @@ struct ExtensionTests {
                 [
                     "name": "mode", "type": "dropdown", "default": "b",
                     "data": [["title": "A", "value": "a"], ["title": "B", "value": "b"]]
-                ]
+                ],
+                [
+                    "name": "editor", "type": "appPicker",
+                    "default": "/System/Applications/Utilities/Terminal.app"
+                ],
+                ["name": "browser", "type": "appPicker"]
             ],
             "commands": [
                 ["name": "search", "title": "Search", "mode": "view", "keywords": ["find"]],
@@ -311,6 +328,16 @@ struct ExtensionTests {
             String(describing: prefs["flag"]?.effectiveDefault))
         check("dropdown options", prefs["mode"]?.options.count == 2)
         check("dropdown default", prefs["mode"]?.effectiveDefault == .string("b"))
+
+        // Raycast dereferences `preference.name` unconditionally, so a bare path crashes the command.
+        let picked = prefs["editor"]?.runtimeValue(nil)?.jsonValue as? [String: Any]
+        check(
+            "an app picker resolves to an Application", picked?["name"] as? String == "Terminal",
+            String(describing: picked))
+        check(
+            "an app picker carries its bundle id",
+            picked?["bundleId"] as? String == "com.apple.Terminal", String(describing: picked))
+        check("an unset app picker is absent", prefs["browser"]?.runtimeValue(nil) == nil)
 
         // A manifest with no commands isn't an extension Tinycast can run.
         check("rejects a manifest with no commands", ExtensionManifest(json: ["name": "x"]) == nil)
@@ -1279,6 +1306,23 @@ struct ExtensionTests {
               fs.writeSync(writer, Buffer.from("Y"), 0, 1, null);
               fs.closeSync(writer);
               assert.equal(fs.readFileSync(moved).subarray(0, 3).toString(), "YaX");
+              const listing = "\(directory.path)/listing";
+              fs.mkdirSync(listing + "/folder", { recursive: true });
+              fs.writeFileSync(listing + "/entry", "");
+              const handle = fs.opendirSync(listing);
+              assert.equal(handle.path, listing);
+              const first = handle.readSync(), second = handle.readSync();
+              assert.equal(handle.readSync(), null);
+              handle.closeSync();
+              assert.equal(code(() => handle.readSync()), "ERR_DIR_CLOSED");
+              const byName = Object.fromEntries([first, second].map((entry) => [entry.name, entry]));
+              assert(byName.entry.isFile() && byName.folder.isDirectory());
+              assert.equal(byName.entry.parentPath, listing);
+              const [callbackDir] = await call("opendir", listing);
+              assert.equal((await callbackDir.read()).constructor, fs.Dirent);
+              await callbackDir.close();
+              const iterated = await Array.fromAsync(await fs.promises.opendir(listing));
+              assert.equal(iterated.map((entry) => entry.name).sort().join(), "entry,folder");
               const zlibDecoded = new zlib.Unzip()._processChunk(
                 Buffer.from("eJwrSSxi+F+QWJmTn5gCACHpBTE=", "base64"), 4);
               assert(zlibDecoded.equals(expected));
