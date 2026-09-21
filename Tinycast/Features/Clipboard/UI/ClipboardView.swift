@@ -91,6 +91,11 @@ struct ClipboardList: View {
             // Snap to the origin on the first row so its section header shows too.
             .scrollFollowsSelection(
                 scroll, row: selectedID?.uuidString, atOrigin: firstRowSelected, proxy: proxy)
+            // The list is born with the intent already set, so `onChange` never sees this open.
+            .onAppear {
+                guard scroll.kind == .follow, let id = selectedID?.uuidString else { return }
+                proxy.scrollTo(id, anchor: nil)
+            }
         }
     }
 }
