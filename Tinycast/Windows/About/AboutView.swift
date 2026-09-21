@@ -32,7 +32,6 @@ struct AboutView: View {
                         .padding(.vertical, Theme.Spacing.lg)
                 }
                 .settingsAnchor(.aboutAbout)
-                links
             }
             .formStyle(.grouped)
             .settingsScrollTarget(.about)
@@ -80,104 +79,9 @@ struct AboutView: View {
         }
     }
 
-    private var links: some View {
-        Section {
-            ForEach(AboutLink.all) { link in
-                AboutLinkRow(link: link)
-            }
-        } header: {
-            SettingsSectionHeader(.aboutLinks)
-        }
-    }
-
     private var footer: some View {
-        Text("© 2026 Abue Ammar · Released under AGPL-3.0")
+        Text("© 2026 t3code · Released under AGPL-3.0")
             .font(.caption2)
             .foregroundStyle(.tertiary)
-    }
-}
-
-/// One external destination in the About "Links" card.
-private struct AboutLink: Identifiable {
-    enum Glyph {
-        case symbol(String)
-        /// A brand mark from the asset catalog; SF Symbols ships no such logo.
-        case brand(String)
-    }
-
-    let id: String
-    let glyph: Glyph
-    let title: String
-    let detail: String
-    let url: URL
-
-    static let all: [AboutLink] = [
-        AboutLink(
-            id: "website", glyph: .symbol("globe"), title: "Website",
-            detail: "abue-ammar.github.io/tinycast",
-            url: URL(string: "https://abue-ammar.github.io/tinycast/")!),
-        AboutLink(
-            id: "github", glyph: .brand("BrandGitHub"), title: "GitHub",
-            detail: "github.com/abue-ammar/tinycast",
-            url: URL(string: "https://github.com/abue-ammar/tinycast")!),
-        AboutLink(
-            id: "discord", glyph: .brand("BrandDiscord"), title: "Discord",
-            detail: "Join the Tinycast community",
-            url: URL(string: "https://discord.gg/v2Eeb4QQy3")!),
-        AboutLink(
-            id: "x", glyph: .brand("BrandX"), title: "X", detail: "@abue_ammar",
-            url: URL(string: "https://x.com/abue_ammar")!),
-        AboutLink(
-            id: "email", glyph: .symbol("envelope"), title: "Email",
-            detail: "iabueammar@gmail.com", url: URL(string: "mailto:iabueammar@gmail.com")!)
-    ]
-}
-
-/// A row in the About "Links" card: glyph, title, destination and the arrow.
-private struct AboutLinkRow: View {
-    let link: AboutLink
-
-    @State private var hovered = false
-
-    var body: some View {
-        Button {
-            NSWorkspace.shared.open(link.url)
-        } label: {
-            LabeledContent {
-                HStack(spacing: Theme.Spacing.sm) {
-                    Text(link.detail)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                    Image(systemName: "arrow.up.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(hovered ? .secondary : .tertiary)
-                }
-            } label: {
-                Label {
-                    Text(link.title)
-                } icon: {
-                    glyph
-                }
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovered = $0 }
-    }
-
-    @ViewBuilder
-    private var glyph: some View {
-        switch link.glyph {
-        case .symbol(let name):
-            Image(systemName: name)
-                .font(.system(size: 13, weight: .medium))
-        case .brand(let name):
-            // Brand marks paint edge to edge, so they sit under the symbol box to match.
-            Image(name)
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 14, height: 14)
-        }
     }
 }
