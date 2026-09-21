@@ -67,7 +67,6 @@ extension SettingsAnchor {
     static let backupImportFromRaycast = Self(tab: .backup, title: "Import from Raycast")
 
     static let aboutAbout = Self(tab: .about, title: "About")
-    static let aboutLinks = Self(tab: .about, title: "Links")
 }
 
 /// Where a search result lands: a whole section, or one row inside it.

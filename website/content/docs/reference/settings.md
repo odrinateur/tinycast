@@ -87,5 +87,5 @@ Everything here ships **off**, except Clipboard and Emoji & Symbols.
 **Backup.** Export a backup, import one, or
 [import from Raycast](/docs/reference/import-from-raycast). See [Backup & restore](/docs/reference/backup).
 
-**About.** Version, license, **Check for Updates**, links to the project, and **Support**. See
+**About.** Version, license, and **Check for Updates**. See
 [Updates](/docs/reference/updates).
