@@ -313,9 +313,7 @@ struct RootPaletteView: View {
             // Every show bumps focusToken so the search field refocuses.
             .onChange(of: vm.focusToken) { handleFocusToken() }
             // A preserved screen re-summons as it was left, so a menu must end with the palette.
-            .onChange(of: vm.isVisible) {
-                if !vm.isVisible, menuOpen { closeMenus() }
-            }
+            .modifier(PaletteHideObserver { if menuOpen { closeMenus() } })
             .onChange(of: vm.query) { handleQueryChange() }
             // Anything typed while the command was still starting predates its handler.
             .onChange(of: extensionScreen.searchTextHandler) { previous, handler in
@@ -1110,6 +1108,18 @@ private enum OpenMenu {
     case app
     case clipboardFilter
     case fileSearchFilter
+}
+
+/// Reads visibility in its own body, so a summon never re-renders the palette's.
+private struct PaletteHideObserver: ViewModifier {
+    @Environment(PaletteState.self) private var vm
+    let onHide: () -> Void
+
+    func body(content: Content) -> some View {
+        content.onChange(of: vm.isVisible) { _, visible in
+            if !visible { onHide() }
+        }
+    }
 }
 
 /// Its own modifier: the palette's body is already at the type-checker's limit.
