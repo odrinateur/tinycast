@@ -22,6 +22,8 @@ import {
 import { ReadableStream, TransformStream, WritableStream } from "./web-streams.js";
 import { fileURLToPath, pathToFileURL, URL, URLSearchParams } from "./url.js";
 import { punycode } from "./punycode.js";
+import { upgradeToWebSocket } from "./websocket.js";
+import { dgram } from "./dgram.js";
 
 // ─── path ───────────────────────────────────────────────────────────
 
@@ -506,9 +508,52 @@ const fs = {
     stream.path = target;
     return stream;
   },
+  opendirSync(dir) {
+    return new Dir(fsPath(dir), fs.readdirSync(dir, { withFileTypes: true }));
+  },
   Stats,
   Dirent,
 };
+
+// The host has no directory handles, so a Dir walks a snapshot taken when it was opened.
+class Dir {
+  #entries;
+  #closed = false;
+  constructor(path, entries) {
+    this.path = path;
+    this.#entries = entries;
+  }
+  #assertOpen() {
+    if (!this.#closed) return;
+    const error = new Error("Directory handle was closed");
+    error.code = "ERR_DIR_CLOSED";
+    throw error;
+  }
+  readSync() {
+    this.#assertOpen();
+    return this.#entries.shift() ?? null;
+  }
+  read(callback) {
+    if (!callback) return (async () => this.readSync())();
+    callbackify(() => this.readSync())(callback);
+  }
+  closeSync() {
+    this.#assertOpen();
+    this.#closed = true;
+  }
+  close(callback) {
+    if (!callback) return (async () => this.closeSync())();
+    callbackify(() => this.closeSync())(callback);
+  }
+  async *[Symbol.asyncIterator]() {
+    try {
+      for (let entry = this.readSync(); entry; entry = this.readSync()) yield entry;
+    } finally {
+      if (!this.#closed) this.closeSync();
+    }
+  }
+}
+fs.Dir = Dir;
 
 // Callback forms: run the same sync host call, hand the result back on a microtask.
 function callbackify(syncFn) {
@@ -536,6 +581,7 @@ for (const [name, sync] of [
   ["stat", fs.statSync],
   ["lstat", fs.lstatSync],
   ["readdir", fs.readdirSync],
+  ["opendir", fs.opendirSync],
   ["mkdir", fs.mkdirSync],
   ["rm", fs.rmSync],
   ["rmdir", fs.rmdirSync],
@@ -568,6 +614,7 @@ const fsPromises = {
   stat: promisify1(fs.statSync),
   lstat: promisify1(fs.lstatSync),
   readdir: promisify1(fs.readdirSync),
+  opendir: promisify1(fs.opendirSync),
   mkdir: promisify1(fs.mkdirSync),
   rm: promisify1(fs.rmSync),
   rmdir: promisify1(fs.rmdirSync),
@@ -1200,6 +1247,7 @@ class ClientRequest extends EventEmitter {
   flushHeaders() {}
 
   async _send() {
+    if (String(this.getHeader("upgrade") ?? "").toLowerCase() === "websocket") return this._upgrade();
     // Content negotiation belongs to the transport, which decodes for us and reports the result.
     this.removeHeader("accept-encoding");
     const body = this._chunks.length ? Buffer.concat(this._chunks) : null;
@@ -1223,21 +1271,64 @@ class ClientRequest extends EventEmitter {
       if (!this._destroyed) this.emit("error", error instanceof Error ? error : new Error(String(error)));
     }
   }
+
+  /// The host opens the socket, so the 101 is synthesised — never with an extension, so no deflate.
+  async _upgrade() {
+    const headers = this.getHeaders();
+    try {
+      const { socket, protocol } = await upgradeToWebSocket({
+        url: this.url.replace(/^http/, "ws"),
+        protocols: splitList(headers["sec-websocket-protocol"]),
+        headers: Object.fromEntries(
+          Object.entries(headers).filter(([name]) => !HANDSHAKE_HEADERS.has(name)),
+        ),
+      });
+      clearTimeout(this._timer);
+      if (this._destroyed) return socket.destroy();
+      const accept = new Hash("sha1").update(`${headers["sec-websocket-key"] ?? ""}${WEBSOCKET_GUID}`).digest("base64");
+      const response = new IncomingMessage({
+        status: 101,
+        statusText: "Switching Protocols",
+        headers: {
+          upgrade: "websocket",
+          connection: "Upgrade",
+          "sec-websocket-accept": accept,
+          ...(protocol ? { "sec-websocket-protocol": protocol } : {}),
+        },
+      });
+      if (!this.emit("upgrade", response, socket, Buffer.alloc(0))) socket.destroy();
+    } catch (error) {
+      clearTimeout(this._timer);
+      if (!this._destroyed) this.emit("error", error instanceof Error ? error : new Error(String(error)));
+    }
+  }
 }
 
-function httpRequest(input, options, callback) {
-  if (typeof options === "function") return httpRequest(input, {}, options);
+const WEBSOCKET_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+/// URLSession writes the handshake itself; forwarding these would have it refuse the request.
+const HANDSHAKE_HEADERS = new Set([
+  "connection", "upgrade", "host", "sec-websocket-key", "sec-websocket-version",
+  "sec-websocket-extensions", "sec-websocket-protocol",
+]);
+
+function splitList(value) {
+  return String(value ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function httpRequest(input, options, callback, scheme = "http:") {
+  if (typeof options === "function") return httpRequest(input, {}, options, scheme);
   if (typeof input === "string" || input instanceof URL) {
     return new ClientRequest(String(input), options ?? {}, callback);
   }
   const spec = input ?? {};
   const host = spec.hostname ?? spec.host ?? "localhost";
   const port = spec.port ? `:${spec.port}` : "";
-  return new ClientRequest(`${spec.protocol ?? "http:"}//${host}${port}${spec.path ?? "/"}`, spec, callback);
+  return new ClientRequest(`${spec.protocol ?? scheme}//${host}${port}${spec.path ?? "/"}`, spec, callback);
 }
 
-function httpGet(input, options, callback) {
-  return httpRequest(input, options, callback).end();
+function httpGet(input, options, callback, scheme) {
+  return httpRequest(input, options, callback, scheme).end();
 }
 
 // ─── util ───────────────────────────────────────────────────────────
@@ -1492,8 +1583,9 @@ function makeUnsupported(label) {
 
 const httpLike = (name) =>
   unsupportedModule(name, {
-    request: httpRequest,
-    get: httpGet,
+    // The scheme rides with the module: `ws` and axios both pass an options bag with no protocol.
+    request: (input, options, callback) => httpRequest(input, options, callback, `${name}:`),
+    get: (input, options, callback) => httpGet(input, options, callback, `${name}:`),
     validateHeaderName,
     validateHeaderValue,
     IncomingMessage,
@@ -1590,6 +1682,10 @@ const diagnosticsChannelModule = {
   unsubscribe: () => {},
   tracingChannel: (name) => new TracingChannel(name),
 };
+/// http2-wrapper reads `new tls.TLSSocket(stream)._handle._parentWrap.constructor` at import time.
+const TLSSocket = class TLSSocket extends Duplex {
+  _handle = { _parentWrap: { constructor: TLSSocket } };
+};
 
 // ─── Registry ───────────────────────────────────────────────────────
 
@@ -1617,8 +1713,9 @@ export const nodeModules = {
   diagnostics_channel: diagnosticsChannelModule,
   http: httpLike("http"),
   https: httpLike("https"),
+  dgram,
   net: unsupportedModule("net"),
-  tls: unsupportedModule("tls"),
+  tls: unsupportedModule("tls", { TLSSocket }),
   dns: unsupportedModule("dns"),
   stream: streamModule,
   "stream/web": webStreamModule,
@@ -1660,10 +1757,10 @@ function requireStub(name) {
 }
 
 // Every remaining Node builtin resolves to a refuse-on-use stub. Bundles reference the whole
-// long tail (dgram, http2, domain, repl, …) from dependencies that only touch them on paths an
+// long tail (http2, domain, repl, …) from dependencies that only touch them on paths an
 // extension never reaches, so a require-time throw would fail extensions that actually work.
 const REMAINING_BUILTINS = [
-  "assert/strict", "console", "dgram", "dns/promises", "domain", "http2",
+  "assert/strict", "console", "dns/promises", "domain", "http2",
   "inspector/promises", "path/posix", "path/win32", "readline/promises", "repl",
   "stream/consumers", "sys", "trace_events", "util/types", "wasi", "sea", "sqlite", "test",
   "test/reporters",
