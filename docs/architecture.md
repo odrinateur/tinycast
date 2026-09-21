@@ -101,14 +101,17 @@ handed an input path and answers with bounded text down a pipe.
 ## Entry points and windows
 
 `TinycastApp` (`@main`) declares only the one `MenuBarExtra` scene — Tinycast's own item;
-everything else visible is driven imperatively from AppKit.
+everything else visible is driven imperatively from AppKit. Extension menu extras are dynamic
+`NSStatusItem`s owned entirely by `Features/Extensions/`, through `ExtensionManager`, with no scene
+or lifecycle wiring in the core.
 
 - **Command palette** — a borderless floating `NSPanel` (`Palette/PalettePanel.swift`) hosting SwiftUI
   via `NSHostingView`, managed by `PaletteWindowController`. It toggles between a compact bar and the
   full launcher by resizing the window. The controller **solely** owns the frame, resolved once per show
   to a top-left anchor so it grows downward, and the hosting view sets `sizingOptions = []` so SwiftUI
   never drives the window size — without that the hosting view resizes the panel to fit content and the
-  top edge drifts on the compact↔expanded swap. The panel auto-dismisses on `windowDidResignKey`.
+  top edge drifts on the compact↔expanded swap. The panel auto-dismisses on `windowDidResignKey`,
+  unless a modal panel holds key.
   See [features/palette.md](features/palette.md).
 - **Settings and Onboarding** — titled `NSWindow`s, one `Windows/AppWindowController.swift` each, owned
   by `SettingsCoordinator` and `OnboardingCoordinator`. SwiftUI `Settings` and `Window` scenes are
