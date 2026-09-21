@@ -265,6 +265,8 @@ screens hold (see [palette.md](palette.md)).
   measured once for every cell — a tile that measured itself would cost a layout pass each. A symbol or
   glyph has no artwork to scale, so it takes a share of the tile; `Grid.Section` props are not read,
   since the grid draws one column count throughout.
+  A tile may be a bare `{color}` swatch instead of an image, stated in any notation `ColorValue`
+  reads — a colour picker writes `oklch()`, not hex.
 - **Detail** — markdown rendered block-by-block (headings, lists, code fences, quotes, rules, fetched
   and inline images) with `AttributedString` handling inline styling, plus `Detail.Metadata`. An image
   is full-width and at most 220pt tall; `?raycast-width=` / `?raycast-height=` on its URL, read by
@@ -396,7 +398,7 @@ screens hold (see [palette.md](palette.md)).
   transition, anchored to the control that opened them.
 - **Feedback** — `showToast` stacks above the footer, `showHUD` is a centred pill, and `confirmAlert`
   goes through `DialogController` like every other question the app asks. Its dialog sits at
-  `.modalPanel`, above the palette's `.floating`, so a view command keeps its screen behind it — and
+  `.dialog`, above the palette's `.palette`, so a view command keeps its screen behind it — and
   the palette does not dismiss while it is up (`AppCore.isShowingDialog`), because dismissing pops to
   root, which would tear the command down before its `await confirmAlert(…)` ever returns.
 - **Command arguments** — a command declaring `arguments` shows inline fields sized to their

@@ -29,7 +29,6 @@ extension View {
             .environment(core.runningApps)
             .environment(core.hotKeys)
             .environment(core.quicklinks)
-            .environment(core.customCommandArguments)
             .environment(core.extensions)
     }
 }

@@ -58,15 +58,7 @@ struct PaletteEscapeTests {
             resolve(),
             .hidePalette,
             "an empty launcher query hides the palette")
-        // The two surfaces where the field is not a search field: an argument answer, a chat draft.
-        expect(
-            resolve(query: "blue", mode: .customCommandArguments),
-            .clearQuery,
-            "a half-typed argument clears before the pending command is abandoned")
-        expect(
-            resolve(mode: .customCommandArguments),
-            .hidePalette,
-            "an empty argument field hides the palette, which cancels the pending command")
+        // The surface where the field is not a search field: a chat draft.
         expect(
             resolve(query: "report", mode: .fileSearch),
             .clearQuery,

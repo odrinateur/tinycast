@@ -6,15 +6,11 @@ enum PaletteMode: String, CaseIterable, Identifiable {
     case calculatorHistory
     case fileSearch
     case quicklinks
-    /// Collects a custom command's positional arguments, held on its own session.
-    case customCommandArguments
     /// A Raycast extension command rendering into the palette.
     case extensionCommand
 
     var id: String { rawValue }
 
-    /// One value at a time into the search field, so ↵ still acts with no rows to select.
-    var isArgumentForm: Bool { self == .customCommandArguments }
     var systemImage: String {
         switch self {
         case .launcher: return "magnifyingglass"
@@ -22,7 +18,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .calculatorHistory: return "plus.forwardslash.minus"
         case .fileSearch: return "doc.text.magnifyingglass"
         case .quicklinks: return Quicklink.sfSymbol
-        case .customCommandArguments: return CustomCommand.sfSymbol
         case .extensionCommand: return "puzzlepiece.extension"
         }
     }
@@ -33,8 +28,6 @@ enum PaletteMode: String, CaseIterable, Identifiable {
         case .calculatorHistory: return "Do math, convert units, or search your past calculations…"
         case .fileSearch: return "Search files and folders…"
         case .quicklinks: return "Search quicklinks…"
-        // Replaced by the pending argument's name; only reached if the session vanished mid-render.
-        case .customCommandArguments: return "Enter a value…"
         // Replaced by the command's own `searchBarPlaceholder` whenever it declares one.
         case .extensionCommand: return "Search…"
         }

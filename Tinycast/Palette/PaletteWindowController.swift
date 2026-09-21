@@ -305,14 +305,6 @@ final class PaletteWindowController: NSObject, NSWindowDelegate {
             guard let core = self?.core, core.palette.query.isEmpty else { return false }
             // A form field owns the key: the text it deletes is the field's, not a query's.
             if core.palette.isEditingField { return false }
-            // The argument form steps back through the answers first, one key per field.
-            if core.palette.mode == .customCommandArguments,
-                let previous = core.customCommandArguments.retreat()
-            {
-                core.palette.query = previous
-                core.palette.selection = 0
-                return true
-            }
             if core.palette.mode == .extensionCommand {
                 core.extensionCoordinator.exitExtensionScreen()
                 return true
