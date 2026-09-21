@@ -219,7 +219,7 @@ struct CustomCommandEditorSheet: View {
                 .foregroundStyle(.secondary)
                 .frame(width: Self.positionWidth, alignment: .leading)
             TextField("Argument name", text: argument.name)
-                .settingsEditorTextField()
+                .textFieldStyle(.roundedBorder)
             Toggle("Optional", isOn: argument.isOptional)
                 .toggleStyle(.checkbox)
             Button {
