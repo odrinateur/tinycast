@@ -17,6 +17,8 @@ Independently of the folder tree, every mature subsystem has converged on the sa
 │ SearchRelevance · EntryNaming · ScriptRomanization · LauncherOrder ·       │
 │ SearchScopes · LauncherRankingStore · FileSearch{Query,Result,Scope} ·      │
 │ Calculator/* · Quicklink{,Destination,Store,Archive} ·                       │
+│ WindowCommand · WindowPlacementEngine · WindowActionMemory · WindowLayout/* · │
+│ CustomWindowSize{,Store} ·                                                   │
 │ PaletteRowIndex ·                                                          │
 │ ShellCommandRunner · DoubleTap{Modifier,Detector} · ClipboardStore ·       │
 │ RaycastDecoder · Scrypt · AppSettingsKey · SettingsBackupCoverage          │

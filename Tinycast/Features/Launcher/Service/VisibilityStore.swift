@@ -77,7 +77,7 @@ final class VisibilityStore {
         case .command(let id): id.owner == nil ? isKindEnabled(.command) : true
         case .togglePalette, .customCommand,
             .quicklink, .extensionCommand,
-            .windowCommand, .windowLayout:
+            .windowCommand, .windowLayout, .customWindowSize:
             true
         }
     }
