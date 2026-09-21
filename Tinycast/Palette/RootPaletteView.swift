@@ -237,6 +237,19 @@ struct RootPaletteView: View {
         }
     }
 
+    /// Index 0 is the pinned block, so an empty history opens on the newest clip instead.
+    @discardableResult
+    private func applyClipboardOpeningSelection() -> Bool {
+        guard vm.mode == .clipboard, vm.query.isEmpty, let clipboard = screen as? ClipboardScreen
+        else { return false }
+        vm.selection = clipboard.defaultSelection
+        return true
+    }
+
+    private var scrollForCurrentSelection: ScrollIntent.Kind {
+        vm.mode == .clipboard && vm.query.isEmpty && vm.selection > 0 ? .follow : .top
+    }
+
     private func handleFocusToken() {
         searchFocused = !screen.hidesSearchField
         applyDefaultLauncherSelection()
@@ -246,10 +259,10 @@ struct RootPaletteView: View {
         if vm.collapseQueryLineBreaks() { return }
         if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
             vm.selection = launcher.defaultSelection
-        } else {
+        } else if !applyClipboardOpeningSelection() {
             vm.selection = 0
         }
-        scroll = ScrollIntent(kind: .top)
+        scroll = ScrollIntent(kind: scrollForCurrentSelection)
         if vm.mode == .fileSearch { fileSearch.search(vm.query, filter: vm.fileSearchFilter) }
         if vm.mode == .extensionCommand, let handler = extensionScreen.searchTextHandler {
             extensions.dispatch(handler: handler, arguments: [vm.query])
@@ -257,16 +270,16 @@ struct RootPaletteView: View {
     }
 
     private func handleModeChange() {
-        if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
-            vm.selection = launcher.defaultSelection
-        } else {
-            vm.selection = 0
-        }
         vm.clipboardFilter = .all
         vm.fileSearchFilter = .all
         vm.fileSearchQuickLook = false
+        if vm.mode == .launcher && vm.query.isEmpty, let launcher = screen as? LauncherScreen {
+            vm.selection = launcher.defaultSelection
+        } else if !applyClipboardOpeningSelection() {
+            vm.selection = 0
+        }
         if menuOpen { closeMenus() }
-        scroll = ScrollIntent(kind: .top)
+        scroll = ScrollIntent(kind: scrollForCurrentSelection)
         searchFocused = !screen.hidesSearchField
         if vm.mode == .fileSearch {
             fileSearch.search(vm.query, filter: vm.fileSearchFilter)
@@ -283,8 +296,9 @@ struct RootPaletteView: View {
 
     private func handleResetToken() {
         if menuOpen { closeMenus() }
-        scroll = ScrollIntent(kind: .top)
         applyDefaultLauncherSelection()
+        applyClipboardOpeningSelection()
+        scroll = ScrollIntent(kind: scrollForCurrentSelection)
     }
 
     private func handleAppear() {
@@ -318,8 +332,9 @@ struct RootPaletteView: View {
             .modifier(ExtensionSelectionForwarder(screen: extensionScreen, selection: vm.selection))
             // A narrower list means the old index points at a different row, or at none.
             .onChange(of: vm.clipboardFilter) {
-                vm.selection = 0
-                scroll = ScrollIntent(kind: .top)
+                guard vm.mode == .clipboard else { return }
+                if !applyClipboardOpeningSelection() { vm.selection = 0 }
+                scroll = ScrollIntent(kind: scrollForCurrentSelection)
             }
             // The filter is part of the query, so narrowing re-runs it rather than thinning rows.
             .onChange(of: vm.fileSearchFilter) {

@@ -14,6 +14,7 @@ struct ClipboardTests {
         pinsSurvivePruningAndTheWindow()
         pinsLeadFilteredSearches()
         pinnedSlotResolutionUsesVisiblePins()
+        openingSelectionSkipsPins()
         textFormClassification()
         colorParsing()
         colorFormatting()
@@ -153,6 +154,27 @@ struct ClipboardTests {
             expect(
                 short.first?.text == "needle in the haystack",
                 "the pinned match leads the fallback search too")
+        }
+    }
+
+    /// Opening the history lands past the pinned block, on the newest ordinary clip.
+    static func openingSelectionSkipsPins() {
+        withStore { store, _ in
+            store.addText("older", sourceBundleID: nil)
+            store.addText("newer", sourceBundleID: nil)
+            expect(
+                store.defaultSelection(in: "", filter: .all) == 0,
+                "with nothing pinned the newest row is already first")
+
+            store.togglePinned(item(store, "older"))
+            expect(
+                store.defaultSelection(in: "", filter: .all) == 1,
+                "a fresh history opens on the first unpinned row")
+
+            store.togglePinned(item(store, "newer"))
+            expect(
+                store.defaultSelection(in: "", filter: .all) == 0,
+                "an all-pinned history opens on the first pin")
         }
     }
 

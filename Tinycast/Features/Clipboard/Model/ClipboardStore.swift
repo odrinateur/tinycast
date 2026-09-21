@@ -491,6 +491,11 @@ final class ClipboardStore {
         search(query, filter: filter).firstIndex { $0.id == item.id }
     }
 
+    /// A fresh open pastes the newest clip; pins stay a section above the highlight.
+    func defaultSelection(in query: String, filter: ClipboardFilter) -> Int {
+        search(query, filter: filter).firstIndex { !$0.isPinned } ?? 0
+    }
+
     /// The Nth visible pinned entry under `query` and `filter`, where 0 is the first pinned row.
     func pinnedItem(at index: Int, in query: String, filter: ClipboardFilter) -> ClipboardItem? {
         guard index >= 0 else { return nil }

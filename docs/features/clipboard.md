@@ -299,7 +299,10 @@ Pins change four things:
   window. "Clear History" still deletes everything.
 - **Selection.** Pinning lifts a row out of its date bucket, so `ClipboardCoordinator.togglePinnedClip` moves the
   palette selection to the row's new index in the _current_ results and bumps `palette.followToken`,
-  which is what makes the list scroll the highlight back into view.
+  which is what makes the list scroll the highlight back into view. A fresh clipboard screen — the
+  history shortcut, Tab onto an empty query, a cleared query — selects the first unpinned row, so
+  Return pastes the newest clip while the Pinned section stays above the highlight. A history made
+  only of pins selects the first of them. `ClipboardStore.defaultSelection` is that index.
 
 Pasting a pinned entry deliberately does **not** promote it: it holds its place in the Pinned
 section, so `promote` skips pinned rows instead of rewriting the row and its FTS entry for no
