@@ -137,7 +137,8 @@ grep -rln 'import AppKit\|import SwiftUI\|import Cocoa' Tinycast/Features/*/Mode
 Beyond the imports, the injected-environment half is not mechanically checkable, so it is worth an eye
 when touching a pure file:
 
-- `Calculator/Model/` still takes its clock via `now`/`calendar` and its rates via `rates`
+- `Calculator/Model/` still takes its clock via `now`/`calendar`, its rates via `rates` and its
+  separators via `format`
 - `HotKeys/Model/DoubleTap*` still take the clock as a parameter
 - `Features/PaletteRowIndex.swift` still imports Foundation alone, despite living under `Features/`
 - `Quicklinks/Model/` is still handed the home directory rather than reading it
@@ -292,6 +293,9 @@ caches, TCC grants and login item, so this cannot disturb an installed copy.
 - ⌃N/⌃P move the highlight as ↓/↑ do, and the caret elsewhere
 - The highlight always sits on the row the footer pill describes
 - With a calculation typed, the calculator card is first and is selected first
+- With macOS set to a decimal-comma region (Italian), `2,3 + 1,5` answers `3,8`, `max(2,5; 3)`
+  answers `3`, and ↵ pastes `3,8`; General ▸ Calculator ▸ Number format `English` restores `2.3 + 1.5`
+  and re-renders past Calculator History in the chosen format
 - Section headers appear in order: Favorites, Applications, System Settings, Quicklinks,
   Custom Commands, Commands
 - With a non-ASCII input source active, ⌘K opens Actions; ↑/↓ move it, ↵ activates, Escape closes it
