@@ -39,6 +39,8 @@ macOS picks which app gets those links. A sign-in that never comes back gives up
 
 `http` and `https` requests go through the same path as `fetch`, so libraries like axios and
 node-fetch work. Streams are the real thing, so pipelines like `fetch` → file work end to end.
+`os.networkInterfaces` lists this Mac's addresses, and `net.isIP` validates IPv4 and IPv6, which is
+what IP lookup extensions use.
 
 **Bundled Swift helpers**, like Color Picker's, run.
 
@@ -63,7 +65,7 @@ the palette. Passing them on would launch Raycast itself.
 | **Cancelling a `fetch` in flight**               | The caller gets its `AbortError`, but the request still finishes in the background      |
 | **Live `child_process.spawn` output**            | The command runs to the end, then its output arrives in one piece                       |
 | **Streaming HTTP**                               | A response arrives all at once, so server-sent events and download progress do not work |
-| **`net` and `tls`**                              | Load, but fail when used                                                                |
+| **`net` and `tls`**                              | Load, but fail when used — except `net.isIP` and `tls.TLSSocket` at import time         |
 | **AI tools (`tools/`)**                          | Not shown                                                                               |
 
 **An extension that needs something missing tells you when you run it**, instead of failing silently

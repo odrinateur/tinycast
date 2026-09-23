@@ -253,6 +253,16 @@ struct ExtensionTests {
             "os.loadavg returns three finite values",
             loadAverages?.count == 3
                 && loadAverages?.allSatisfy { $0.doubleValue.isFinite && $0.doubleValue >= 0 } == true)
+
+        let interfaces = value("networkInterfaces") as? [String: [[String: Any]]]
+        let loopback = interfaces?.values.flatMap { $0 }.first { entry in
+            entry["internal"] as? Bool == true && entry["address"] as? String == "127.0.0.1"
+        }
+        check("os.networkInterfaces includes loopback", loopback != nil)
+        check(
+            "loopback is an internal IPv4 /8",
+            loopback?["family"] as? String == "IPv4" && loopback?["cidr"] as? String == "127.0.0.1/8",
+            String(describing: loopback))
     }
 
     @MainActor

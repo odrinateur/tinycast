@@ -650,7 +650,15 @@ directions), `http`/`https` (`request`, `get` and `Agent`, buffered over the sam
 as `fetch`), `stream` (`Readable`, `Writable`, `Duplex`, `Transform`, `PassThrough`, `pipeline`,
 `finished`, plus `stream/promises` and `stream/web`), `util`, `events`, `buffer`, `url`, `querystring`, `punycode`, `assert`,
 `string_decoder`, `timers`. Every other built-in resolves to a stub that throws only when used, so a
-bundle that merely references `http2` or `domain` still loads.
+bundle that merely references `http2` or `domain` still loads. Those stubs are manufactured lazily,
+but each module still has to enumerate its members as own keys: esbuild's `__toESM` — what every
+namespace or named import compiles to — snapshots own keys instead of reading through the proxy, and
+a member it cannot see arrives as `undefined`, which `class … extends` reports as
+`TypeError: The superclass is not a constructor` at import time, naming nothing. `async_hooks` hands
+out a real `AsyncLocalStorage` and `AsyncResource` rather than a stub for the same reason: undici
+extends the latter at module scope, and running the callback in place is the whole of it here.
+`os.networkInterfaces` and `net.isIP` / `isIPv4` / `isIPv6` are real rather than stubs: IP lookup
+extensions enumerate local addresses and validate the query through those two calls.
 
 **Streams** — the stream core is Node's real contract, not a stand-in: an extension that ships
 `stream-chain` and `stream-json` to walk a package index builds object-mode pipelines out of it, and
@@ -735,7 +743,7 @@ OAuth extensions it excluded are not counted yet — re-measure before quoting t
 | **A WebSocket to a host with a certificate macOS distrusts** | `ws`'s `rejectUnauthorized: false` is ignored — URLSession validates the chain either way. |
 | **Aborting a `fetch` already in flight** | `AbortSignal` is complete — `timeout`, `abort` and `any` included — and `fetch` checks it on both sides of the host call, so a caller gets its `AbortError`. The request itself still runs to completion: the signal isn't carried across the bridge, so nothing cancels the `URLSessionTask`. A timeout bounds the caller, not the network. |
 | **Streaming `child_process.spawn`** | `spawn` runs the child to completion and emits its output as one chunk (async-iterable, which is what `get-stream`/`execa` consume). True duplex streaming would need a bidirectional channel across the bridge. Extensions built on `execa`'s deeper stream API can still fail. |
-| **`net` / `tls`** | Resolve but throw on use. Nothing bridges a raw socket; a bundled `ws` reaches the network through the WebSocket bridge instead. `tls.TLSSocket` is the one exception: `http2-wrapper`, inside `got`, derives a class from one at import time, so it constructs as an inert duplex. |
+| **`net` / `tls`** | Resolve but throw on use, except `net.isIP` / `isIPv4` / `isIPv6` (pure string checks) and `tls.TLSSocket` (`http2-wrapper`, inside `got`, derives a class from one at import time, so it constructs as an inert duplex). Nothing bridges a raw socket; a bundled `ws` reaches the network through the WebSocket bridge instead. |
 | **Streaming HTTP** | The bridge answers a request with the whole body at once, so `http.request` delivers one chunk and `Response.body` replays bytes that already arrived. Server-sent events, network-level progress and backpressure onto the socket are all out of reach; `stream` itself is real enough to carry them the day the bridge is. |
 | **Tool/AI-extension entry points (`tools/`)** | Not surfaced. |
 

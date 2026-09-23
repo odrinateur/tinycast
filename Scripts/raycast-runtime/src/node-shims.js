@@ -25,6 +25,22 @@ import { punycode } from "./punycode.js";
 import { upgradeToWebSocket } from "./websocket.js";
 import { dgram } from "./dgram.js";
 
+// ─── Unsupported-module exports ─────────────────────────────────────
+
+/// Node's function exports per module: a lazy member survives `__toESM` only as an own key.
+const UNSUPPORTED_EXPORTS = {
+  net: ["BlockList", "SocketAddress", "connect", "createConnection", "createServer", "isIP", "isIPv4", "isIPv6", "Server", "Socket", "Stream"],
+  tls: ["getCiphers", "checkServerIdentity", "convertALPNProtocols", "createSecureContext", "SecureContext", "TLSSocket", "Server", "createServer", "connect"],
+  dns: ["lookup", "lookupService", "Resolver", "getServers", "setServers", "getDefaultResultOrder", "setDefaultResultOrder", "resolve", "resolve4", "resolve6", "resolveAny", "resolveCaa", "resolveCname", "resolveMx", "resolveNaptr", "resolveNs", "resolvePtr", "resolveSoa", "resolveSrv", "resolveTlsa", "resolveTxt", "reverse"],
+  vm: ["Script", "createContext", "createScript", "runInContext", "runInNewContext", "runInThisContext", "isContext", "compileFunction", "measureMemory"],
+  readline: ["Interface", "clearLine", "clearScreenDown", "createInterface", "cursorTo", "emitKeypressEvents", "moveCursor"],
+  worker_threads: ["MessagePort", "MessageChannel", "markAsUncloneable", "markAsUntransferable", "isMarkedAsUntransferable", "moveMessagePortToContext", "receiveMessageOnPort", "postMessageToThread", "Worker", "BroadcastChannel", "setEnvironmentData", "getEnvironmentData"],
+  http2: ["connect", "createServer", "createSecureServer", "getDefaultSettings", "getPackedSettings", "getUnpackedSettings", "performServerHandshake", "Http2ServerRequest", "Http2ServerResponse"],
+  domain: ["Domain", "createDomain", "create"],
+  diagnostics_channel: ["channel", "hasSubscribers", "subscribe", "unsubscribe", "tracingChannel", "Channel"],
+  "stream/consumers": ["arrayBuffer", "blob", "buffer", "text", "json"],
+};
+
 // ─── path ───────────────────────────────────────────────────────────
 
 function normalizeSegments(parts, allowAboveRoot) {
@@ -256,7 +272,7 @@ const os = {
   freemem: () => hostCallSync("os", "freemem", []),
   uptime: () => hostCallSync("os", "uptime", []),
   loadavg: () => hostCallSync("os", "loadavg", []),
-  networkInterfaces: () => ({}),
+  networkInterfaces: () => hostCallSync("os", "networkInterfaces", []),
   endianness: () => "LE",
   devNull: "/dev/null",
   constants: { signals: SIGNALS, errno: {} },
@@ -1551,6 +1567,11 @@ class StringDecoder {
 /// so the member has to be a real constructor — and unknown members must exist too, hence the Proxy.
 function unsupportedModule(name, extras = {}) {
   const cache = new Map();
+  const lazy = new Set((UNSUPPORTED_EXPORTS[name] ?? []).filter((each) => !(each in extras)));
+  const manufacture = (member) => {
+    if (!cache.has(member)) cache.set(member, makeUnsupported(`${name}.${member}`));
+    return cache.get(member);
+  };
   return new Proxy(extras, {
     get(target, member) {
       if (member in target) return target[member];
@@ -1558,8 +1579,14 @@ function unsupportedModule(name, extras = {}) {
       // skip the default-wrapping it would otherwise apply, and a truthy `then` makes the module
       // look like a thenable to `await`.
       if (typeof member !== "string" || RESERVED_MEMBERS.has(member)) return undefined;
-      if (!cache.has(member)) cache.set(member, makeUnsupported(`${name}.${member}`));
-      return cache.get(member);
+      return manufacture(member);
+    },
+    // esbuild's `__toESM` snapshots own keys and never reads through `get`.
+    ownKeys: (target) => [...new Set([...Reflect.ownKeys(target), ...lazy])],
+    getOwnPropertyDescriptor(target, member) {
+      const own = Reflect.getOwnPropertyDescriptor(target, member);
+      if (own || !lazy.has(member)) return own;
+      return { value: manufacture(member), writable: true, enumerable: true, configurable: true };
     },
   });
 }
@@ -1687,6 +1714,68 @@ const TLSSocket = class TLSSocket extends Duplex {
   _handle = { _parentWrap: { constructor: TLSSocket } };
 };
 
+function isIPv4(value) {
+  const octets = String(value).split(".");
+  return octets.length === 4 && octets.every((octet) => /^(0|[1-9]\d{0,2})$/.test(octet) && Number(octet) <= 255);
+}
+
+function isIPv6(value) {
+  const text = String(value);
+  if (text.includes("%")) return false;
+  const mapped = text.match(/^(.+):([^:]*\.[^:]+)$/);
+  if (mapped) return isIPv6(`${mapped[1]}:0`) && isIPv4(mapped[2]);
+  if (!/^[0-9a-fA-F:]+$/.test(text)) return false;
+  const compact = text.indexOf("::");
+  if (compact !== -1 && compact !== text.lastIndexOf("::")) return false;
+  const groups = text.split(":");
+  const filled = groups.filter((group) => group !== "");
+  if (filled.some((group) => !/^[0-9a-fA-F]{1,4}$/.test(group))) return false;
+  if (compact === -1) return groups.length === 8 && filled.length === 8;
+  return filled.length < 8 && groups.length <= 9;
+}
+
+function isIP(value) {
+  if (isIPv4(value)) return 4;
+  if (isIPv6(value)) return 6;
+  return 0;
+}
+
+class AsyncLocalStorage {
+  run(_store, fn) {
+    return fn();
+  }
+  getStore() {
+    return undefined;
+  }
+}
+
+/// undici extends this at module scope; with one synchronous context, the scope is just the call.
+class AsyncResource {
+  constructor(type) {
+    this.type = type;
+  }
+  emitBefore() {}
+  emitAfter() {}
+  emitDestroy() {
+    return this;
+  }
+  asyncId() {
+    return 1;
+  }
+  triggerAsyncId() {
+    return 1;
+  }
+  runInAsyncScope(fn, thisArg, ...args) {
+    return Reflect.apply(fn, thisArg, args);
+  }
+  bind(fn, thisArg = this) {
+    return fn.bind(thisArg);
+  }
+  static bind(fn) {
+    return fn;
+  }
+}
+
 // ─── Registry ───────────────────────────────────────────────────────
 
 export const nodeModules = {
@@ -1714,7 +1803,7 @@ export const nodeModules = {
   http: httpLike("http"),
   https: httpLike("https"),
   dgram,
-  net: unsupportedModule("net"),
+  net: unsupportedModule("net", { isIP, isIPv4, isIPv6 }),
   tls: unsupportedModule("tls", { TLSSocket }),
   dns: unsupportedModule("dns"),
   stream: streamModule,
@@ -1734,18 +1823,8 @@ export const nodeModules = {
   inspector: {},
   v8: {},
   async_hooks: {
-    AsyncLocalStorage: class { run(_store, fn) { return fn(); } getStore() { return undefined; } },
-    AsyncResource: class {
-      constructor(type) { this.type = type; }
-      emitBefore() {}
-      emitAfter() {}
-      emitDestroy() {}
-      asyncId() { return 1; }
-      triggerAsyncId() { return 1; }
-      runInAsyncScope(fn, thisArg, ...args) { return fn.apply(thisArg, args); }
-      bind(fn) { return fn; }
-      static bind(fn) { return fn; }
-    },
+    AsyncLocalStorage,
+    AsyncResource,
     executionAsyncId: () => 1,
     triggerAsyncId: () => 1,
     createHook: () => ({ enable() {}, disable() {} }),
