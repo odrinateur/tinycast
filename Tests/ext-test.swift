@@ -1019,6 +1019,9 @@ struct ExtensionTests {
               const digest = crypto.createHash("sha256").update("abc").digest("hex").slice(0, 8);
               const cpu = os.cpus()[0];
               const cpuTimes = Object.values(cpu.times).every(Number.isFinite) ? "cpu=ok" : "cpu=bad";
+              const net = require("node:net");
+              const copiedIsIP = Object.getOwnPropertyDescriptor(net, "isIP")?.value;
+              const ipShim = [net.isIP("8.8.8.8"), copiedIsIP("::1"), net.isIPv4("not-an-ip")].join(",");
               // AbortSignal's statics, the brand node-fetch checks, and url.parse's legacy `path`.
               const abortable = [
                 typeof AbortSignal.timeout, typeof AbortSignal.abort, typeof AbortSignal.any,
@@ -1076,6 +1079,7 @@ struct ExtensionTests {
                   accessories: [
                     { text: digest }, { text: abortable }, { text: filePaths },
                     { text: cpuTimes }, { text: cipherShim }, { text: utilShim },
+                    { text: ipShim },
                   ],
                   actions: h(ActionPanel, null,
                     h(Action, { title: "Bump", onAction: () => setCount((v) => v + 10) }))
@@ -1141,8 +1145,14 @@ struct ExtensionTests {
             String(describing: screen.items.first?.node.array("accessories").dropFirst(4).first))
         check(
             "util shim answers debuglog, stripVTControlCharacters, aborted and inspect.custom",
-            ExtensionAccessoriesView_labelForTest(screen.items.first?.node.array("accessories").last)
+            ExtensionAccessoriesView_labelForTest(
+                screen.items.first?.node.array("accessories").dropFirst(5).first)
                 == "function,false,undefined,red,n=2,true,function",
+            String(describing: screen.items.first?.node.array("accessories").dropFirst(5).first))
+        check(
+            "net.isIP survives a copied property descriptor",
+            ExtensionAccessoriesView_labelForTest(screen.items.first?.node.array("accessories").last)
+                == "4,6,false",
             String(describing: screen.items.first?.node.array("accessories").last))
 
         // Dispatch the row's action and confirm the re-render.

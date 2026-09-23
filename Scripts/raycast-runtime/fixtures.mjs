@@ -1106,6 +1106,26 @@ export async function runFixtures() {
     check("loopback cidr is /8", result?.cidr === "127.0.0.1/8", String(result?.cidr));
   });
 
+  await run("a copied net.isIP descriptor keeps the real function", `
+import { isIP } from "node:net";
+export default async function Command() {
+  const net = require("node:net");
+  const copied = {};
+  for (const key of Object.getOwnPropertyNames(net)) {
+    const descriptor = Object.getOwnPropertyDescriptor(net, key);
+    if (descriptor) Object.defineProperty(copied, key, descriptor);
+  }
+  globalThis.__copiedIsIP = {
+    named: isIP("8.8.8.8"),
+    copied: copied.isIP("8.8.8.8"),
+    direct: net.isIP("1.2.3.4"),
+  };
+}
+`, "no-view", async (harness) => {
+    const result = harness.call("globalThis.__copiedIsIP");
+    check("named, copied and direct isIP all return 4", JSON.stringify(result) === JSON.stringify({ named: 4, copied: 4, direct: 4 }), JSON.stringify(result));
+  });
+
   await run(
     "an http.Agent subclass carries cookies between requests",
     cookieAgentSource,

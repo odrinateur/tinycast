@@ -1567,25 +1567,33 @@ class StringDecoder {
 /// so the member has to be a real constructor — and unknown members must exist too, hence the Proxy.
 function unsupportedModule(name, extras = {}) {
   const cache = new Map();
-  const lazy = new Set((UNSUPPORTED_EXPORTS[name] ?? []).filter((each) => !(each in extras)));
+  // Raycast's `__toESM` copies descriptor.value, so isIP must be a real own property.
+  for (const key of UNSUPPORTED_EXPORTS[name] ?? []) {
+    if (!Object.prototype.hasOwnProperty.call(extras, key)) {
+      extras[key] = makeUnsupported(`${name}.${key}`);
+    }
+  }
   const manufacture = (member) => {
     if (!cache.has(member)) cache.set(member, makeUnsupported(`${name}.${member}`));
     return cache.get(member);
   };
   return new Proxy(extras, {
-    get(target, member) {
-      if (member in target) return target[member];
+    get(object, member) {
+      if (Object.prototype.hasOwnProperty.call(object, member)) return object[member];
       // Interop and probing keys must stay absent: a truthy `__esModule` makes esbuild's `__toESM`
       // skip the default-wrapping it would otherwise apply, and a truthy `then` makes the module
       // look like a thenable to `await`.
       if (typeof member !== "string" || RESERVED_MEMBERS.has(member)) return undefined;
       return manufacture(member);
     },
-    // esbuild's `__toESM` snapshots own keys and never reads through `get`.
-    ownKeys: (target) => [...new Set([...Reflect.ownKeys(target), ...lazy])],
-    getOwnPropertyDescriptor(target, member) {
-      const own = Reflect.getOwnPropertyDescriptor(target, member);
-      if (own || !lazy.has(member)) return own;
+    has(object, member) {
+      return Object.prototype.hasOwnProperty.call(object, member)
+        || (typeof member === "string" && !RESERVED_MEMBERS.has(member));
+    },
+    ownKeys: (object) => Reflect.ownKeys(object),
+    getOwnPropertyDescriptor(object, member) {
+      const own = Reflect.getOwnPropertyDescriptor(object, member);
+      if (own || typeof member !== "string" || RESERVED_MEMBERS.has(member)) return own;
       return { value: manufacture(member), writable: true, enumerable: true, configurable: true };
     },
   });

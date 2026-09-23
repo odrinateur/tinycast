@@ -650,15 +650,15 @@ directions), `http`/`https` (`request`, `get` and `Agent`, buffered over the sam
 as `fetch`), `stream` (`Readable`, `Writable`, `Duplex`, `Transform`, `PassThrough`, `pipeline`,
 `finished`, plus `stream/promises` and `stream/web`), `util`, `events`, `buffer`, `url`, `querystring`, `punycode`, `assert`,
 `string_decoder`, `timers`. Every other built-in resolves to a stub that throws only when used, so a
-bundle that merely references `http2` or `domain` still loads. Those stubs are manufactured lazily,
-but each module still has to enumerate its members as own keys: esbuild's `__toESM` — what every
-namespace or named import compiles to — snapshots own keys instead of reading through the proxy, and
-a member it cannot see arrives as `undefined`, which `class … extends` reports as
-`TypeError: The superclass is not a constructor` at import time, naming nothing. `async_hooks` hands
-out a real `AsyncLocalStorage` and `AsyncResource` rather than a stub for the same reason: undici
-extends the latter at module scope, and running the callback in place is the whole of it here.
-`os.networkInterfaces` and `net.isIP` / `isIPv4` / `isIPv6` are real rather than stubs: IP lookup
-extensions enumerate local addresses and validate the query through those two calls.
+bundle that merely references `http2` or `domain` still loads. Known members of those stubs are own
+data properties, because esbuild's `__toESM` copies `getOwnPropertyDescriptor().value` onto the
+import namespace: a trap-synthesised stub would stick, and `net.isIP` would throw instead of
+classifying an address. A member `__toESM` cannot see arrives as `undefined`, which `class … extends`
+reports as `TypeError: The superclass is not a constructor` at import time, naming nothing.
+`async_hooks` hands out a real `AsyncLocalStorage` and `AsyncResource` rather than a stub for the
+same reason: undici extends the latter at module scope, and running the callback in place is the
+whole of it here. `os.networkInterfaces` and `net.isIP` / `isIPv4` / `isIPv6` are real rather than
+stubs: IP lookup extensions enumerate local addresses and validate the query through those two calls.
 
 **Streams** — the stream core is Node's real contract, not a stand-in: an extension that ships
 `stream-chain` and `stream-json` to walk a package index builds object-mode pipelines out of it, and
