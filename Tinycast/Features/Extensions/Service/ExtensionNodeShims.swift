@@ -88,6 +88,7 @@ final class ExtensionNodeShims: @unchecked Sendable {
             }
             return Double(statistics.free_count) * Double(getpagesize())
         }
+        if method == "networkInterfaces" { return try networkInterfaces() }
         guard method == "cpus" else {
             throw ShimError.failed("os.\(method) is not supported.", "ENOSYS")
         }
@@ -124,6 +125,139 @@ final class ExtensionNodeShims: @unchecked Sendable {
                     "irq": 0
                 ]
             ]
+        }
+    }
+
+    /// IP lookup extensions enumerate local addresses through `os.networkInterfaces`.
+    private func networkInterfaces() throws -> [String: [[String: Any]]] {
+        var head: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&head) == 0 else {
+            throw ShimError.failed("Could not read network interfaces.")
+        }
+        guard let first = head else { return [:] }
+        defer { freeifaddrs(first) }
+
+        var macByName: [String: String] = [:]
+        var cursor: UnsafeMutablePointer<ifaddrs>? = first
+        while let iface = cursor {
+            let name = String(cString: iface.pointee.ifa_name)
+            if let mac = macAddress(iface.pointee.ifa_addr) { macByName[name] = mac }
+            cursor = iface.pointee.ifa_next
+        }
+
+        var grouped: [String: [[String: Any]]] = [:]
+        cursor = first
+        while let iface = cursor {
+            let name = String(cString: iface.pointee.ifa_name)
+            if let entry = addressEntry(
+                iface.pointee, mac: macByName[name] ?? "00:00:00:00:00:00")
+            {
+                grouped[name, default: []].append(entry)
+            }
+            cursor = iface.pointee.ifa_next
+        }
+        return grouped
+    }
+
+    private func macAddress(_ addr: UnsafePointer<sockaddr>?) -> String? {
+        guard let addr, addr.pointee.sa_family == sa_family_t(AF_LINK) else { return nil }
+        return addr.withMemoryRebound(to: sockaddr_dl.self, capacity: 1) { link in
+            let length = Int(link.pointee.sdl_alen)
+            guard length == 6, let dataOffset = MemoryLayout<sockaddr_dl>.offset(of: \.sdl_data)
+            else { return nil }
+            let start = dataOffset + Int(link.pointee.sdl_nlen)
+            return UnsafeRawPointer(link).advanced(by: start).withMemoryRebound(
+                to: UInt8.self, capacity: length
+            ) { bytes in
+                (0..<length).map { String(format: "%02x", bytes[$0]) }.joined(separator: ":")
+            }
+        }
+    }
+
+    private func addressEntry(_ iface: ifaddrs, mac: String) -> [String: Any]? {
+        guard let addr = iface.ifa_addr else { return nil }
+        let loopback = (Int32(iface.ifa_flags) & IFF_LOOPBACK) != 0
+        switch Int32(addr.pointee.sa_family) {
+        case AF_INET:
+            return inetEntry(
+                addr, netmask: iface.ifa_netmask, family: AF_INET, name: "IPv4",
+                mac: mac, loopback: loopback)
+        case AF_INET6:
+            var entry = inetEntry(
+                addr, netmask: iface.ifa_netmask, family: AF_INET6, name: "IPv6",
+                mac: mac, loopback: loopback)
+            addr.withMemoryRebound(to: sockaddr_in6.self, capacity: 1) { sin6 in
+                entry?["scopeid"] = Int(sin6.pointee.sin6_scope_id)
+            }
+            return entry
+        default:
+            return nil
+        }
+    }
+
+    private func inetEntry(
+        _ addr: UnsafePointer<sockaddr>, netmask: UnsafePointer<sockaddr>?,
+        family: Int32, name: String, mac: String, loopback: Bool
+    ) -> [String: Any]? {
+        guard let address = numericHost(addr, family: family) else { return nil }
+        let mask = netmask.flatMap { numericHost($0, family: family) } ?? ""
+        let prefix = netmask.map { prefixLength($0, family: family) } ?? 0
+        return [
+            "address": address,
+            "netmask": mask,
+            "family": name,
+            "mac": mac,
+            "internal": loopback,
+            "cidr": "\(address)/\(prefix)"
+        ]
+    }
+
+    private func numericHost(_ addr: UnsafePointer<sockaddr>, family: Int32) -> String? {
+        var host = [CChar](repeating: 0, count: Int(INET6_ADDRSTRLEN))
+        let ok: Bool
+        if family == AF_INET {
+            ok = addr.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { sin in
+                withUnsafePointer(to: sin.pointee.sin_addr) {
+                    inet_ntop(family, $0, &host, socklen_t(INET6_ADDRSTRLEN)) != nil
+                }
+            }
+        } else {
+            ok = addr.withMemoryRebound(to: sockaddr_in6.self, capacity: 1) { sin6 in
+                withUnsafePointer(to: sin6.pointee.sin6_addr) {
+                    inet_ntop(family, $0, &host, socklen_t(INET6_ADDRSTRLEN)) != nil
+                }
+            }
+        }
+        return ok ? String(cString: host) : nil
+    }
+
+    private func prefixLength(_ addr: UnsafePointer<sockaddr>, family: Int32) -> Int {
+        if family == AF_INET {
+            return addr.withMemoryRebound(to: sockaddr_in.self, capacity: 1) {
+                leadingOnes(of: $0.pointee.sin_addr)
+            }
+        }
+        return addr.withMemoryRebound(to: sockaddr_in6.self, capacity: 1) {
+            leadingOnes(of: $0.pointee.sin6_addr)
+        }
+    }
+
+    private func leadingOnes<T>(of value: T) -> Int {
+        withUnsafeBytes(of: value) { bytes in
+            var length = 0
+            for byte in bytes {
+                if byte == 0xff {
+                    length += 8
+                    continue
+                }
+                var bit: UInt8 = 0x80
+                while bit != 0 && (byte & bit) != 0 {
+                    length += 1
+                    bit >>= 1
+                }
+                break
+            }
+            return length
         }
     }
 
